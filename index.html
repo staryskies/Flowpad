@@ -622,7 +622,7 @@
             tile.element.style.left = `${tile.x}px`;
             tile.element.style.top = `${tile.y}px`;
           });
-          updateAllConnections();
+          connectionManager.updateAllConnections();
 
           const originalCanvasWidth = canvas.style.width;
           const originalCanvasHeight = canvas.style.height;
