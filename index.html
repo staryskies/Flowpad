@@ -39,17 +39,28 @@
         linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px);
       background-size: 20px 20px;
     }
-    .tile {
-      position: absolute;
-      width: 220px;
-      border-radius: 8px;
-      background: white;
-      box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
-      user-select: none;
-      overflow: hidden;
-      transition: box-shadow 0.2s ease, transform 0.1s ease;
-      padding: 10px;
-    }
+         .tile {
+       position: absolute;
+       width: 220px;
+       border-radius: 8px;
+       background: white;
+       box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+       user-select: none;
+       overflow: hidden;
+       transition: box-shadow 0.2s ease, transform 0.1s ease;
+       padding: 10px;
+       border: 2px solid transparent;
+     }
+     .tile:hover {
+       border-color: #3b82f6;
+       box-shadow: rgba(59, 130, 246, 0.15) 0px 4px 12px;
+     }
+     .tile.dragging {
+       border-color: #3b82f6;
+       box-shadow: rgba(59, 130, 246, 0.3) 0px 8px 24px;
+       transform: scale(1.02);
+       z-index: 1000;
+     }
     .tile-header {
       display: flex;
       justify-content: space-between;
@@ -60,6 +71,14 @@
       min-height: 50px;
       word-wrap: break-word;
       white-space: pre-line;
+    }
+    .edit-bar {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 10px;
     }
     .toolbar {
       display: flex;
@@ -166,10 +185,27 @@
        stroke-width: 2;
        fill: none;
        marker-end: url(#arrowhead);
+       filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
      }
      .connection-line.active {
        stroke: #3b82f6;
        stroke-width: 3;
+       filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+     }
+     .connector-handle {
+       position: absolute;
+       width: 12px;
+       height: 12px;
+       background-color: #94a3b8;
+       border-radius: 50%;
+       cursor: pointer;
+       border: 2px solid white;
+       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+       transition: all 0.2s ease;
+     }
+     .connector-handle:hover {
+       background-color: #3b82f6;
+       transform: scale(1.2);
      }
   </style>
 </head>
@@ -207,7 +243,7 @@
      </div>
    </div>
 
-  <div class="zoom-controls">
+  <div class="zoom-controls" style="display: none;">
     <button id="zoom-in"><i class="fa-solid fa-plus"></i></button>
     <button id="zoom-out"><i class="fa-solid fa-minus"></i></button>
     <button id="zoom-reset"><i class="fa-solid fa-arrows-to-dot"></i></button>
@@ -218,8 +254,8 @@
     <span id="toast-message"></span>
   </div>
 
-  <div id="modal" class="modal">
-    <div class="modal-content">
+  <div id="export-area" class="p-4" style="display: none;">
+    <div class="bg-white p-4 rounded-md shadow-md">
       <h3 class="text-xl font-semibold text-slate-800 mb-4">Export JSON</h3>
       <div class="mb-4">
         <textarea id="json-content" class="w-full h-64 p-3 border border-slate-300 rounded-md font-mono text-sm" readonly></textarea>
@@ -228,7 +264,7 @@
         <button id="copy-json" class="toolbar-button mr-2">
           <i class="fa-solid fa-copy"></i> Copy
         </button>
-        <button id="close-modal" class="toolbar-button">
+        <button id="close-export" class="toolbar-button">
           Close
         </button>
       </div>
@@ -261,28 +297,37 @@
          return connection;
        }
        
-       createSVGLine(fromHandle, toHandle) {
-         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-         line.classList.add('connection-line');
-         this.updateLinePosition(line, fromHandle, toHandle);
-         return line;
-       }
-       
-       updateLinePosition(line, fromHandle, toHandle) {
-         const fromRect = fromHandle.getBoundingClientRect();
-         const toRect = toHandle.getBoundingClientRect();
-         const svgRect = this.svg.getBoundingClientRect();
-         
-         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
-         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-         const toX = toRect.left + toRect.width / 2 - svgRect.left;
-         const toY = toRect.top + toRect.height / 2 - svgRect.top;
-         
-         line.setAttribute('x1', fromX);
-         line.setAttribute('y1', fromY);
-         line.setAttribute('x2', toX);
-         line.setAttribute('y2', toY);
-       }
+               createSVGLine(fromHandle, toHandle) {
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.classList.add('connection-line');
+          this.updateLinePosition(path, fromHandle, toHandle);
+          return path;
+        }
+        
+        updateLinePosition(path, fromHandle, toHandle) {
+          const fromRect = fromHandle.getBoundingClientRect();
+          const toRect = toHandle.getBoundingClientRect();
+          const svgRect = this.svg.getBoundingClientRect();
+          
+          const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+          const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+          const toX = toRect.left + toRect.width / 2 - svgRect.left;
+          const toY = toRect.top + toRect.height / 2 - svgRect.top;
+          
+          // Calculate control points for curved path
+          const dx = toX - fromX;
+          const dy = toY - fromY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const controlOffset = Math.min(distance * 0.3, 100); // Curvature factor
+          
+          const controlX1 = fromX + controlOffset;
+          const controlY1 = fromY;
+          const controlX2 = toX - controlOffset;
+          const controlY2 = toY;
+          
+          const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${toX} ${toY}`;
+          path.setAttribute('d', pathData);
+        }
        
        updateConnection(connection) {
          const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${connection.from}"]`);
@@ -313,24 +358,35 @@
            .forEach(conn => this.removeConnection(conn));
        }
        
-       createTemporaryLine(fromHandle, toX, toY) {
-         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-         line.classList.add('connection-line', 'active');
-         
-         const fromRect = fromHandle.getBoundingClientRect();
-         const svgRect = this.svg.getBoundingClientRect();
-         
-         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
-         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-         
-         line.setAttribute('x1', fromX);
-         line.setAttribute('y1', fromY);
-         line.setAttribute('x2', toX - svgRect.left);
-         line.setAttribute('y2', toY - svgRect.top);
-         
-         this.svg.appendChild(line);
-         return line;
-       }
+               createTemporaryLine(fromHandle, toX, toY) {
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.classList.add('connection-line', 'active');
+          
+          const fromRect = fromHandle.getBoundingClientRect();
+          const svgRect = this.svg.getBoundingClientRect();
+          
+          const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+          const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+          const targetX = toX - svgRect.left;
+          const targetY = toY - svgRect.top;
+          
+          // Calculate control points for curved path
+          const dx = targetX - fromX;
+          const dy = targetY - fromY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const controlOffset = Math.min(distance * 0.3, 100);
+          
+          const controlX1 = fromX + controlOffset;
+          const controlY1 = fromY;
+          const controlX2 = targetX - controlOffset;
+          const controlY2 = targetY;
+          
+          const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
+          path.setAttribute('d', pathData);
+          
+          this.svg.appendChild(path);
+          return path;
+        }
      }
 
      function initApp() {
@@ -355,10 +411,10 @@
       const zoomResetBtn = document.getElementById('zoom-reset');
       const toast = document.getElementById('toast');
       const toastMessage = document.getElementById('toast-message');
-      const modal = document.getElementById('modal');
+      const exportArea = document.getElementById('export-area');
       const jsonContent = document.getElementById('json-content');
       const copyJsonBtn = document.getElementById('copy-json');
-      const closeModalBtn = document.getElementById('close-modal');
+      const closeExportBtn = document.getElementById('close-export');
 
              const panzoomInstance = Panzoom(canvas, {
          maxZoom: 4,
@@ -409,6 +465,7 @@
               </button>
             </div>
           </div>
+          <input type="text" class="edit-bar" placeholder="Type here and press Enter to add text...">
           <div class="tile-content" contenteditable="true">${content}</div>
           <div class="connector-handle input" data-tile="${id}"></div>
           <div class="connector-handle output" data-tile="${id}"></div>
@@ -420,27 +477,33 @@
         return tile;
       }
 
-      function makeElementDraggable(element) {
-        const header = element.querySelector('.tile-header');
-        let startX, startY, startMouseX, startMouseY, isDragging = false;
-
-        header.addEventListener('mousedown', startDrag);
-        header.addEventListener('touchstart', startDrag, { passive: false });
-
-        function startDrag(e) {
-          e.preventDefault();
-          startX = parseFloat(element.style.left) || 0;
-          startY = parseFloat(element.style.top) || 0;
-          startMouseX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
-          startMouseY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
-          isDragging = true;
-          setActiveTile(element);
-          document.addEventListener('mousemove', drag);
-          document.addEventListener('touchmove', drag, { passive: false });
-          document.addEventListener('mouseup', endDrag);
-          document.addEventListener('touchend', endDrag);
-          element.style.zIndex = '100';
-        }
+             function makeElementDraggable(element) {
+         let startX, startY, startMouseX, startMouseY, isDragging = false;
+ 
+         // Make entire tile draggable, not just header
+         element.addEventListener('mousedown', startDrag);
+         element.addEventListener('touchstart', startDrag, { passive: false });
+ 
+         function startDrag(e) {
+           // Don't start drag if clicking on buttons or contenteditable elements
+           if (e.target.closest('button') || e.target.getAttribute('contenteditable') === 'true') {
+             return;
+           }
+           
+           e.preventDefault();
+           startX = parseFloat(element.style.left) || 0;
+           startY = parseFloat(element.style.top) || 0;
+           startMouseX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+           startMouseY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+           isDragging = true;
+           
+           element.classList.add('dragging');
+           setActiveTile(element);
+           document.addEventListener('mousemove', drag);
+           document.addEventListener('touchmove', drag, { passive: false });
+           document.addEventListener('mouseup', endDrag);
+           document.addEventListener('touchend', endDrag);
+         }
 
         function drag(e) {
           if (!isDragging) return;
@@ -462,23 +525,25 @@
           updateConnections(tileId);
         }
 
-        function endDrag() {
-          isDragging = false;
-          document.removeEventListener('mousemove', drag);
-          document.removeEventListener('touchmove', drag);
-          document.removeEventListener('mouseup', endDrag);
-          document.removeEventListener('touchend', endDrag);
-          element.style.zIndex = '';
-          const tileId = parseInt(element.dataset.id);
-          const tile = state.tiles.find(t => t.id === tileId);
-          const gridSize = 20;
-          tile.x = Math.round(tile.x / gridSize) * gridSize;
-          tile.y = Math.round(tile.y / gridSize) * gridSize;
-          element.style.left = `${tile.x}px`;
-          element.style.top = `${tile.y}px`;
-          updateConnections(tileId);
-          saveState();
-        }
+                 function endDrag() {
+           isDragging = false;
+           document.removeEventListener('mousemove', drag);
+           document.removeEventListener('touchmove', drag);
+           document.removeEventListener('mouseup', endDrag);
+           document.removeEventListener('touchend', endDrag);
+           
+           element.classList.remove('dragging');
+           
+           const tileId = parseInt(element.dataset.id);
+           const tile = state.tiles.find(t => t.id === tileId);
+           const gridSize = 20;
+           tile.x = Math.round(tile.x / gridSize) * gridSize;
+           tile.y = Math.round(tile.y / gridSize) * gridSize;
+           element.style.left = `${tile.x}px`;
+           element.style.top = `${tile.y}px`;
+           updateConnections(tileId);
+           saveState();
+         }
       }
 
       function setActiveTile(element) {
@@ -580,7 +645,7 @@
           }))
         };
         jsonContent.value = JSON.stringify(dataToExport, null, 2);
-        modal.classList.add('show');
+        exportArea.style.display = 'block';
       }
 
       async function exportAsPng() {
@@ -744,7 +809,6 @@
       exportJsonBtn.addEventListener('click', exportAsJson);
       exportPngBtn.addEventListener('click', exportAsPng);
              clearAllBtn.addEventListener('click', () => {
-         if (confirm('Are you sure you want to clear all tiles and connections?')) {
            state.connections.forEach(conn => connectionManager.removeConnection(conn));
            canvas.innerHTML = `
              <svg class="connections-layer" id="connections-svg">
@@ -763,7 +827,6 @@
            panzoomInstance.zoomAbs(0, 0, 1);
            localStorage.removeItem('Flowpad-state');
            showToast('All content cleared!');
-         }
        });
       zoomInBtn.addEventListener('click', () => {
         const { scale } = panzoomInstance.getTransform();
@@ -793,7 +856,7 @@
           }
         }
       });
-      closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
+      closeExportBtn.addEventListener('click', () => exportArea.style.display = 'none');
       canvas.addEventListener('click', (e) => {
         if (e.target.closest('.tile-delete')) {
           removeTile(parseInt(e.target.closest('.tile').dataset.id));
@@ -816,20 +879,31 @@
            state.activeConnection.tempLine = connectionManager.createTemporaryLine(handle, e.clientX, e.clientY);
          }
        });
-       document.addEventListener('mousemove', (e) => {
-         if (!state.activeConnection) return;
-         const fromHandle = state.activeConnection.startElement;
-         const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
-         const fromRect = fromHandle.getBoundingClientRect();
-         
-         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
-         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-         
-         state.activeConnection.tempLine.setAttribute('x1', fromX);
-         state.activeConnection.tempLine.setAttribute('y1', fromY);
-         state.activeConnection.tempLine.setAttribute('x2', e.clientX - svgRect.left);
-         state.activeConnection.tempLine.setAttribute('y2', e.clientY - svgRect.top);
-       });
+               document.addEventListener('mousemove', (e) => {
+          if (!state.activeConnection) return;
+          const fromHandle = state.activeConnection.startElement;
+          const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
+          const fromRect = fromHandle.getBoundingClientRect();
+          
+          const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+          const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+          const targetX = e.clientX - svgRect.left;
+          const targetY = e.clientY - svgRect.top;
+          
+          // Calculate control points for curved path
+          const dx = targetX - fromX;
+          const dy = targetY - fromY;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const controlOffset = Math.min(distance * 0.3, 100);
+          
+          const controlX1 = fromX + controlOffset;
+          const controlY1 = fromY;
+          const controlX2 = targetX - controlOffset;
+          const controlY2 = targetY;
+          
+          const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
+          state.activeConnection.tempLine.setAttribute('d', pathData);
+        });
        document.addEventListener('mouseup', (e) => {
          if (!state.activeConnection) return;
          const handle = e.target.closest('.connector-handle');
@@ -848,6 +922,21 @@
       canvas.addEventListener('blur', (e) => {
         if (e.target.getAttribute('contenteditable') === 'true') saveState();
       }, true);
+      
+      // Add event listener for edit bars in tiles
+      canvas.addEventListener('keydown', (e) => {
+        if (e.target.classList.contains('edit-bar') && e.key === 'Enter') {
+          e.preventDefault();
+          const text = e.target.value.trim();
+          if (text) {
+            const tile = e.target.closest('.tile');
+            const contentArea = tile.querySelector('.tile-content');
+            contentArea.textContent += (contentArea.textContent ? '\n' : '') + text;
+            e.target.value = '';
+            saveState();
+          }
+        }
+      });
 
              if (!loadState()) {
          createTile(state.nextId++, 100, 100, 'Welcome to Flowpad!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
