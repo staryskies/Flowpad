@@ -5,6 +5,7 @@ const cookieParser = require('cookie-parser');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const fetch = require('node-fetch');
 
 require('dotenv').config();
 
@@ -140,55 +141,213 @@ app.post('/api/auth/google', async (req, res) => {
 });
 
 // ----- Graphs API -----
+// Get all graphs for a user
 app.get('/api/graphs', authenticateToken, async (req, res) => {
-  const own = await pool.query(
-    'SELECT * FROM graphs WHERE user_id=$1 ORDER BY updated_at DESC',
-    [req.user.id]
-  );
-  const shared = await pool.query(`
-    SELECT g.*, u.name AS owner_name
-    FROM graphs g
-    JOIN users u ON g.user_id = u.id
-    JOIN graph_shares gs ON g.id = gs.graph_id
-    WHERE gs.shared_with_email = $1
-    ORDER BY g.updated_at DESC
-  `,[req.user.email]);
-  res.json({ own: own.rows, shared: shared.rows });
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT * FROM graphs WHERE user_id = $1 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with = $1) ORDER BY updated_at DESC',
+      [req.user.id]
+    );
+    client.release();
+    
+    const own = result.rows.filter(g => g.user_id === req.user.id);
+    const shared = result.rows.filter(g => g.user_id !== req.user.id);
+    
+    res.json({ own, shared });
+  } catch (err) {
+    console.error('Error fetching graphs:', err);
+    res.status(500).json({ error: 'Failed to fetch graphs' });
+  }
 });
 
-app.post('/api/graphs', authenticateToken, async (req, res) => {
-  const { title, data } = req.body;
-  const r = await pool.query(
-    'INSERT INTO graphs (user_id, title, data) VALUES ($1,$2,$3) RETURNING *',
-    [req.user.id, title || 'Untitled', data || { tiles: [], connections: [] }]
-  );
-  res.json(r.rows[0]);
-});
-
-app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const { title, data } = req.body;
-  const r = await pool.query(
-    `UPDATE graphs
-     SET title=$1, data=$2, updated_at=CURRENT_TIMESTAMP
-     WHERE id=$3 AND user_id=$4
-     RETURNING *`,
-    [title, data, id, req.user.id]
-  );
-  if (r.rows.length === 0) return res.status(404).json({ error: 'Graph not found' });
-  res.json(r.rows[0]);
-});
-
+// Get a specific graph with caching
 app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
-  const r = await pool.query(`
-    SELECT g.*
-    FROM graphs g
-    LEFT JOIN graph_shares gs ON g.id = gs.graph_id
-    WHERE g.id=$1 AND (g.user_id=$2 OR gs.shared_with_email=$3)
-  `,[id, req.user.id, req.user.email]);
-  if (r.rows.length === 0) return res.status(404).json({ error: 'Graph not found' });
-  res.json(r.rows[0]);
+  try {
+    const graphId = req.params.id;
+    
+    // Check cache first
+    let cached = getCachedGraph(graphId);
+    if (cached) {
+      console.log(`Serving graph ${graphId} from cache`);
+      return res.json(cached.data);
+    }
+    
+    // Fetch from database
+    const client = await pool.connect();
+    const result = await client.query(
+      'SELECT * FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with = $2))',
+      [graphId, req.user.id]
+    );
+    client.release();
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found' });
+    }
+    
+    const graph = result.rows[0];
+    
+    // Cache the graph data
+    cacheGraph(graphId, graph);
+    
+    res.json(graph);
+  } catch (err) {
+    console.error('Error fetching graph:', err);
+    res.status(500).json({ error: 'Failed to fetch graph' });
+  }
+});
+
+// Create a new graph
+app.post('/api/graphs', authenticateToken, async (req, res) => {
+  try {
+    const { title, data } = req.body;
+    const client = await pool.connect();
+    const result = await client.query(
+      'INSERT INTO graphs (title, data, user_id) VALUES ($1, $2, $3) RETURNING *',
+      [title, JSON.stringify(data), req.user.id]
+    );
+    client.release();
+    
+    const newGraph = result.rows[0];
+    
+    // Cache the new graph
+    cacheGraph(newGraph.id, newGraph);
+    
+    res.status(201).json(newGraph);
+  } catch (err) {
+    console.error('Error creating graph:', err);
+    res.status(500).json({ error: 'Failed to create graph' });
+  }
+});
+
+// Update a graph with caching
+app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
+  try {
+    const graphId = req.params.id;
+    const { title, data } = req.body;
+    
+    // Update cache immediately for instant feedback
+    const cached = getCachedGraph(graphId);
+    if (cached) {
+      cached.data.title = title;
+      cached.data.data = data;
+      cached.lastModified = Date.now();
+      cached.dirty = true;
+    }
+    
+    // Update database
+    const client = await pool.connect();
+    await client.query(
+      'UPDATE graphs SET title = $1, data = $2, updated_at = NOW() WHERE id = $3 AND (user_id = $4 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with = $4))',
+      [title, JSON.stringify(data), graphId, req.user.id]
+    );
+    client.release();
+    
+    // Mark cache as clean since we just saved
+    if (cached) {
+      cached.dirty = false;
+    }
+    
+    res.json({ success: true, message: 'Graph updated successfully' });
+  } catch (err) {
+    console.error('Error updating graph:', err);
+    res.status(500).json({ error: 'Failed to update graph' });
+  }
+});
+
+// Real-time updates endpoint with caching
+app.post('/api/graphs/:id/realtime', authenticateToken, async (req, res) => {
+  try {
+    const graphId = req.params.id;
+    const { updates } = req.body;
+    
+    // Get cached graph or fetch from database
+    let cached = getCachedGraph(graphId);
+    if (!cached) {
+      const client = await pool.connect();
+      const result = await client.query('SELECT * FROM graphs WHERE id = $1', [graphId]);
+      client.release();
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Graph not found' });
+      }
+      
+      cacheGraph(graphId, result.rows[0]);
+      cached = getCachedGraph(graphId);
+    }
+    
+    // Apply updates to cached data
+    updates.forEach(update => {
+      switch (update.type) {
+        case 'tile_move':
+          const tile = cached.data.data.tiles.find(t => t.id === update.data.tileId);
+          if (tile) {
+            tile.x = update.data.x;
+            tile.y = update.data.y;
+          }
+          break;
+        case 'tile_delete':
+          cached.data.data.tiles = cached.data.data.tiles.filter(t => t.id !== update.data.tileId);
+          cached.data.data.connections = cached.data.data.connections.filter(
+            c => c.fromTile !== update.data.tileId && c.toTile !== update.data.tileId
+          );
+          break;
+        case 'connection_delete':
+          cached.data.data.connections = cached.data.data.connections.filter(
+            c => c.id !== update.data.connectionId
+          );
+          break;
+        case 'tile_create':
+          cached.data.data.tiles.push(update.data);
+          break;
+        case 'connection_create':
+          cached.data.data.connections.push(update.data);
+          break;
+      }
+    });
+    
+    // Mark as dirty for auto-save
+    markGraphDirty(graphId);
+    
+    res.json({ success: true, message: 'Updates applied successfully' });
+  } catch (err) {
+    console.error('Error applying real-time updates:', err);
+    res.status(500).json({ error: 'Failed to apply updates' });
+  }
+});
+
+// Force save a specific graph
+app.post('/api/graphs/:id/save', authenticateToken, async (req, res) => {
+  try {
+    const graphId = req.params.id;
+    await saveCachedGraph(graphId);
+    res.json({ success: true, message: 'Graph saved successfully' });
+  } catch (err) {
+    console.error('Error saving graph:', err);
+    res.status(500).json({ error: 'Failed to save graph' });
+  }
+});
+
+// Get graph cache status
+app.get('/api/graphs/:id/cache-status', authenticateToken, async (req, res) => {
+  try {
+    const graphId = req.params.id;
+    const cached = getCachedGraph(graphId);
+    
+    if (!cached) {
+      return res.json({ cached: false });
+    }
+    
+    res.json({
+      cached: true,
+      lastModified: cached.lastModified,
+      dirty: cached.dirty,
+      dataSize: JSON.stringify(cached.data).length
+    });
+  } catch (err) {
+    console.error('Error getting cache status:', err);
+    res.status(500).json({ error: 'Failed to get cache status' });
+  }
 });
 
 app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {

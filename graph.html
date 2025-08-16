@@ -17,11 +17,17 @@
       --text-tile: #000;
       --border-primary: #333;
       --border-secondary: #555;
-      --accent-primary: #4CAF50;
-      --accent-secondary: #45a049;
+      --accent-primary: #007AFF;
+      --accent-secondary: #0056CC;
       --shadow-primary: rgba(0,0,0,0.3);
       --shadow-secondary: rgba(0,0,0,0.2);
       --grid-color: rgba(255,255,255,0.03);
+      --tab-active: #007AFF;
+      --tab-inactive: #444;
+      --tab-hover: #555;
+      --inbox-pending: #FF9500;
+      --inbox-accepted: #34C759;
+      --inbox-rejected: #FF3B30;
     }
 
     :root[data-theme="light"] {
@@ -39,29 +45,63 @@
       --shadow-primary: rgba(0,0,0,0.1);
       --shadow-secondary: rgba(0,0,0,0.05);
       --grid-color: rgba(0,0,0,0.03);
+      --tab-active: #007AFF;
+      --tab-inactive: #ddd;
+      --tab-hover: #e2e8f0;
+      --inbox-pending: #FF9500;
+      --inbox-accepted: #34C759;
+      --inbox-rejected: #FF3B30;
     }
 
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:var(--bg-primary);background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
     
-    .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;transition:all 0.3s ease}
-    .logo{font-size:1.5rem;font-weight:700;background:linear-gradient(45deg,var(--text-primary),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;transition:all 0.3s ease;box-shadow:0 4px 20px var(--shadow-primary)}
+    .logo{font-size:1.5rem;font-weight:400;background:linear-gradient(45deg,var(--text-primary),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .user-info{display:flex;align-items:center;gap:15px}
-    .signout-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;transition:all 0.3s ease}
-    .signout-btn:hover{background:var(--border-secondary)}
+    .signout-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .signout-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
     
-    .theme-toggle{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:10px;transition:all 0.3s ease}
-    .theme-toggle:hover{background:var(--border-secondary)}
+    .theme-toggle{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:10px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .theme-toggle:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
     
-    .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:var(--bg-sidebar);backdrop-filter:blur(20px);border-right:1px solid var(--border-primary);overflow-y:auto;transition:all 0.3s ease}
+    .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:var(--bg-sidebar);backdrop-filter:blur(20px);border-right:1px solid var(--border-primary);overflow-y:auto;transition:all 0.3s ease;box-shadow:4px 0 20px var(--shadow-primary)}
     .sidebar-content{padding:20px}
-    .section-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;color:var(--text-primary)}
-    .new-graph-btn{background:var(--accent-primary);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px;transition:all 0.3s ease}
-    .new-graph-btn:hover{background:var(--accent-secondary)}
-    .graph-item{background:rgba(255,255,255,0.05);border:1px solid var(--border-primary);border-radius:8px;padding:15px;margin-bottom:10px;cursor:pointer;transition:all 0.3s ease}
-    .graph-item:hover{background:rgba(255,255,255,0.1)}
-    .graph-title{font-weight:600;margin-bottom:5px;color:var(--text-primary)}
-    .graph-meta{font-size:.8rem;color:var(--text-secondary)}
+    .section-title{font-size:1.1rem;font-weight:400;margin-bottom:15px;color:var(--text-primary);text-shadow:0 1px 2px var(--shadow-primary)}
+    .new-graph-btn{background:var(--accent-primary);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
+    .new-graph-btn:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
+    
+    .folder-section{margin-bottom:25px;border:1px solid var(--border-secondary);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px var(--shadow-primary)}
+    .folder-header{background:var(--bg-secondary);padding:12px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-secondary);transition:all 0.3s ease}
+    .folder-header:hover{background:var(--border-primary)}
+    .folder-header.active{background:var(--accent-primary);color:#fff}
+    .folder-icon{margin-right:8px;font-size:1.1rem}
+    .folder-arrow{transition:transform 0.3s ease}
+    .folder-arrow.expanded{transform:rotate(90deg)}
+    .folder-content{padding:10px;background:var(--bg-tertiary);display:none}
+    .folder-content.expanded{display:block}
+    
+    .graph-item{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);position:relative}
+    .graph-item:hover{background:var(--border-primary);box-shadow:0 4px 12px var(--shadow-secondary);transform:translateX(5px)}
+    .graph-item.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+    .graph-title{font-weight:400;margin-bottom:5px;color:inherit;font-size:0.95rem}
+    .graph-meta{font-size:.75rem;color:inherit;opacity:0.8}
+    .graph-delete{position:absolute;top:8px;right:8px;background:rgba(255,0,0,0.8);color:#fff;border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;opacity:0;transition:opacity 0.3s ease}
+    .graph-item:hover .graph-delete{opacity:1}
+    .graph-delete:hover{background:rgba(255,0,0,1)}
+    
+    .inbox-item{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:12px;margin-bottom:8px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);position:relative}
+    .inbox-item.pending{border-left:4px solid var(--inbox-pending)}
+    .inbox-item.accepted{border-left:4px solid var(--inbox-accepted)}
+    .inbox-item.rejected{border-left:4px solid var(--inbox-rejected)}
+    .inbox-title{font-weight:400;margin-bottom:5px;color:var(--text-primary);font-size:0.95rem}
+    .inbox-meta{font-size:.75rem;color:var(--text-secondary);margin-bottom:10px}
+    .inbox-actions{display:flex;gap:8px}
+    .inbox-btn{flex:1;padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;transition:all 0.3s ease;box-shadow:0 2px 4px var(--shadow-primary)}
+    .inbox-btn.accept{background:var(--inbox-accepted);color:#fff}
+    .inbox-btn.accept:hover{box-shadow:0 4px 8px var(--shadow-secondary)}
+    .inbox-btn.reject{background:var(--inbox-rejected);color:#fff}
+    .inbox-btn.reject:hover{box-shadow:0 4px 8px var(--shadow-secondary)}
     
     .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
     .canvas{width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;position:relative;cursor:grab}
@@ -69,52 +109,96 @@
     
     .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.3s ease;resize:both;overflow:hidden}
     .tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
-    .tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(76, 175, 80, 0.3)}
-    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none}
-    .tile-title{font-weight:600;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
-    .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile)}
+    .tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(0, 122, 255, 0.3)}
+    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;font-weight:400}
+    .tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
+    .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
     
-    .color-palette{position:absolute;top:10px;right:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;width:120px}
+    /* Resize handles - bigger and better positioned */
+    .tile::after{content:'';position:absolute;bottom:0;right:0;width:30px;height:30px;cursor:se-resize;background:linear-gradient(-45deg,transparent 30%,var(--border-primary) 30%,var(--border-primary) 40%,transparent 40%,transparent 60%,var(--border-primary) 60%,var(--border-primary) 70%,transparent 70%);border-radius:0 0 12px 0}
+    .tile::before{content:'';position:absolute;top:0;left:0;width:30px;height:30px;cursor:nw-resize;background:linear-gradient(45deg,transparent 30%,var(--border-primary) 30%,var(--border-primary) 40%,transparent 40%,transparent 60%,var(--border-primary) 60%,var(--border-primary) 70%,transparent 70%);border-radius:12px 0 0 0}
+    
+    .color-palette{position:absolute;top:10px;right:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;width:120px;z-index:1000}
     .tile:hover .color-palette{opacity:1}
     .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease}
     .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
     .color-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-primary)}
     
-    .connection-dot{position:absolute;width:12px;height:12px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease}
+    /* Color picker popout */
+    .color-picker-popout{position:absolute;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:15px;box-shadow:0 10px 25px var(--shadow-primary);z-index:1001;display:none;min-width:200px;backdrop-filter:blur(20px)}
+    .color-picker-popout.show{display:block}
+    .color-picker-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--border-secondary)}
+    .color-picker-title{font-weight:500;color:var(--text-primary);font-size:0.9rem}
+    .color-picker-close{background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;padding:2px;border-radius:4px;transition:all 0.3s ease}
+    .color-picker-close:hover{color:var(--text-primary);background:var(--border-primary)}
+    .color-picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:15px}
+    .color-picker-option{width:30px;height:30px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease;position:relative}
+    .color-picker-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
+    .color-picker-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-primary)}
+    .color-picker-option.selected::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.5)}
+    .color-picker-recent{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    .color-picker-recent-title{font-size:0.8rem;color:var(--text-secondary);margin-bottom:8px;text-align:center}
+    .color-picker-recent-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+    
+    /* Collaborative users list */
+    .collaborators-list{position:fixed;bottom:20px;right:20px;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:12px;box-shadow:0 8px 25px var(--shadow-primary);z-index:1000;min-width:180px;backdrop-filter:blur(20px);display:none}
+    .collaborators-list.show{display:block}
+    .collaborators-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border-secondary)}
+    .collaborators-title{font-size:0.8rem;font-weight:500;color:var(--text-primary)}
+    .collaborators-count{background:var(--accent-primary);color:#fff;border-radius:10px;padding:2px 8px;font-size:0.7rem;font-weight:500}
+    .collaborator-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-secondary);font-size:0.8rem}
+    .collaborator-item:last-child{border-bottom:none}
+    .collaborator-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+    .collaborator-name{color:var(--text-primary);flex:1}
+    .collaborator-status{width:8px;height:8px;border-radius:50%;background:var(--inbox-accepted)}
+    .collaborator-status.away{background:var(--inbox-pending)}
+    .collaborator-status.offline{background:var(--inbox-rejected)}
+    
+    .connection-dot{position:absolute;width:20px;height:20px;background:var(--accent-primary);border:3px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
     .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
-    .connection-dot.input{left:-6px;top:50%;transform:translateY(-50%)}
-    .connection-dot.output{right:-6px;top:50%;transform:translateY(-50%)}
-    .connection-dot.top{top:-6px;left:50%;transform:translateX(-50%)}
-    .connection-dot.bottom{bottom:-6px;left:50%;transform:translateX(-50%)}
+    .connection-dot.input{left:-10px;top:50%;transform:translateY(-50%)}
+    .connection-dot.output{right:-10px;top:50%;transform:translateY(-50%)}
+    .connection-dot.top{top:-10px;left:50%;transform:translateX(-50%)}
+    .connection-dot.bottom{bottom:-10px;left:50%;transform:translateX(-50%)}
     
     .connection{position:absolute;pointer-events:none;z-index:5}
     .connection-line{stroke:var(--accent-primary);stroke-width:3;fill:none;marker-end:url(#arrowhead);filter:drop-shadow(0 2px 4px var(--shadow-primary))}
     .connection-line:hover{stroke:var(--accent-secondary);stroke-width:4}
     
-    .toolbar{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;min-width:200px;transition:all 0.3s ease}
-    .tool-label{color:var(--text-secondary);font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:500}
-    .tool-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px;border-radius:6px;cursor:pointer;margin:2px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.3s ease}
-    .tool-btn:hover{background:var(--border-secondary)}
+    .toolbar{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;min-width:200px;transition:all 0.3s ease;box-shadow:0 8px 25px var(--shadow-primary)}
+    .tool-label{color:var(--text-secondary);font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:400}
+    .tool-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px;border-radius:6px;cursor:pointer;margin:2px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .tool-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
     .tool-btn.active{background:var(--accent-primary);color:#fff}
+    .tool-btn.cache-status-btn{background:var(--accent-primary);color:#fff}
+    .tool-btn.cache-status-btn:hover{background:var(--accent-secondary)}
+    .tool-btn.force-save-btn{background:var(--inbox-pending);color:#fff}
+    .tool-btn.force-save-btn:hover{background:var(--inbox-accepted)}
+    .tool-btn.snap-grid-btn{background:var(--accent-primary);color:#fff}
+    .tool-btn.snap-grid-btn:hover{background:var(--accent-secondary)}
+    .tool-btn.snap-grid-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
+    .tool-btn.snap-tiles-btn{background:var(--accent-primary);color:#fff}
+    .tool-btn.snap-tiles-btn:hover{background:var(--accent-secondary)}
+    .tool-btn.snap-tiles-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
     
-    .ai-panel{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:20px;z-index:1000;width:300px;display:none;transition:all 0.3s ease}
+    .ai-panel{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:20px;z-index:1000;width:300px;display:none;transition:all 0.3s ease;box-shadow:0 8px 25px var(--shadow-primary)}
     .ai-panel.show{display:block}
-    .ai-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;color:var(--text-primary)}
-    .ai-input{width:100%;padding:10px;border:1px solid var(--border-secondary);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:15px;resize:vertical;min-height:80px}
-    .ai-btn{background:var(--accent-primary);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease}
-    .ai-btn:hover{background:var(--accent-secondary)}
-    .ai-btn:disabled{background:var(--border-secondary);cursor:not-allowed}
+    .ai-title{font-size:1.1rem;font-weight:400;margin-bottom:15px;color:var(--text-primary)}
+    .ai-input{width:100%;padding:10px;border:1px solid var(--border-secondary);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:15px;resize:vertical;min-height:80px;font-weight:400}
+    .ai-btn{background:var(--accent-primary);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
+    .ai-btn:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
+    .ai-btn:disabled{background:var(--border-secondary);cursor:not-allowed;box-shadow:none}
     .ai-suggestions{margin-top:15px;max-height:200px;overflow-y:auto}
-    .ai-suggestion{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease}
-    .ai-suggestion:hover{background:var(--border-primary)}
+    .ai-suggestion{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);font-weight:400}
+    .ai-suggestion:hover{background:var(--border-primary);box-shadow:0 4px 12px var(--shadow-secondary)}
     
-    .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px var(--shadow-primary);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
+    .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 8px 25px var(--shadow-primary);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
     .notification.show{transform:translateX(0)}
     .notification.error{background:#f44336}
     
-    .connection-mode{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;margin-bottom:10px}
-    .connection-mode-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin:2px;transition:all 0.3s ease}
-    .connection-mode-btn:hover{background:var(--border-secondary)}
+    .connection-mode{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;margin-bottom:10px;box-shadow:0 8px 25px var(--shadow-primary)}
+    .connection-mode-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin:2px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .connection-mode-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
     .connection-mode-btn.active{background:var(--accent-primary);color:#fff}
     
     .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
@@ -123,19 +207,77 @@
     .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:10000;display:none;align-items:center;justify-content:center}
     .modal-overlay.show{display:flex}
     .modal{background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:12px;padding:30px;min-width:400px;max-width:600px;box-shadow:0 20px 40px var(--shadow-primary)}
-    .modal-title{font-size:1.3rem;font-weight:600;margin-bottom:20px;color:var(--text-primary)}
-    .modal-input{width:100%;padding:15px;border:1px solid var(--border-secondary);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:1rem;margin-bottom:20px;outline:none;transition:border-color 0.3s ease}
+    .modal-title{font-size:1.3rem;font-weight:400;margin-bottom:20px;color:var(--text-primary)}
+    .modal-input{width:100%;padding:15px;border:1px solid var(--border-secondary);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:1rem;margin-bottom:20px;outline:none;transition:border-color 0.3s ease;font-weight:400}
     .modal-input:focus{border-color:var(--accent-primary)}
     .modal-buttons{display:flex;gap:10px;justify-content:flex-end}
-    .modal-btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s ease}
+    .modal-btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
     .modal-btn.primary{background:var(--accent-primary);color:#fff}
-    .modal-btn.primary:hover{background:var(--accent-secondary)}
+    .modal-btn.primary:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
     .modal-btn.secondary{background:var(--border-primary);color:var(--text-primary)}
-    .modal-btn.secondary:hover{background:var(--border-secondary)}
+    .modal-btn.secondary:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
     
     .recent-colors-popup{position:absolute;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:10px;box-shadow:0 10px 25px var(--shadow-primary);z-index:1000;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;min-width:200px}
     .recent-colors-popup .color-option{width:25px;height:25px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all 0.2s ease}
     .recent-colors-popup .color-option:hover{border-color:var(--accent-primary);transform:scale(1.1)}
+    
+    /* Share section styling */
+    .share-section{display:none;margin-top:20px;padding:15px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-secondary);box-shadow:0 2px 8px var(--shadow-primary)}
+    .share-section.show{display:block}
+    .share-toggle{background:var(--accent-primary);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .share-toggle:hover{background:var(--accent-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+    .share-toggle.off{background:var(--border-primary);color:var(--text-primary)}
+    .share-toggle.off:hover{background:var(--border-secondary)}
+    .share-email{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border-secondary);background:var(--bg-tertiary);color:var(--text-primary);margin-top:10px;font-weight:400}
+    .share-btn{margin-top:8px;background:var(--accent-primary);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+    .share-btn:hover{background:var(--accent-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+    
+    /* Smooth animations for real-time updates */
+    .tile-updating{transition:all 0.1s ease-out}
+    .connection-updating{transition:all 0.1s ease-out}
+    
+    /* Browser-like tab interface */
+    .tab-container{display:flex;background:var(--bg-secondary);border-bottom:1px solid var(--border-primary);overflow-x:auto;padding:0 20px}
+    .tab{background:var(--tab-inactive);color:var(--text-secondary);border:none;padding:12px 20px;cursor:pointer;transition:all 0.3s ease;border-radius:8px 8px 0 0;margin-right:2px;font-weight:400;position:relative;min-width:120px;text-align:center}
+    .tab:hover{background:var(--tab-hover);color:var(--text-primary)}
+    .tab.active{background:var(--tab-active);color:#fff}
+    .tab-close{position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.2);color:inherit;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;opacity:0;transition:opacity 0.3s ease}
+    .tab:hover .tab-close{opacity:1}
+    .tab-close:hover{background:rgba(255,255,255,0.3)}
+    
+    /* Auto-save indicator */
+    .auto-save-indicator{position:fixed;bottom:20px;left:320px;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:8px 12px;box-shadow:0 4px 12px var(--shadow-primary);z-index:1000;font-size:0.8rem;color:var(--text-secondary);transition:all 0.3s ease;opacity:0;transform:translateY(20px)}
+    .auto-save-indicator.show{opacity:1;transform:translateY(0)}
+    .auto-save-indicator.saving{color:var(--inbox-pending)}
+    .auto-save-indicator.saved{color:var(--inbox-accepted)}
+    .auto-save-indicator.error{color:var(--inbox-rejected)}
+    
+    /* Snap to grid and other tiles */
+    .snap-indicator{position:absolute;width:2px;height:2px;background:var(--accent-primary);border-radius:50%;pointer-events:none;z-index:1000;opacity:0;transition:opacity 0.2s ease}
+    .snap-indicator.show{opacity:1}
+    .snap-indicator.grid{background:var(--accent-primary)}
+    .snap-indicator.tile{background:var(--inbox-accepted)}
+    
+    /* Shape palette */
+    .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
+    .tile:hover .shape-palette{opacity:1}
+    .shape-option{width:24px;height:24px;border:2px solid var(--border-primary);border-radius:4px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)}
+    .shape-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
+    .shape-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+    
+    /* Different tile shapes */
+    .tile.rounded{border-radius:20px}
+    .tile.circular{border-radius:50%;min-width:120px;min-height:120px}
+    .tile.hexagon{clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)}
+    .tile.diamond{clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
+    .tile.triangle{clip-path:polygon(50% 0%, 0% 100%, 100% 100%)}
+    .tile.parallelogram{clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)}
+    
+    /* Grid snapping visual feedback */
+    .grid-snap-line{position:absolute;background:var(--accent-primary);opacity:0.3;pointer-events:none;z-index:999;transition:opacity 0.2s ease}
+    .grid-snap-line.show{opacity:0.6}
+    .grid-snap-line.vertical{width:1px}
+    .grid-snap-line.horizontal{height:1px}
   </style>
 </head>
 <body>
@@ -153,17 +295,52 @@
   <div class="sidebar" id="sidebar">
     <div class="sidebar-content">
       <button class="new-graph-btn" onclick="createNewGraph()">+ New Graph</button>
-      <div class="section-title">My Graphs</div>
-      <div id="ownGraphs"></div>
-      <div class="section-title">Shared With Me</div>
-      <div id="sharedGraphs"></div>
-      <div class="section-title" id="shareHeader" style="display:none;">Share Current Graph</div>
-      <input type="email" id="shareEmail" placeholder="Enter email address" style="display:none;width:100%;padding:8px;border-radius:6px;border:1px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-primary)"/>
-      <button id="shareBtn" style="display:none;margin-top:8px" class="new-graph-btn" onclick="shareGraph()">Share</button>
+      
+      <div class="folder-section">
+        <div class="folder-header" onclick="toggleFolder('myGraphs')">
+          <span><span class="folder-icon">📁</span>My Graphs</span>
+          <span class="folder-arrow">▶</span>
+        </div>
+        <div class="folder-content expanded" id="myGraphs">
+          <div id="ownGraphs"></div>
+        </div>
+      </div>
+      
+      <div class="folder-section">
+        <div class="folder-header" onclick="toggleFolder('sharedGraphs')">
+          <span><span class="folder-icon">👥</span>Shared With Me</span>
+          <span class="folder-arrow">▶</span>
+        </div>
+        <div class="folder-content" id="sharedGraphs">
+          <div id="sharedGraphsContent"></div>
+        </div>
+      </div>
+      
+      <div class="folder-section">
+        <div class="folder-header" onclick="toggleFolder('inbox')">
+          <span><span class="folder-icon">📥</span>Inbox</span>
+          <span class="folder-arrow">▶</span>
+        </div>
+        <div class="folder-content" id="inbox">
+          <div id="inboxContent"></div>
+        </div>
+      </div>
+      
+      <div class="share-section" id="shareSection">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <span style="font-weight:500;color:var(--text-primary)">Share Current Graph</span>
+          <button class="share-toggle" id="shareToggle" onclick="toggleSharing()">ON</button>
+        </div>
+        <input type="email" id="shareEmail" class="share-email" placeholder="Enter email address" style="display:none"/>
+        <button id="shareBtn" class="share-btn" style="display:none" onclick="shareGraph()">Share</button>
+      </div>
     </div>
   </div>
   
   <div class="canvas-container">
+    <div class="tab-container" id="tabContainer">
+      <!-- Tabs will be dynamically added here -->
+    </div>
     <div class="canvas" id="canvas"></div>
   </div>
   
@@ -191,6 +368,20 @@
   </div>
   
   <div id="notification" class="notification"></div>
+
+  <!-- Collaborative Users List -->
+  <div class="collaborators-list" id="collaboratorsList">
+    <div class="collaborators-header">
+      <span class="collaborators-title">Collaborators</span>
+      <span class="collaborators-count" id="collaboratorsCount">0</span>
+    </div>
+    <div id="collaboratorsContent"></div>
+  </div>
+
+  <!-- Auto-save Indicator -->
+  <div class="auto-save-indicator" id="autoSaveIndicator">
+    <span id="autoSaveText">Ready</span>
+  </div>
 
   <!-- New Graph Modal -->
   <div class="modal-overlay" id="newGraphModal">
@@ -221,16 +412,265 @@
     let isPanning = false;
     let panStart = {x: 0, y: 0};
     let canvasOffset = {x: 0, y: 0};
+    let openTabs = [];
+    let activeTabId = null;
+    let realtimeUpdateTimer = null;
+    let pendingUpdates = [];
+    let autoSaveTimer = null;
+    let lastSaveTime = 0;
+    let isDirty = false;
+    let snapToGrid = true;
+    let snapToTiles = true;
+    let gridSize = 20;
+    let snapIndicators = [];
+    let snapLines = [];
     
     const canvas = document.getElementById('canvas');
+    const tabContainer = document.getElementById('tabContainer');
 
     document.addEventListener('DOMContentLoaded', init);
 
     async function init() {
       await checkAuth();
       await loadGraphs();
+      await loadInbox();
       setupCanvas();
       setupTheme();
+      setupRealtimeUpdates();
+      setupAutoSave();
+      setupSnapping();
+    }
+
+    function setupSnapping() {
+      // Create snap indicators
+      for (let i = 0; i < 10; i++) {
+        const indicator = document.createElement('div');
+        indicator.className = 'snap-indicator';
+        indicator.id = `snap-indicator-${i}`;
+        canvas.appendChild(indicator);
+        snapIndicators.push(indicator);
+      }
+      
+      // Create snap lines
+      for (let i = 0; i < 6; i++) {
+        const line = document.createElement('div');
+        line.className = 'grid-snap-line';
+        line.id = `snap-line-${i}`;
+        canvas.appendChild(line);
+        snapLines.push(line);
+      }
+    }
+
+    function getSnapPosition(x, y) {
+      let snappedX = x;
+      let snappedY = y;
+      let snapDistance = 10; // Distance within which to snap
+      
+      // Snap to grid
+      if (snapToGrid) {
+        const gridX = Math.round(x / gridSize) * gridSize;
+        const gridY = Math.round(y / gridSize) * gridSize;
+        
+        if (Math.abs(x - gridX) < snapDistance) {
+          snappedX = gridX;
+          showSnapIndicator(gridX, y, 'grid');
+        }
+        if (Math.abs(y - gridY) < snapDistance) {
+          snappedY = gridY;
+          showSnapIndicator(x, gridY, 'grid');
+        }
+      }
+      
+      // Snap to other tiles
+      if (snapToTiles) {
+        tiles.forEach(tile => {
+          if (tile === selectedTile) return;
+          
+          const tileRect = tile.getBoundingClientRect();
+          const canvasRect = canvas.getBoundingClientRect();
+          const tileX = tileRect.left - canvasRect.left;
+          const tileY = tileRect.top - canvasRect.top;
+          const tileWidth = tileRect.width;
+          const tileHeight = tileRect.height;
+          
+          // Snap to tile edges
+          const edges = [
+            { x: tileX, y: y, type: 'left' },
+            { x: tileX + tileWidth, y: y, type: 'right' },
+            { x: x, y: tileY, type: 'top' },
+            { x: x, y: tileY + tileHeight, type: 'bottom' }
+          ];
+          
+          edges.forEach(edge => {
+            if (Math.abs(x - edge.x) < snapDistance) {
+              snappedX = edge.x;
+              showSnapIndicator(edge.x, y, 'tile');
+              showSnapLine(edge.x, 'vertical');
+            }
+            if (Math.abs(y - edge.y) < snapDistance) {
+              snappedY = edge.y;
+              showSnapIndicator(x, edge.y, 'tile');
+              showSnapLine(edge.y, 'horizontal');
+            }
+          });
+          
+          // Snap to tile center
+          const centerX = tileX + tileWidth / 2;
+          const centerY = tileY + tileHeight / 2;
+          
+          if (Math.abs(x - centerX) < snapDistance) {
+            snappedX = centerX;
+            showSnapIndicator(centerX, y, 'tile');
+          }
+          if (Math.abs(y - centerY) < snapDistance) {
+            snappedY = centerY;
+            showSnapIndicator(x, centerY, 'tile');
+          }
+        });
+      }
+      
+      return { x: snappedX, y: snappedY };
+    }
+
+    function showSnapIndicator(x, y, type) {
+      const indicator = snapIndicators.find(ind => !ind.classList.contains('show'));
+      if (indicator) {
+        indicator.style.left = (x + canvasOffset.x) + 'px';
+        indicator.style.top = (y + canvasOffset.y) + 'px';
+        indicator.className = `snap-indicator show ${type}`;
+        
+        // Hide after a short time
+        setTimeout(() => {
+          indicator.classList.remove('show');
+        }, 200);
+      }
+    }
+
+    function showSnapLine(position, orientation) {
+      const line = snapLines.find(l => !l.classList.contains('show'));
+      if (line) {
+        if (orientation === 'vertical') {
+          line.style.left = (position + canvasOffset.x) + 'px';
+          line.style.top = '0px';
+          line.style.height = '100%';
+          line.className = 'grid-snap-line show vertical';
+        } else {
+          line.style.top = (position + canvasOffset.y) + 'px';
+          line.style.left = '0px';
+          line.style.width = '100%';
+          line.className = 'grid-snap-line show horizontal';
+        }
+        
+        // Hide after a short time
+        setTimeout(() => {
+          line.classList.remove('show');
+        }, 300);
+      }
+    }
+
+    function clearSnapIndicators() {
+      snapIndicators.forEach(ind => ind.classList.remove('show'));
+      snapLines.forEach(line => line.classList.remove('show'));
+    }
+
+    function setupAutoSave() {
+      // Set up automatic saving every 15 seconds
+      autoSaveTimer = setInterval(() => {
+        if (isDirty && currentGraph && Date.now() - lastSaveTime > 15000) {
+          autoSaveGraph();
+        }
+      }, 15000);
+    }
+
+    function setupRealtimeUpdates() {
+      // Set up real-time updates every 2 seconds
+      setInterval(() => {
+        if (pendingUpdates.length > 0 && currentGraph) {
+          sendRealtimeUpdates();
+        }
+      }, 2000);
+    }
+
+    function markAsDirty() {
+      isDirty = true;
+      lastSaveTime = Date.now();
+    }
+
+    async function autoSaveGraph() {
+      if (!currentGraph || !isDirty) return;
+      
+      const indicator = document.getElementById('autoSaveIndicator');
+      const text = document.getElementById('autoSaveText');
+      
+      try {
+        // Show saving indicator
+        indicator.classList.add('show', 'saving');
+        text.textContent = 'Saving...';
+        
+        const token = localStorage.getItem('flowpad_token');
+        const data = {
+          tiles: tiles.map(t => ({
+            id: t.dataset.tileId,
+            x: parseInt(t.dataset.baseX) || 0,
+            y: parseInt(t.dataset.baseY) || 0,
+            title: t.querySelector('.tile-title').value || '',
+            content: t.querySelector('.tile-content').value || '',
+            color: t.style.background || '#ffffff'
+          })),
+          connections: connections
+        };
+        
+        const res = await fetch(`/api/graphs/${currentGraph.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ title: currentGraph.title, data })
+        });
+        
+        if (res.ok) {
+          isDirty = false;
+          lastSaveTime = Date.now();
+          
+          // Show saved indicator
+          indicator.classList.remove('saving');
+          indicator.classList.add('saved');
+          text.textContent = `Saved at ${new Date().toLocaleTimeString()}`;
+          
+          // Hide after 3 seconds
+          setTimeout(() => {
+            indicator.classList.remove('show', 'saved');
+          }, 3000);
+          
+          console.log('Auto-saved graph successfully');
+        } else {
+          throw new Error('Save failed');
+        }
+      } catch (error) {
+        console.error('Auto-save failed:', error);
+        
+        // Show error indicator
+        indicator.classList.remove('saving');
+        indicator.classList.add('error');
+        text.textContent = 'Save failed';
+        
+        // Hide after 5 seconds
+        setTimeout(() => {
+          indicator.classList.remove('show', 'error');
+        }, 5000);
+      }
+    }
+
+    function scheduleSave() {
+      markAsDirty();
+      // Debounced save - only save after 500ms of inactivity
+      clearTimeout(window.saveTimeout);
+      window.saveTimeout = setTimeout(() => {
+        if (isDirty) {
+          autoSaveGraph();
+        }
+      }, 500);
     }
 
     function setupTheme() {
@@ -260,150 +700,217 @@
       icon.textContent = theme === 'dark' ? '🌙' : '☀️';
     }
 
-    function updateTileColorsForTheme(theme) {
-      // Update tile colors based on theme
-      tiles.forEach(tile => {
-        const currentColor = tile.style.background;
-        if (currentColor) {
-          const newColor = getThemeAdjustedColor(currentColor, theme);
-          tile.style.background = newColor;
-          
-          // Update the selected color in the palette
-          const colorOption = tile.querySelector(`[data-color="${currentColor}"]`);
-          if (colorOption) {
-            colorOption.classList.remove('selected');
-          }
-          
-          const newColorOption = tile.querySelector(`[data-color="${newColor}"]`);
-          if (newColorOption) {
-            newColorOption.classList.add('selected');
-          }
-        }
-      });
+    function toggleFolder(folderId) {
+      const folder = document.getElementById(folderId);
+      const header = folder.previousElementSibling;
+      const arrow = header.querySelector('.folder-arrow');
       
-      // Re-render to update connections
-      renderConnections();
+      folder.classList.toggle('expanded');
+      arrow.classList.toggle('expanded');
+      header.classList.toggle('active');
     }
 
-    function getThemeAdjustedColor(color, theme) {
-      // Handle white and black colors - reverse them for theme
-      if (color === '#ffffff' || color === 'white') {
-        return theme === 'light' ? '#2d3748' : '#ffffff';
-      }
-      if (color === '#000000' || color === 'black' || color === '#212529') {
-        return theme === 'light' ? '#ffffff' : '#2d3748';
-      }
+    function toggleSharing() {
+      const toggle = document.getElementById('shareToggle');
+      const email = document.getElementById('shareEmail');
+      const shareBtn = document.getElementById('shareBtn');
       
-      // For other colors, keep them the same but adjust brightness slightly
-      if (theme === 'light') {
-        // Make colors slightly lighter in light mode
-        return adjustColorBrightness(color, 1.1);
+      if (toggle.textContent === 'ON') {
+        toggle.textContent = 'OFF';
+        toggle.classList.add('off');
+        email.style.display = 'none';
+        shareBtn.style.display = 'none';
+        // Turn off sharing
+        if (currentGraph) {
+          currentGraph.sharingEnabled = false;
+        }
       } else {
-        // Make colors slightly darker in dark mode
-        return adjustColorBrightness(color, 0.9);
+        toggle.textContent = 'ON';
+        toggle.classList.remove('off');
+        email.style.display = 'block';
+        shareBtn.style.display = 'block';
+        // Turn on sharing
+        if (currentGraph) {
+          currentGraph.sharingEnabled = true;
+        }
       }
     }
 
-    function adjustColorBrightness(hex, factor) {
-      // Convert hex to RGB, adjust brightness, convert back
-      const r = Math.min(255, Math.round(parseInt(hex.slice(1, 3), 16) * factor));
-      const g = Math.min(255, Math.round(parseInt(hex.slice(3, 5), 16) * factor));
-      const b = Math.min(255, Math.round(parseInt(hex.slice(5, 7), 16) * factor));
+    function createTab(graph) {
+      const tab = document.createElement('div');
+      tab.className = 'tab';
+      tab.dataset.graphId = graph.id;
+      tab.innerHTML = `
+        ${graph.title || 'Untitled Graph'}
+        <button class="tab-close" onclick="closeTab('${graph.id}')" title="Close tab">×</button>
+      `;
       
-      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    }
-
-    async function checkAuth() {
-      const token = localStorage.getItem('flowpad_token');
-      const user = localStorage.getItem('flowpad_user');
-      if (!token || !user) { window.location.href = '/'; return; }
-      currentUser = JSON.parse(user);
-      document.getElementById('userName').textContent = currentUser.name;
-      const ok = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok).catch(() => false);
-      if (!ok) { localStorage.clear(); window.location.href = '/'; }
-    }
-
-    function signOut() { localStorage.clear(); window.location.href = '/'; }
-
-    function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
-
-    async function loadGraphs() {
-      const token = localStorage.getItem('flowpad_token');
-      const res = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) return;
-      const data = await res.json();
-      renderGraphList(data.own, 'ownGraphs');
-      renderGraphList(data.shared, 'sharedGraphs');
-    }
-
-    function renderGraphList(list, id) {
-      const c = document.getElementById(id); c.innerHTML = '';
-      list.forEach(g => {
-        const item = el(`<div class="graph-item"><div class="graph-title">${g.title}</div><div class="graph-meta">Updated: ${new Date(g.updated_at).toLocaleString()}</div></div>`);
-        item.addEventListener('click', () => loadGraph(g));
-        c.appendChild(item);
+      tab.addEventListener('click', () => {
+        if (graph.id !== activeTabId) {
+          switchToTab(graph.id);
+        }
       });
-    }
-
-    function createNewGraph() {
-      const modal = document.getElementById('newGraphModal');
-      const input = document.getElementById('newGraphTitle');
-      input.value = '';
-      modal.classList.add('show');
-      input.focus();
       
-      // Handle Enter key
-      input.onkeydown = (e) => {
-        if (e.key === 'Enter') {
-          confirmNewGraph();
-        } else if (e.key === 'Escape') {
-          closeNewGraphModal();
-        }
-      };
+      openTabs.push({ id: graph.id, element: tab, graph: graph });
+      tabContainer.appendChild(tab);
       
-      // Handle click outside to close
-      modal.onclick = (e) => {
-        if (e.target === modal) {
-          closeNewGraphModal();
+      return tab;
+    }
+
+    function closeTab(graphId) {
+      const tabIndex = openTabs.findIndex(tab => tab.id === graphId);
+      if (tabIndex === -1) return;
+      
+      const tab = openTabs[tabIndex];
+      tab.element.remove();
+      openTabs.splice(tabIndex, 1);
+      
+      if (activeTabId === graphId) {
+        if (openTabs.length > 0) {
+          switchToTab(openTabs[0].id);
+        } else {
+          // No tabs left, show empty state
+          activeTabId = null;
+          currentGraph = null;
+          tiles = [];
+          connections = [];
+          renderCanvas();
+          document.getElementById('shareSection').style.display = 'none';
         }
-      };
+      }
     }
 
-    function closeNewGraphModal() {
-      const modal = document.getElementById('newGraphModal');
-      modal.classList.remove('show');
+    function switchToTab(graphId) {
+      const tab = openTabs.find(t => t.id === graphId);
+      if (!tab) return;
+      
+      // Update active tab styling
+      openTabs.forEach(t => t.element.classList.remove('active'));
+      tab.element.classList.add('active');
+      activeTabId = graphId;
+      
+      // Load the graph
+      loadGraph(tab.graph);
+      
+      // Auto-scroll to center the graph
+      centerCanvas();
     }
 
-    async function confirmNewGraph() {
-      const title = document.getElementById('newGraphTitle').value.trim();
-      if (!title) {
-        document.getElementById('newGraphTitle').focus();
+    async function loadInbox() {
+      const token = localStorage.getItem('flowpad_token');
+      try {
+        const res = await fetch('/api/graphs/inbox', { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const inboxItems = await res.json();
+          renderInbox(inboxItems);
+        }
+      } catch (error) {
+        console.error('Failed to load inbox:', error);
+      }
+    }
+
+    function renderInbox(inboxItems) {
+      const container = document.getElementById('inboxContent');
+      container.innerHTML = '';
+      
+      if (inboxItems.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">No pending invitations</div>';
         return;
       }
       
-      const createBtn = document.querySelector('#newGraphModal .modal-btn.primary');
-      const originalText = createBtn.textContent;
-      createBtn.textContent = 'Creating...';
-      createBtn.disabled = true;
-      
+      inboxItems.forEach(item => {
+        const inboxItem = document.createElement('div');
+        inboxItem.className = `inbox-item ${item.status}`;
+        
+        inboxItem.innerHTML = `
+          <div class="inbox-title">${item.graphTitle}</div>
+          <div class="inbox-meta">From: ${item.sharerName} • ${new Date(item.sharedAt).toLocaleString()}</div>
+          ${item.status === 'pending' ? `
+            <div class="inbox-actions">
+              <button class="inbox-btn accept" onclick="respondToInvitation('${item.id}', 'accept')">Accept</button>
+              <button class="inbox-btn reject" onclick="respondToInvitation('${item.id}', 'reject')">Reject</button>
+            </div>
+          ` : ''}
+        `;
+        
+        container.appendChild(inboxItem);
+      });
+    }
+
+    async function respondToInvitation(invitationId, response) {
+      const token = localStorage.getItem('flowpad_token');
       try {
-        const token = localStorage.getItem('flowpad_token');
-        const res = await fetch('/api/graphs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title, data: { tiles: [], connections: [] } }) });
-        if (!res.ok) {
-          notify('Failed to create graph', 'error');
-          return;
+        const res = await fetch(`/api/graphs/inbox/${invitationId}/${response}`, { 
+          method: 'POST', 
+          headers: { Authorization: `Bearer ${token}` } 
+        });
+        
+        if (res.ok) {
+          notify(`Invitation ${response}ed successfully`, 'success');
+          await loadInbox(); // Refresh inbox
+          if (response === 'accept') {
+            await loadGraphs(); // Refresh graphs list
+          }
+        } else {
+          notify(`Failed to ${response} invitation`, 'error');
         }
-        const graph = await res.json();
-      await loadGraphs();
-      loadGraph(graph);
-        closeNewGraphModal();
-        notify('Graph created successfully!', 'success');
       } catch (error) {
-        notify('Failed to create graph: ' + error.message, 'error');
-      } finally {
-        createBtn.textContent = originalText;
-        createBtn.disabled = false;
+        notify(`Failed to ${response} invitation: ${error.message}`, 'error');
       }
+    }
+
+    function deleteGraph(graphId) {
+      if (confirm('Are you sure you want to delete this graph? This action cannot be undone.')) {
+        // Remove from UI first
+        const graphElement = document.querySelector(`[data-graph-id="${graphId}"]`);
+        if (graphElement) {
+          graphElement.remove();
+        }
+        
+        // Close tab if open
+        if (openTabs.find(tab => tab.id === graphId)) {
+          closeTab(graphId);
+        }
+        
+        // Remove from arrays
+        if (currentGraph && currentGraph.id === graphId) {
+          currentGraph = null;
+          tiles = [];
+          connections = [];
+          renderCanvas();
+          document.getElementById('shareSection').style.display = 'none';
+        }
+        
+        // TODO: Add API call to delete from server
+        notify('Graph deleted', 'success');
+      }
+    }
+
+    function renderGraphList(list, id) {
+      const container = id === 'sharedGraphs' ? document.getElementById('sharedGraphsContent') : document.getElementById(id);
+      container.innerHTML = '';
+      
+      list.forEach(g => {
+        const item = document.createElement('div');
+        item.className = 'graph-item';
+        item.dataset.graphId = g.id;
+        
+        item.innerHTML = `
+          <div class="graph-title">${g.title}</div>
+          <div class="graph-meta">Updated: ${new Date(g.updated_at).toLocaleString()}</div>
+          <button class="graph-delete" onclick="deleteGraph('${g.id}')" title="Delete graph">×</button>
+        `;
+        
+        item.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('graph-delete')) {
+            loadGraph(g);
+            // Auto-scroll to center the graph
+            centerCanvas();
+          }
+        });
+        
+        container.appendChild(item);
+      });
     }
 
     function loadGraph(graph) {
@@ -412,25 +919,151 @@
         const tile = createTile(t.x, t.y, t.title, t.content, t.id);
         if (t.color) {
           tile.style.background = t.color;
-          // Update selected color in palette
-          const colorOption = tile.querySelector(`[data-color="${t.color}"]`);
-          if (colorOption) {
-            colorOption.classList.add('selected');
-          }
         }
         return tile;
       });
       connections = graph.data?.connections || [];
-      document.getElementById('shareHeader').style.display = 'block';
-      document.getElementById('shareEmail').style.display = 'block';
-      document.getElementById('shareBtn').style.display = 'inline-block';
-      document.getElementById('connectionMode').style.display = 'block';
-      document.getElementById('toolbar').style.display = 'block';
+      
+      // Create or update tab
+      if (!openTabs.find(tab => tab.id === graph.id)) {
+        createTab(graph);
+      }
+      switchToTab(graph.id);
+      
+      // Show share section
+      document.getElementById('shareSection').style.display = 'block';
+      if (graph.sharingEnabled !== false) {
+        document.getElementById('shareToggle').textContent = 'ON';
+        document.getElementById('shareToggle').classList.remove('off');
+        document.getElementById('shareEmail').style.display = 'block';
+        document.getElementById('shareBtn').style.display = 'block';
+      } else {
+        document.getElementById('shareToggle').textContent = 'OFF';
+        document.getElementById('shareToggle').classList.add('off');
+        document.getElementById('shareEmail').style.display = 'none';
+        document.getElementById('shareBtn').style.display = 'none';
+      }
+      
       renderCanvas();
+      
+      // Load collaborators
+      loadCollaborators();
+      
+      // Add cache status buttons
+      addCacheStatusButton();
+      
+      // Reset dirty state
+      isDirty = false;
       
       // Apply theme colors to loaded tiles
       const currentTheme = document.documentElement.getAttribute('data-theme');
       updateTileColorsForTheme(currentTheme);
+    }
+
+    function addPendingUpdate(type, data) {
+      pendingUpdates.push({ type, data, timestamp: Date.now() });
+    }
+
+    function sendRealtimeUpdates() {
+      if (pendingUpdates.length === 0 || !currentGraph) return;
+      
+      const updates = [...pendingUpdates];
+      pendingUpdates = [];
+      
+      // Send updates to server
+      fetch(`/api/graphs/${currentGraph.id}/realtime`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('flowpad_token')}`
+        },
+        body: JSON.stringify({ updates })
+      }).catch(error => {
+        console.error('Failed to send real-time updates:', error);
+        // Re-add failed updates
+        pendingUpdates.unshift(...updates);
+      });
+    }
+
+    function updateDragging(e) {
+      // More responsive dragging with direct mouse coordinates
+      let x = e.clientX - dragOffset.x - canvasOffset.x;
+      let y = e.clientY - dragOffset.y - canvasOffset.y;
+      
+      // Apply snapping
+      const snapped = getSnapPosition(x, y);
+      x = snapped.x;
+      y = snapped.y;
+      
+      // Update base coordinates and current position
+      selectedTile.dataset.baseX = x;
+      selectedTile.dataset.baseY = y;
+      selectedTile.style.left = (x + canvasOffset.x) + 'px';
+      selectedTile.style.top = (y + canvasOffset.y) + 'px';
+      
+      // Add smooth animation class
+      selectedTile.classList.add('tile-updating');
+      
+      // Update connections immediately when tile moves
+      renderConnections();
+      
+      // Add to pending updates for real-time sync
+      addPendingUpdate('tile_move', {
+        tileId: selectedTile.dataset.tileId,
+        x: x,
+        y: y
+      });
+      
+      // Mark as dirty for auto-save
+      markAsDirty();
+    }
+
+    function finishDragging() {
+      if (selectedTile) {
+        selectedTile.classList.remove('tile-updating');
+        selectedTile = null;
+      }
+      isDragging = false;
+      
+      // Clear snap indicators
+      clearSnapIndicators();
+    }
+
+    function deleteSelected() {
+      if (selectedTile) {
+        // Delete the tile
+        const tileId = selectedTile.dataset.tileId;
+        selectedTile.remove();
+        tiles = tiles.filter(t => t.dataset.tileId !== tileId);
+        
+        // Remove connections involving this tile
+        connections = connections.filter(conn => 
+          conn.fromTile !== tileId && conn.toTile !== tileId
+        );
+        
+        // Add to pending updates
+        addPendingUpdate('tile_delete', { tileId });
+        
+        // Mark as dirty
+        markAsDirty();
+        
+        clearSelection();
+        renderCanvas();
+        notify('Tile deleted', 'success');
+      }
+    }
+
+    function deleteConnection(connectionId) {
+      connections = connections.filter(conn => conn.id !== connectionId);
+      
+      // Add to pending updates
+      addPendingUpdate('connection_delete', { connectionId });
+      
+      // Mark as dirty
+      markAsDirty();
+      
+      renderConnections();
+      notify('Connection deleted', 'success');
     }
 
     function setupCanvas() {
@@ -469,9 +1102,10 @@
       if (isConnecting) {
         finishConnection(e);
       }
-      isDragging = false;
+      if (isDragging) {
+        finishDragging();
+      }
       isPanning = false;
-      selectedTile = null;
     }
 
     function handleCanvasClick(e) {
@@ -512,19 +1146,37 @@
       const targetTile = e.target.closest('.tile');
       const targetDot = e.target.closest('.connection-dot');
       
-      if (targetTile && targetDot && targetTile !== connectionStart.tile) {
+      if (targetTile && targetTile !== connectionStart.tile) {
+        // Use automatic port selection if no specific dots were clicked
+        let fromDotType = connectionStart.dot ? connectionStart.dot.dataset.dotType : null;
+        let toDotType = targetDot ? targetDot.dataset.dotType : null;
+        
+        // If no specific dots, use automatic port selection
+        if (!fromDotType || !toDotType) {
+          const ports = findOptimalPort(connectionStart.tile, targetTile, fromDotType, toDotType);
+          fromDotType = ports.fromPort.type;
+          toDotType = ports.toPort.type;
+        }
+        
         const connection = {
           id: 'conn_' + Date.now(),
           fromTile: connectionStart.tile.dataset.tileId,
-          fromDot: connectionStart.dot.dataset.dotType,
+          fromDot: fromDotType,
           toTile: targetTile.dataset.tileId,
-          toDot: targetDot.dataset.dotType,
+          toDot: toDotType,
           color: getRandomConnectionColor()
         };
         
         connections.push(connection);
+        
+        // Add to pending updates
+        addPendingUpdate('connection_create', connection);
+        
+        // Mark as dirty
+        markAsDirty();
+        
         renderCanvas();
-        scheduleSave();
+        notify('Connection created', 'success');
       }
       
       // Clean up
@@ -684,8 +1336,13 @@
 
     function updateDragging(e) {
       // More responsive dragging with direct mouse coordinates
-      const x = e.clientX - dragOffset.x - canvasOffset.x;
-      const y = e.clientY - dragOffset.y - canvasOffset.y;
+      let x = e.clientX - dragOffset.x - canvasOffset.x;
+      let y = e.clientY - dragOffset.y - canvasOffset.y;
+      
+      // Apply snapping
+      const snapped = getSnapPosition(x, y);
+      x = snapped.x;
+      y = snapped.y;
       
       // Update base coordinates and current position
       selectedTile.dataset.baseX = x;
@@ -693,44 +1350,54 @@
       selectedTile.style.left = (x + canvasOffset.x) + 'px';
       selectedTile.style.top = (y + canvasOffset.y) + 'px';
       
+      // Add smooth animation class
+      selectedTile.classList.add('tile-updating');
+      
       // Update connections immediately when tile moves
       renderConnections();
-      scheduleSave();
+      
+      // Add to pending updates for real-time sync
+      addPendingUpdate('tile_move', {
+        tileId: selectedTile.dataset.tileId,
+        x: x,
+        y: y
+      });
+      
+      // Mark as dirty for auto-save
+      markAsDirty();
     }
 
-    function createTile(x = 100, y = 100, title = '', content = '', id = null) {
+    function finishDragging() {
+      if (selectedTile) {
+        selectedTile.classList.remove('tile-updating');
+        selectedTile = null;
+      }
+      isDragging = false;
+      
+      // Clear snap indicators
+      clearSnapIndicators();
+    }
+
+    function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle') {
       const tile = document.createElement('div');
-      tile.className = 'tile';
+      tile.className = `tile ${shape}`;
       tile.dataset.tileId = id || 'tile_' + Date.now();
       tile.dataset.baseX = x;
       tile.dataset.baseY = y;
+      tile.dataset.shape = shape;
       tile.style.left = (x + canvasOffset.x) + 'px';
       tile.style.top = (y + canvasOffset.y) + 'px';
       
       tile.innerHTML = `
-        <div class="color-palette">
-          <div class="color-option" data-color="#ffffff" style="background:#ffffff" title="White"></div>
-          <div class="color-option" data-color="#f8f9fa" style="background:#f8f9fa" title="Light Gray"></div>
-          <div class="color-option" data-color="#e9ecef" style="background:#e9ecef" title="Gray"></div>
-          <div class="color-option" data-color="#dee2e6" style="background:#dee2e6" title="Medium Gray"></div>
-          <div class="color-option" data-color="#ced4da" style="background:#ced4da" title="Dark Gray"></div>
-          <div class="color-option" data-color="#adb5bd" style="background:#adb5bd" title="Charcoal"></div>
-          <div class="color-option" data-color="#6c757d" style="background:#6c757d" title="Slate"></div>
-          <div class="color-option" data-color="#495057" style="background:#495057" title="Dark Slate"></div>
-          <div class="color-option" data-color="#343a40" style="background:#343a40" title="Navy"></div>
-          <div class="color-option" data-color="#212529" style="background:#212529" title="Black"></div>
-          <div class="color-option" data-color="#ff6b6b" style="background:#ff6b6b" title="Coral"></div>
-          <div class="color-option" data-color="#4ecdc4" style="background:#4ecdc4" title="Turquoise"></div>
-          <div class="color-option" data-color="#45b7d1" style="background:#45b7d1" title="Sky Blue"></div>
-          <div class="color-option" data-color="#96ceb4" style="background:#96ceb4" title="Mint"></div>
-          <div class="color-option" data-color="#feca57" style="background:#feca57" title="Yellow"></div>
-          <div class="color-option" data-color="#ff9ff3" style="background:#ff9ff3" title="Pink"></div>
-          <div class="color-option" data-color="#54a0ff" style="background:#54a0ff" title="Blue"></div>
-          <div class="color-option" data-color="#5f27cd" style="background:#5f27cd" title="Purple"></div>
-          <div class="color-option" data-color="#00d2d3" style="background:#00d2d3" title="Teal"></div>
-          <div class="color-option" data-color="#ff9f43" style="background:#ff9f43" title="Orange"></div>
-          <div class="color-option recent-colors" data-color="custom" style="background:linear-gradient(45deg, #ff6b6b, #4ecdc4)" title="Recent Colors"></div>
+        <div class="shape-palette">
+          <div class="shape-option" data-shape="rectangle" title="Rectangle">□</div>
+          <div class="shape-option" data-shape="rounded" title="Rounded">◐</div>
+          <div class="shape-option" data-shape="circular" title="Circle">○</div>
+          <div class="shape-option" data-shape="hexagon" title="Hexagon">⬡</div>
+          <div class="shape-option" data-shape="diamond" title="Diamond">◇</div>
+          <div class="shape-option" data-shape="triangle" title="Triangle">△</div>
         </div>
+        <div class="color-picker-trigger" style="position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--accent-primary);cursor:pointer;border:2px solid var(--border-primary);transition:all 0.3s ease;opacity:0;z-index:1000" title="Change color"></div>
         <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
         <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
         <div class="connection-dot input" data-dot-type="input" title="Input connection"></div>
@@ -739,70 +1406,90 @@
         <div class="connection-dot bottom" data-dot-type="bottom" title="Bottom connection"></div>
       `;
       
-      tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
+      // Set initial selected shape
+      const shapeOption = tile.querySelector(`[data-shape="${shape}"]`);
+      if (shapeOption) {
+        shapeOption.classList.add('selected');
+      }
       
-      // Add color selection functionality
-      tile.querySelectorAll('.color-option').forEach(option => {
+      // Add shape selection functionality
+      tile.querySelectorAll('.shape-option').forEach(option => {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
           
-          if (option.dataset.color === 'custom') {
-            // Show recent colors popup
-            showRecentColorsPopup(tile, option);
-          } else {
-            const color = option.dataset.color;
-            tile.style.background = color;
-            
-            // Update selected state
-            tile.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-            option.classList.add('selected');
-            
-            // Save to recent colors
-            saveRecentColor(color);
-            
-            scheduleSave();
-          }
+          // Remove selected class from all options
+          tile.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
+          
+          // Add selected class to clicked option
+          option.classList.add('selected');
+          
+          // Update tile shape
+          const newShape = option.dataset.shape;
+          tile.className = `tile ${newShape}`;
+          tile.dataset.shape = newShape;
+          
+          // Mark as dirty
+          markAsDirty();
+          
+          // Update connections
+          renderConnections();
         });
       });
       
-      tile.addEventListener('click', (e) => {
-        if (!isConnecting) {
-          selectTile(tile);
-        }
+      // Add color picker trigger functionality
+      const colorTrigger = tile.querySelector('.color-picker-trigger');
+      colorTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showColorPicker(tile, colorTrigger);
       });
       
-      // Prevent tile movement when selecting text
-      tile.addEventListener('mousedown', (e) => {
-        if (e.target.tagName === 'TEXTAREA') {
-          e.stopPropagation();
-          return;
-        }
-        startDragging(e, tile);
+      // Show color trigger on hover
+      tile.addEventListener('mouseenter', () => {
+        colorTrigger.style.opacity = '1';
       });
       
-        return tile;
-      }
+      tile.addEventListener('mouseleave', () => {
+        colorTrigger.style.opacity = '0';
+      });
+      
+      tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
+      
+      return tile;
+    }
 
     function selectTile(tile) {
-      // Clear previous selection
-      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
-      tile.classList.add('selected');
+      clearSelection();
       selectedTile = tile;
+      tile.classList.add('selected');
     }
 
     function clearSelection() {
-      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
-      selectedTile = null;
+      if (selectedTile) {
+        selectedTile.classList.remove('selected');
+        selectedTile = null;
+      }
     }
 
     function addTile() {
-      const rect = canvas.getBoundingClientRect();
-      const x = Math.random() * (rect.width - 200) + 100;
-      const y = Math.random() * (rect.height - 200) + 100;
-      const tile = createTile(x, y, 'New Tile', 'Add content here...');
-      tiles.push(tile);
+      const newTile = createTile(200, 200, 'New Tile', '', null, 'rectangle');
+      tiles.push(newTile);
+      
+      // Add to pending updates
+      addPendingUpdate('tile_create', {
+        id: newTile.dataset.tileId,
+        x: 200,
+        y: 200,
+        title: 'New Tile',
+        content: '',
+        color: '#ffffff',
+        shape: 'rectangle'
+      });
+      
+      // Mark as dirty
+      markAsDirty();
+      
       renderCanvas();
-      scheduleSave();
+      notify('New tile added', 'success');
     }
 
     function deleteSelected() {
@@ -929,37 +1616,83 @@
       
       console.log('AI Response:', suggestions); // Debug log
       
-      // Handle different response formats
+      // Handle different response formats more robustly
       let suggestionsArray = [];
       
-      if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
-        suggestionsArray = suggestions.suggestions;
-      } else if (suggestions.data && Array.isArray(suggestions.data)) {
-        suggestionsArray = suggestions.data;
-      } else if (Array.isArray(suggestions)) {
-        suggestionsArray = suggestions;
+      if (suggestions && typeof suggestions === 'object') {
+        if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
+          suggestionsArray = suggestions.suggestions;
+        } else if (suggestions.data && Array.isArray(suggestions.data)) {
+          suggestionsArray = suggestions.data;
+        } else if (suggestions.text && typeof suggestions.text === 'string') {
+          suggestionsArray = [suggestions.text];
+        } else if (suggestions.content && typeof suggestions.content === 'string') {
+          suggestionsArray = [suggestions.content];
+        } else if (suggestions.description && typeof suggestions.description === 'string') {
+          suggestionsArray = [suggestions.description];
+        } else if (suggestions.message && typeof suggestions.message === 'string') {
+          suggestionsArray = [suggestions.message];
+        } else if (suggestions.response && typeof suggestions.response === 'string') {
+          suggestionsArray = [suggestions.response];
+        } else if (Array.isArray(suggestions)) {
+          suggestionsArray = suggestions;
+        } else {
+          // Try to extract any meaningful text content
+          const suggestionText = extractTextFromObject(suggestions);
+          if (suggestionText) {
+            suggestionsArray = [suggestionText];
+          }
+        }
       } else if (typeof suggestions === 'string') {
         suggestionsArray = [suggestions];
-      } else if (suggestions.text) {
-        suggestionsArray = [suggestions.text];
-      } else if (suggestions.content) {
-        suggestionsArray = [suggestions.content];
-      } else {
-        // Fallback: try to extract any text content
-        const suggestionText = JSON.stringify(suggestions, null, 2);
-        suggestionsArray = [suggestionText];
       }
       
       if (suggestionsArray.length > 0) {
-        suggestionsArray.forEach(suggestion => {
+        suggestionsArray.forEach((suggestion, index) => {
           const div = document.createElement('div');
           div.className = 'ai-suggestion';
-          div.textContent = typeof suggestion === 'string' ? suggestion : JSON.stringify(suggestion);
+          
+          let displayText = '';
+          if (typeof suggestion === 'string') {
+            displayText = suggestion;
+          } else if (suggestion && typeof suggestion === 'object') {
+            displayText = extractTextFromObject(suggestion);
+          } else {
+            displayText = String(suggestion);
+          }
+          
+          div.textContent = displayText;
           div.addEventListener('click', () => applyAISuggestion(suggestion));
           container.appendChild(div);
         });
       } else {
         container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No suggestions available</div>';
+      }
+    }
+
+    function extractTextFromObject(obj) {
+      if (!obj || typeof obj !== 'object') return null;
+      
+      // Try common text fields
+      const textFields = ['text', 'content', 'description', 'message', 'response', 'suggestion', 'title', 'name'];
+      for (const field of textFields) {
+        if (obj[field] && typeof obj[field] === 'string') {
+          return obj[field];
+        }
+      }
+      
+      // Try to find any string value
+      for (const key in obj) {
+        if (typeof obj[key] === 'string' && obj[key].length > 0) {
+          return obj[key];
+        }
+      }
+      
+      // Fallback to JSON string
+      try {
+        return JSON.stringify(obj, null, 2);
+      } catch (e) {
+        return 'Unable to process suggestion';
       }
     }
 
@@ -969,19 +1702,21 @@
         
         if (typeof suggestion === 'string') {
           content = suggestion;
-        } else if (suggestion.text) {
-          content = suggestion.text;
-        } else if (suggestion.content) {
-          content = suggestion.content;
-        } else if (suggestion.description) {
-          content = suggestion.description;
+        } else if (suggestion && typeof suggestion === 'object') {
+          content = extractTextFromObject(suggestion);
         } else {
-          content = JSON.stringify(suggestion, null, 2);
+          content = String(suggestion);
         }
         
-        selectedTile.querySelector('.tile-content').value = content;
-        scheduleSave();
-        notify('Suggestion applied!', 'success');
+        if (content) {
+          selectedTile.querySelector('.tile-content').value = content;
+          scheduleSave();
+          notify('Suggestion applied!', 'success');
+        } else {
+          notify('Unable to apply suggestion', 'error');
+        }
+      } else {
+        notify('Please select a tile first', 'error');
       }
     }
 
@@ -1061,9 +1796,8 @@
         return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
       }
       
-      // Create path with max 3 bends using straight edges first
-      const pathMap = createPathMap(fromX, fromY, toX, toY, obstacles);
-      return convertPathMapToCurves(pathMap);
+      // Use Manhattan routing for obstacle avoidance
+      return createManhattanPath(fromX, fromY, toX, toY, obstacles);
     }
 
     function findObstacles(fromX, fromY, toX, toY) {
@@ -1157,86 +1891,42 @@
       return waypoints;
     }
 
-    function findBestWaypoint(fromX, fromY, toX, toY, obstacle) {
-      // Try different positions around the obstacle
-      const positions = [
-        { x: obstacle.x - 20, y: obstacle.y - 20 }, // top-left
-        { x: obstacle.x + obstacle.width + 20, y: obstacle.y - 20 }, // top-right
-        { x: obstacle.x + obstacle.width + 20, y: obstacle.y + obstacle.height + 20 }, // bottom-right
-        { x: obstacle.x - 20, y: obstacle.y + obstacle.height + 20 }, // bottom-left
-        { x: obstacle.x - 20, y: (obstacle.y + obstacle.y + obstacle.height) / 2 }, // left-middle
-        { x: obstacle.x + obstacle.width + 20, y: (obstacle.y + obstacle.y + obstacle.height) / 2 }, // right-middle
-      ];
+    function findBestWaypoint(currentX, currentY, toX, toY, obstacle) {
+      // Find the best waypoint around an obstacle
+      const waypoints = [];
+      const margin = 20;
       
-      // Find position with shortest total path length
+      // Generate waypoints around the obstacle
+      const left = obstacle.x - margin;
+      const right = obstacle.x + obstacle.width + margin;
+      const top = obstacle.y - margin;
+      const bottom = obstacle.y + obstacle.height + margin;
+      
+      // Add corner waypoints
+      waypoints.push({ x: left, y: top });
+      waypoints.push({ x: right, y: top });
+      waypoints.push({ x: left, y: bottom });
+      waypoints.push({ x: right, y: bottom });
+      
+      // Add edge waypoints
+      waypoints.push({ x: left, y: obstacle.y + obstacle.height / 2 });
+      waypoints.push({ x: right, y: obstacle.y + obstacle.height / 2 });
+      waypoints.push({ x: obstacle.x + obstacle.width / 2, y: top });
+      waypoints.push({ x: obstacle.x + obstacle.width / 2, y: bottom });
+      
+      // Find the waypoint that minimizes total path length
       let bestWaypoint = null;
-      let bestDistance = Infinity;
+      let bestScore = Infinity;
       
-      for (const pos of positions) {
-        const distance1 = Math.sqrt((pos.x - fromX) ** 2 + (pos.y - fromY) ** 2);
-        const distance2 = Math.sqrt((pos.x - toX) ** 2 + (pos.y - toY) ** 2);
-        const totalDistance = distance1 + distance2;
-        
-        if (totalDistance < bestDistance) {
-          bestDistance = totalDistance;
-          bestWaypoint = pos;
+      for (const wp of waypoints) {
+        const score = calculatePathScore(currentX, currentY, wp.x, wp.y, toX, toY, obstacle);
+        if (score < bestScore) {
+          bestScore = score;
+          bestWaypoint = wp;
         }
       }
       
       return bestWaypoint;
-    }
-
-    function createPathFromWaypoints(fromX, fromY, toX, toY, waypoints) {
-      if (waypoints.length === 0) {
-        // No waypoints, use smooth S-curve
-        const midX = (fromX + toX) / 2;
-        const midY = (fromY + toY) / 2;
-        const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
-        const curveIntensity = Math.max(distance * 0.3, 40);
-        
-        const control1 = { 
-          x: fromX + (midX - fromX) * 0.5, 
-          y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
-        };
-        const control2 = { 
-          x: toX - (toX - midX) * 0.5, 
-          y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
-        };
-        
-        return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
-      }
-      
-      // Create smooth path through waypoints using cubic bezier curves
-      let path = `M ${fromX} ${fromY}`;
-      
-      for (let i = 0; i < waypoints.length; i++) {
-        const wp = waypoints[i];
-        if (i === 0) {
-          // First waypoint: smooth curve from start
-          const midX = (fromX + wp.x) / 2;
-          const midY = (fromY + wp.y) / 2;
-          const offset = Math.min(Math.abs(wp.x - fromX) * 0.3, 50);
-          path += ` C ${fromX + offset} ${fromY}, ${midX} ${midY}, ${wp.x} ${wp.y}`;
-        } else {
-          // Subsequent waypoints: smooth curves between them
-          const prevWp = waypoints[i - 1];
-          const midX = (prevWp.x + wp.x) / 2;
-          const midY = (prevWp.y + wp.y) / 2;
-          const offset = Math.min(Math.abs(wp.x - prevWp.x) * 0.3, 50);
-          path += ` C ${prevWp.x + offset} ${prevWp.y}, ${midX} ${midY}, ${wp.x} ${wp.y}`;
-        }
-      }
-      
-      // Connect to final destination with smooth curve
-      if (waypoints.length > 0) {
-        const lastWp = waypoints[waypoints.length - 1];
-        const midX = (lastWp.x + toX) / 2;
-        const midY = (lastWp.y + toY) / 2;
-        const offset = Math.min(Math.abs(toX - lastWp.x) * 0.3, 50);
-        path += ` C ${lastWp.x + offset} ${lastWp.y}, ${midX} ${midY}, ${toX} ${toY}`;
-      }
-      
-      return path;
     }
 
     function createPathMap(fromX, fromY, toX, toY, obstacles) {
@@ -1269,7 +1959,7 @@
         if (bendCount >= maxBends) break;
         
         // Find best waypoint around this obstacle
-        const waypoint = findOptimalWaypoint(currentX, currentY, toX, toY, obstacle);
+        const waypoint = findBestWaypoint(currentX, currentY, toX, toY, obstacle);
         if (waypoint) {
           pathMap.points.push(waypoint);
           pathMap.edges.push({ 
@@ -1291,58 +1981,6 @@
       });
       
       return pathMap;
-    }
-
-    function findOptimalWaypoint(fromX, fromY, toX, toY, obstacle) {
-      // Create a grid of potential waypoints around the obstacle
-      const gridSize = 40;
-      const waypoints = [];
-      
-      // Generate waypoints in a grid pattern around the obstacle
-      for (let x = obstacle.x - gridSize; x <= obstacle.x + obstacle.width + gridSize; x += gridSize) {
-        for (let y = obstacle.y - gridSize; y <= obstacle.y + obstacle.height + gridSize; y += gridSize) {
-          // Skip waypoints inside the obstacle
-          if (x >= obstacle.x && x <= obstacle.x + obstacle.width && 
-              y >= obstacle.y && y <= obstacle.y + obstacle.height) {
-            continue;
-          }
-          
-          waypoints.push({ x, y });
-        }
-      }
-      
-      // Find the waypoint that minimizes total path length and avoids obstacles
-      let bestWaypoint = null;
-      let bestScore = Infinity;
-      
-      for (const wp of waypoints) {
-        const score = calculatePathScore(fromX, fromY, wp.x, wp.y, toX, toY, obstacle);
-        if (score < bestScore) {
-          bestScore = score;
-          bestWaypoint = wp;
-        }
-      }
-      
-      return bestWaypoint;
-    }
-
-    function calculatePathScore(fromX, fromY, waypointX, waypointY, toX, toY, obstacle) {
-      // Calculate total path length
-      const dist1 = Math.sqrt((waypointX - fromX) ** 2 + (waypointY - fromY) ** 2);
-      const dist2 = Math.sqrt((toX - waypointX) ** 2 + (toY - waypointY) ** 2);
-      const totalDistance = dist1 + dist2;
-      
-      // Penalty for being too close to obstacles
-      const obstacleDistance = Math.min(
-        Math.abs(waypointX - obstacle.x),
-        Math.abs(waypointX - (obstacle.x + obstacle.width)),
-        Math.abs(waypointY - obstacle.y),
-        Math.abs(waypointY - (obstacle.y + obstacle.height))
-      );
-      
-      const obstaclePenalty = Math.max(0, 20 - obstacleDistance) * 10;
-      
-      return totalDistance + obstaclePenalty;
     }
 
     function convertPathMapToCurves(pathMap) {
@@ -1395,6 +2033,299 @@
       }
     }
 
+    function findOptimalPort(fromTile, toTile, fromDotType, toDotType) {
+      // Find the optimal connection ports based on relative tile positions
+      const fromRect = fromTile.getBoundingClientRect();
+      const toRect = toTile.getBoundingClientRect();
+      const canvasRect = canvas.getBoundingClientRect();
+      
+      // Calculate relative positions
+      const fromCenterX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+      const fromCenterY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+      const toCenterX = toRect.left + toRect.width / 2 - canvasRect.left;
+      const toCenterY = toRect.top + toRect.height / 2 - canvasRect.top;
+      
+      // Determine optimal port types based on relative positions
+      let optimalFromPort = fromDotType;
+      let optimalToPort = toDotType;
+      
+      // If no specific ports specified, choose based on relative positions
+      if (!fromDotType || !toDotType) {
+        const dx = toCenterX - fromCenterX;
+        const dy = toCenterY - fromCenterY;
+        
+        if (Math.abs(dx) > Math.abs(dy)) {
+          // Horizontal connection
+          optimalFromPort = dx > 0 ? 'output' : 'input';
+          optimalToPort = dx > 0 ? 'input' : 'output';
+        } else {
+          // Vertical connection
+          optimalFromPort = dy > 0 ? 'bottom' : 'top';
+          optimalToPort = dy > 0 ? 'top' : 'bottom';
+        }
+      }
+      
+      // Calculate actual port coordinates
+      const fromPort = getPortCoordinates(fromTile, optimalFromPort, canvasRect);
+      const toPort = getPortCoordinates(toTile, optimalToPort, canvasRect);
+      
+      return {
+        fromPort: { x: fromPort.x, y: fromPort.y, type: optimalFromPort },
+        toPort: { x: toPort.x, y: toPort.y, type: optimalToPort }
+      };
+    }
+
+    function getPortCoordinates(tile, portType, canvasRect) {
+      const rect = tile.getBoundingClientRect();
+      
+      switch (portType) {
+        case 'input':
+          return { x: rect.left - canvasRect.left, y: rect.top + rect.height / 2 - canvasRect.top };
+        case 'output':
+          return { x: rect.right - canvasRect.left, y: rect.top + rect.height / 2 - canvasRect.top };
+        case 'top':
+          return { x: rect.left + rect.width / 2 - canvasRect.left, y: rect.top - canvasRect.top };
+        case 'bottom':
+          return { x: rect.left + rect.width / 2 - canvasRect.left, y: rect.bottom - canvasRect.top };
+        default:
+          return { x: rect.left + rect.width / 2 - canvasRect.left, y: rect.top + rect.height / 2 - canvasRect.top };
+      }
+    }
+
+    function createManhattanPath(fromX, fromY, toX, toY, obstacles) {
+      // Create a coarse grid for Manhattan routing
+      const gridSize = 20;
+      const grid = createRoutingGrid(fromX, fromY, toX, toY, obstacles, gridSize);
+      
+      // Find path using A* with Manhattan heuristic
+      const path = findManhattanPath(fromX, fromY, toX, toY, grid, gridSize);
+      
+      if (path.length === 0) {
+        // Fallback to simple S-curve if routing fails
+        return createSimpleSCurve(fromX, fromY, toX, toY);
+      }
+      
+      // Convert path to SVG with rounded corners
+      return convertPathToSVG(path, gridSize);
+    }
+
+    function createRoutingGrid(fromX, fromY, toX, toY, obstacles, gridSize) {
+      // Create a grid that covers the area between the two points
+      const minX = Math.min(fromX, toX) - 100;
+      const maxX = Math.max(fromX, toX) + 100;
+      const minY = Math.min(fromY, toY) - 100;
+      const maxY = Math.max(fromY, toY) + 100;
+      
+      const cols = Math.ceil((maxX - minX) / gridSize);
+      const rows = Math.ceil((maxY - minY) / gridSize);
+      
+      const grid = Array(rows).fill().map(() => Array(cols).fill(0));
+      
+      // Mark obstacles as blocked
+      obstacles.forEach(obstacle => {
+        const startCol = Math.max(0, Math.floor((obstacle.x - minX) / gridSize));
+        const endCol = Math.min(cols - 1, Math.ceil((obstacle.x + obstacle.width - minX) / gridSize));
+        const startRow = Math.max(0, Math.floor((obstacle.y - minY) / gridSize));
+        const endRow = Math.min(rows - 1, Math.ceil((obstacle.y + obstacle.height - minY) / gridSize));
+        
+        for (let row = startRow; row <= endRow; row++) {
+          for (let col = startCol; col <= endCol; col++) {
+            grid[row][col] = 1; // Blocked
+          }
+        }
+      });
+      
+      return { grid, minX, minY, gridSize, cols, rows };
+    }
+
+    function findManhattanPath(fromX, fromY, toX, toY, gridInfo, gridSize) {
+      const { grid, minX, minY, cols, rows } = gridInfo;
+      
+      // Convert world coordinates to grid coordinates
+      const startCol = Math.floor((fromX - minX) / gridSize);
+      const startRow = Math.floor((fromY - minY) / gridSize);
+      const endCol = Math.floor((toX - minX) / gridSize);
+      const endRow = Math.floor((toY - minY) / gridSize);
+      
+      // Clamp to grid bounds
+      const clampedStartCol = Math.max(0, Math.min(cols - 1, startCol));
+      const clampedStartRow = Math.max(0, Math.min(rows - 1, startRow));
+      const clampedEndCol = Math.max(0, Math.min(cols - 1, endCol));
+      const clampedEndRow = Math.max(0, Math.min(rows - 1, endRow));
+      
+      // A* pathfinding with Manhattan heuristic
+      const openSet = [{ col: clampedStartCol, row: clampedStartRow, g: 0, h: 0, parent: null }];
+      const closedSet = new Set();
+      const cameFrom = new Map();
+      const gScore = new Map();
+      const fScore = new Map();
+      
+      gScore.set(`${clampedStartCol},${clampedStartRow}`, 0);
+      fScore.set(`${clampedStartCol},${clampedStartRow}`, 0);
+      
+      while (openSet.length > 0) {
+        // Find node with lowest f score
+        openSet.sort((a, b) => a.h - b.h);
+        const current = openSet.shift();
+        
+        if (current.col === clampedEndCol && current.row === clampedEndRow) {
+          // Reconstruct path
+          return reconstructPath(current, cameFrom, minX, minY, gridSize);
+        }
+        
+        const currentKey = `${current.col},${current.row}`;
+        closedSet.add(currentKey);
+        
+        // Check neighbors
+        const neighbors = [
+          { col: current.col + 1, row: current.row },
+          { col: current.col - 1, row: current.row },
+          { col: current.col, row: current.row + 1 },
+          { col: current.col, row: current.row - 1 }
+        ];
+        
+        for (const neighbor of neighbors) {
+          if (neighbor.col < 0 || neighbor.col >= cols || neighbor.row < 0 || neighbor.row >= rows) {
+            continue;
+          }
+          
+          if (grid[neighbor.row][neighbor.col] === 1) {
+            continue; // Blocked
+          }
+          
+          const neighborKey = `${neighbor.col},${neighbor.row}`;
+          if (closedSet.has(neighborKey)) {
+            continue;
+          }
+          
+          const tentativeG = current.g + 1;
+          const neighborG = gScore.get(neighborKey) || Infinity;
+          
+          if (tentativeG < neighborG) {
+            cameFrom.set(neighborKey, current);
+            gScore.set(neighborKey, tentativeG);
+            
+            const h = Math.abs(neighbor.col - clampedEndCol) + Math.abs(neighbor.row - clampedEndRow);
+            const f = tentativeG + h;
+            fScore.set(neighborKey, f);
+            
+            // Add to open set if not already there
+            if (!openSet.find(n => n.col === neighbor.col && n.row === neighbor.row)) {
+              openSet.push({ col: neighbor.col, row: neighbor.row, g: tentativeG, h: h, parent: current });
+            }
+          }
+        }
+      }
+      
+      return []; // No path found
+    }
+
+    function reconstructPath(endNode, cameFrom, minX, minY, gridSize) {
+      const path = [];
+      let current = endNode;
+      
+      while (current) {
+        const worldX = minX + current.col * gridSize + gridSize / 2;
+        const worldY = minY + current.row * gridSize + gridSize / 2;
+        path.unshift({ x: worldX, y: worldY });
+        
+        const currentKey = `${current.col},${current.row}`;
+        current = cameFrom.get(currentKey);
+      }
+      
+      return path;
+    }
+
+    function convertPathToSVG(path, gridSize) {
+      if (path.length < 2) {
+        return `M ${path[0].x} ${path[0].y}`;
+      }
+      
+      let svgPath = `M ${path[0].x} ${path[0].y}`;
+      
+      for (let i = 1; i < path.length; i++) {
+        const prev = path[i - 1];
+        const curr = path[i];
+        
+        // Add rounded corners for Manhattan routing
+        if (i < path.length - 1) {
+          const next = path[i + 1];
+          const cornerRadius = Math.min(gridSize / 3, 15);
+          
+          // Determine if this is a corner (direction change)
+          const dx1 = curr.x - prev.x;
+          const dy1 = curr.y - prev.y;
+          const dx2 = next.x - curr.x;
+          const dy2 = next.y - curr.y;
+          
+          if ((Math.abs(dx1) > 0.1 && Math.abs(dy2) > 0.1) || 
+              (Math.abs(dy1) > 0.1 && Math.abs(dx2) > 0.1)) {
+            // This is a corner, add rounded corner
+            const corner = createRoundedCorner(prev, curr, next, cornerRadius);
+            svgPath += corner;
+          } else {
+            // Straight line
+            svgPath += ` L ${curr.x} ${curr.y}`;
+          }
+        } else {
+          // Last segment
+          svgPath += ` L ${curr.x} ${curr.y}`;
+        }
+      }
+      
+      return svgPath;
+    }
+
+    function createRoundedCorner(prev, curr, next, radius) {
+      // Create a rounded corner between three points
+      const dx1 = curr.x - prev.x;
+      const dy1 = curr.y - prev.y;
+      const dx2 = next.x - curr.x;
+      const dy2 = next.y - curr.y;
+      
+      // Calculate the angle between the two segments
+      const angle1 = Math.atan2(dy1, dx1);
+      const angle2 = Math.atan2(dy2, dx2);
+      const angleDiff = Math.abs(angle1 - angle2);
+      
+      if (angleDiff < Math.PI / 6) {
+        // Small angle, just use straight line
+        return ` L ${curr.x} ${curr.y}`;
+      }
+      
+      // Calculate control points for the rounded corner
+      const midAngle = (angle1 + angle2) / 2;
+      const control1 = {
+        x: curr.x - Math.cos(angle1) * radius,
+        y: curr.y - Math.sin(angle1) * radius
+      };
+      const control2 = {
+        x: curr.x + Math.cos(angle2) * radius,
+        y: curr.y + Math.sin(angle2) * radius
+      };
+      
+      return ` C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${next.x} ${next.y}`;
+    }
+
+    function createSimpleSCurve(fromX, fromY, toX, toY) {
+      // Fallback to simple S-curve
+      const midX = (fromX + toX) / 2;
+      const midY = (fromY + toY) / 2;
+      const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+      const curveIntensity = Math.max(distance * 0.3, 40);
+      
+      const control1 = { 
+        x: fromX + (midX - fromX) * 0.5, 
+        y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
+      };
+      const control2 = { 
+        x: toX - (toX - midX) * 0.5, 
+        y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
+      };
+      
+      return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
+    }
+
     function renderCanvas() {
       // Clear canvas
       canvas.innerHTML = '';
@@ -1424,43 +2355,19 @@
         const toTile = tiles.find(t => t.dataset.tileId === conn.toTile);
         
         if (fromTile && toTile) {
-          const fromRect = fromTile.getBoundingClientRect();
-          const toRect = toTile.getBoundingClientRect();
-          const canvasRect = canvas.getBoundingClientRect();
+          // Use automatic port selection for optimal connection points
+          const ports = findOptimalPort(fromTile, toTile, conn.fromDot, conn.toDot);
           
-          let fromX, fromY, toX, toY;
-          
-          // Calculate connection points based on dot types
-          if (conn.fromDot === 'output') {
-            fromX = fromRect.right - canvasRect.left;
-            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-          } else if (conn.fromDot === 'input') {
-            fromX = fromRect.left - canvasRect.left;
-            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-          } else if (conn.fromDot === 'top') {
-            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-            fromY = fromRect.top - canvasRect.top;
-          } else if (conn.fromDot === 'bottom') {
-            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-            fromY = fromRect.bottom - canvasRect.top;
-          }
-          
-          if (conn.toDot === 'input') {
-            toX = toRect.left - canvasRect.left;
-            toY = toRect.top + toRect.height / 2 - canvasRect.top;
-          } else if (conn.toDot === 'output') {
-            toX = toRect.right - canvasRect.left;
-            toY = toRect.top + toRect.height / 2 - canvasRect.top;
-          } else if (conn.toDot === 'top') {
-            toX = toRect.left + toRect.width / 2 - canvasRect.left;
-            toY = toRect.top - canvasRect.top;
-          } else if (conn.toDot === 'bottom') {
-            toX = toRect.left + toRect.width / 2 - canvasRect.left;
-            toY = toRect.bottom - canvasRect.top;
-          }
-          
-          if (fromX !== undefined && toX !== undefined) {
-            const connectionLine = createConnectionLine(fromX, fromY, toX, toY, false, conn.color, conn.id);
+          if (ports.fromPort && ports.toPort) {
+            const connectionLine = createConnectionLine(
+              ports.fromPort.x, 
+              ports.fromPort.y, 
+              ports.toPort.x, 
+              ports.toPort.y, 
+              false, 
+              conn.color, 
+              conn.id
+            );
             connectionLine.classList.add('connection-svg');
             canvas.appendChild(connectionLine);
           }
@@ -1478,31 +2385,495 @@
       if (res.ok) document.getElementById('shareEmail').value = '';
     }
 
-    let saveTimer;
-    function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveGraph, 500); }
-
-    async function saveGraph() {
-      if (!currentGraph) return;
-      const token = localStorage.getItem('flowpad_token');
-      const data = {
-        tiles: [...canvas.querySelectorAll('.tile')].map(t => ({
-          id: t.dataset.tileId,
-          x: parseInt(t.style.left) || 0,
-          y: parseInt(t.style.top) || 0,
-          title: t.querySelector('.tile-title').value || '',
-          content: t.querySelector('.tile-content').value || '',
-          color: t.style.background || '#ffffff'
-        })),
-        connections
-      };
-      await fetch(`/api/graphs/${currentGraph.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title: currentGraph.title, data }) });
-    }
-
     function notify(msg, type = 'success', ms = 2500) {
       const n = document.getElementById('notification');
       n.textContent = msg; n.className = `notification ${type}`; n.classList.add('show');
       setTimeout(() => n.classList.remove('show'), ms);
     }
+
+    function adjustConnectionForSeparation(connection, allConnections) {
+      // Find parallel connections and adjust them to avoid overlap
+      const parallelConnections = findParallelConnections(connection, allConnections);
+      
+      if (parallelConnections.length > 0) {
+        // Apply small offsets to separate parallel edges
+        const offset = 8; // pixels
+        const index = parallelConnections.indexOf(connection);
+        
+        if (index > 0) {
+          // Apply offset based on connection index
+          const offsetAmount = (index * offset) / 2;
+          
+          // Adjust the connection path slightly
+          return applyOffsetToConnection(connection, offsetAmount);
+        }
+      }
+      
+      return connection;
+    }
+
+    function findParallelConnections(connection, allConnections) {
+      const parallel = [connection];
+      
+      allConnections.forEach(otherConn => {
+        if (otherConn.id === connection.id) return;
+        
+        if (isParallelConnection(connection, otherConn)) {
+          parallel.push(otherConn);
+        }
+      });
+      
+      return parallel;
+    }
+
+    function isParallelConnection(conn1, conn2) {
+      // Check if two connections are roughly parallel
+      const fromTile1 = tiles.find(t => t.dataset.tileId === conn1.fromTile);
+      const toTile1 = tiles.find(t => t.dataset.tileId === conn1.toTile);
+      const fromTile2 = tiles.find(t => t.dataset.tileId === conn2.fromTile);
+      const toTile2 = tiles.find(t => t.dataset.tileId === conn2.toTile);
+      
+      if (!fromTile1 || !toTile1 || !fromTile2 || !toTile2) return false;
+      
+      const rect1 = fromTile1.getBoundingClientRect();
+      const rect2 = toTile1.getBoundingClientRect();
+      const rect3 = fromTile2.getBoundingClientRect();
+      const rect4 = toTile2.getBoundingClientRect();
+      
+      const canvasRect = canvas.getBoundingClientRect();
+      
+      // Calculate connection vectors
+      const vec1 = {
+        x: rect2.left - rect1.left,
+        y: rect2.top - rect1.top
+      };
+      const vec2 = {
+        x: rect4.left - rect3.left,
+        y: rect4.top - rect3.top
+      };
+      
+      // Normalize vectors
+      const len1 = Math.sqrt(vec1.x * vec1.x + vec1.y * vec1.y);
+      const len2 = Math.sqrt(vec2.x * vec2.x + vec2.y * vec2.y);
+      
+      if (len1 === 0 || len2 === 0) return false;
+      
+      vec1.x /= len1;
+      vec1.y /= len1;
+      vec2.x /= len2;
+      vec2.y /= len2;
+      
+      // Check if vectors are parallel (dot product close to 1 or -1)
+      const dotProduct = vec1.x * vec2.x + vec1.y * vec2.y;
+      return Math.abs(dotProduct) > 0.8; // 0.8 = cos(37 degrees)
+    }
+
+    function applyOffsetToConnection(connection, offset) {
+      // Apply a small perpendicular offset to the connection
+      const fromTile = tiles.find(t => t.dataset.tileId === connection.fromTile);
+      const toTile = tiles.find(t => t.dataset.tileId === connection.toTile);
+      
+      if (!fromTile || !toTile) return connection;
+      
+      const ports = findOptimalPort(fromTile, toTile, connection.fromDot, connection.toDot);
+      
+      if (ports.fromPort && ports.toPort) {
+        // Calculate perpendicular vector
+        const dx = ports.toPort.x - ports.fromPort.x;
+        const dy = ports.toPort.y - ports.fromPort.y;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        
+        if (length > 0) {
+          // Normalize and rotate 90 degrees
+          const perpX = -dy / length;
+          const perpY = dx / length;
+          
+          // Apply offset
+          const offsetFromX = ports.fromPort.x + perpX * offset;
+          const offsetFromY = ports.fromPort.y + perpY * offset;
+          const offsetToX = ports.toPort.x + perpX * offset;
+          const offsetToY = ports.toPort.y + perpY * offset;
+          
+          // Create new connection with offset
+          return {
+            ...connection,
+            offsetFrom: { x: offsetFromX, y: offsetFromY },
+            offsetTo: { x: offsetToX, y: offsetToY }
+          };
+        }
+      }
+      
+      return connection;
+    }
+
+    function createNewGraph() {
+      const modal = document.getElementById('newGraphModal');
+      const input = document.getElementById('newGraphTitle');
+      input.value = '';
+      modal.classList.add('show');
+      input.focus();
+      
+      // Handle Enter key
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          confirmNewGraph();
+        } else if (e.key === 'Escape') {
+          closeNewGraphModal();
+        }
+      };
+      
+      // Handle click outside to close
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          closeNewGraphModal();
+        }
+      };
+    }
+
+    function closeNewGraphModal() {
+      const modal = document.getElementById('newGraphModal');
+      modal.classList.remove('show');
+    }
+
+    async function confirmNewGraph() {
+      const title = document.getElementById('newGraphTitle').value.trim();
+      if (!title) {
+        document.getElementById('newGraphTitle').focus();
+        return;
+      }
+      
+      const createBtn = document.querySelector('#newGraphModal .modal-btn.primary');
+      const originalText = createBtn.textContent;
+      createBtn.textContent = 'Creating...';
+      createBtn.disabled = true;
+      
+      try {
+        const token = localStorage.getItem('flowpad_token');
+        const res = await fetch('/api/graphs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title, data: { tiles: [], connections: [] } }) });
+        if (!res.ok) {
+          notify('Failed to create graph', 'error');
+          return;
+        }
+        const graph = await res.json();
+      await loadGraphs();
+      loadGraph(graph);
+        closeNewGraphModal();
+        notify('Graph created successfully!', 'success');
+      } catch (error) {
+        notify('Failed to create graph: ' + error.message, 'error');
+      } finally {
+        createBtn.textContent = originalText;
+        createBtn.disabled = false;
+      }
+    }
+
+    async function checkAuth() {
+      const token = localStorage.getItem('flowpad_token');
+      const user = localStorage.getItem('flowpad_user');
+      if (!token || !user) { window.location.href = '/'; return; }
+      currentUser = JSON.parse(user);
+      document.getElementById('userName').textContent = currentUser.name;
+      const ok = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok).catch(() => false);
+      if (!ok) { localStorage.clear(); window.location.href = '/'; }
+    }
+
+    function signOut() { localStorage.clear(); window.location.href = '/'; }
+
+    function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+
+    async function loadGraphs() {
+      const token = localStorage.getItem('flowpad_token');
+      const res = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
+      renderGraphList(data.own, 'ownGraphs');
+      renderGraphList(data.shared, 'sharedGraphs');
+    }
+
+    function updateTileColorsForTheme(theme) {
+      // Update tile colors based on theme
+      tiles.forEach(tile => {
+        const currentColor = tile.style.background;
+        if (currentColor) {
+          const newColor = getThemeAdjustedColor(currentColor, theme);
+          tile.style.background = newColor;
+          
+          // Update the selected color in the palette
+          const colorOption = tile.querySelector(`[data-color="${currentColor}"]`);
+          if (colorOption) {
+            colorOption.classList.remove('selected');
+          }
+          
+          const newColorOption = tile.querySelector(`[data-color="${newColor}"]`);
+          if (newColorOption) {
+            newColorOption.classList.add('selected');
+          }
+        }
+      });
+      
+      // Re-render to update connections
+      renderConnections();
+    }
+
+    function getThemeAdjustedColor(color, theme) {
+      // Handle white and black colors - reverse them for theme
+      if (color === '#ffffff' || color === 'white') {
+        return theme === 'light' ? '#2d3748' : '#ffffff';
+      }
+      if (color === '#000000' || color === 'black' || color === '#212529') {
+        return theme === 'light' ? '#ffffff' : '#2d3748';
+      }
+      
+      // For other colors, keep them the same but adjust brightness slightly
+      if (theme === 'light') {
+        // Make colors slightly lighter in light mode
+        return adjustColorBrightness(color, 1.1);
+      } else {
+        // Make colors slightly darker in dark mode
+        return adjustColorBrightness(color, 0.9);
+      }
+    }
+
+    function adjustColorBrightness(hex, factor) {
+      // Convert hex to RGB, adjust brightness, convert back
+      const r = Math.min(255, Math.round(parseInt(hex.slice(1, 3), 16) * factor));
+      const g = Math.min(255, Math.round(parseInt(hex.slice(3, 5), 16) * factor));
+      const b = Math.min(255, Math.round(parseInt(hex.slice(5, 7), 16) * factor));
+      
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    }
+
+    function showColorPicker(tile, trigger) {
+      // Remove existing color picker
+      const existing = document.querySelector('.color-picker-popout');
+      if (existing) existing.remove();
+      
+      const popout = document.createElement('div');
+      popout.className = 'color-picker-popout';
+      
+      const currentColor = tile.style.background || '#ffffff';
+      const recentColors = getRecentColors();
+      
+      popout.innerHTML = `
+        <div class="color-picker-header">
+          <span class="color-picker-title">Choose Color</span>
+          <button class="color-picker-close" onclick="this.closest('.color-picker-popout').remove()">×</button>
+        </div>
+        <div class="color-picker-grid">
+          <div class="color-picker-option" data-color="#ffffff" style="background:#ffffff" data-selected="${currentColor === '#ffffff'}"></div>
+          <div class="color-picker-option" data-color="#f8f9fa" style="background:#f8f9fa" data-selected="${currentColor === '#f8f9fa'}"></div>
+          <div class="color-picker-option" data-color="#e9ecef" style="background:#e9ecef" data-selected="${currentColor === '#e9ecef'}"></div>
+          <div class="color-picker-option" data-color="#dee2e6" style="background:#dee2e6" data-selected="${currentColor === '#dee2e6'}"></div>
+          <div class="color-picker-option" data-color="#ced4da" style="background:#ced4da" data-selected="${currentColor === '#ced4da'}"></div>
+          <div class="color-picker-option" data-color="#adb5bd" style="background:#adb5bd" data-selected="${currentColor === '#adb5bd'}"></div>
+          <div class="color-picker-option" data-color="#6c757d" style="background:#6c757d" data-selected="${currentColor === '#6c757d'}"></div>
+          <div class="color-picker-option" data-color="#495057" style="background:#495057" data-selected="${currentColor === '#495057'}"></div>
+          <div class="color-picker-option" data-color="#343a40" style="background:#343a40" data-selected="${currentColor === '#343a40'}"></div>
+          <div class="color-picker-option" data-color="#212529" style="background:#212529" data-selected="${currentColor === '#212529'}"></div>
+          <div class="color-picker-option" data-color="#ff6b6b" style="background:#ff6b6b" data-selected="${currentColor === '#ff6b6b'}"></div>
+          <div class="color-picker-option" data-color="#4ecdc4" style="background:#4ecdc4" data-selected="${currentColor === '#4ecdc4'}"></div>
+          <div class="color-picker-option" data-color="#45b7d1" style="background:#45b7d1" data-selected="${currentColor === '#45b7d1'}"></div>
+          <div class="color-picker-option" data-color="#96ceb4" style="background:#96ceb4" data-selected="${currentColor === '#96ceb4'}"></div>
+          <div class="color-picker-option" data-color="#feca57" style="background:#feca57" data-selected="${currentColor === '#feca57'}"></div>
+          <div class="color-picker-option" data-color="#ff9ff3" style="background:#ff9ff3" data-selected="${currentColor === '#ff9ff57'}"></div>
+          <div class="color-picker-option" data-color="#54a0ff" style="background:#54a0ff" data-selected="${currentColor === '#54a0ff'}"></div>
+          <div class="color-picker-option" data-color="#5f27cd" style="background:#5f27cd" data-selected="${currentColor === '#5f27cd'}"></div>
+          <div class="color-picker-option" data-color="#00d2d3" style="background:#00d2d3" data-selected="${currentColor === '#00d2d3'}"></div>
+          <div class="color-picker-option" data-color="#ff9f43" style="background:#ff9f43" data-selected="${currentColor === '#ff9f43'}"></div>
+        </div>
+        ${recentColors.length > 0 ? `
+          <div class="color-picker-recent">
+            <div class="color-picker-recent-title">Recent Colors</div>
+            <div class="color-picker-recent-grid">
+              ${recentColors.map(color => `
+                <div class="color-picker-option" data-color="${color}" style="background:${color}" data-selected="${currentColor === color}"></div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      `;
+      
+      // Position the popout
+      const rect = trigger.getBoundingClientRect();
+      popout.style.left = (rect.left - 100) + 'px';
+      popout.style.top = (rect.bottom + 5) + 'px';
+      
+      // Add click handlers
+      popout.querySelectorAll('.color-picker-option').forEach(option => {
+        option.addEventListener('click', () => {
+          const color = option.dataset.color;
+          tile.style.background = color;
+          saveRecentColor(color);
+          scheduleSave();
+          popout.remove();
+          
+          // Update selected state
+          popout.querySelectorAll('.color-picker-option').forEach(opt => {
+            opt.dataset.selected = 'false';
+            opt.classList.remove('selected');
+          });
+          option.dataset.selected = 'true';
+          option.classList.add('selected');
+        });
+      });
+      
+      // Mark current color as selected
+      const currentOption = popout.querySelector(`[data-color="${currentColor}"]`);
+      if (currentOption) {
+        currentOption.classList.add('selected');
+      }
+      
+      document.body.appendChild(popout);
+      
+      // Close when clicking outside
+      setTimeout(() => {
+        document.addEventListener('click', function closeColorPicker(e) {
+          if (!popout.contains(e.target) && !trigger.contains(e.target)) {
+            popout.remove();
+            document.removeEventListener('click', closeColorPicker);
+          }
+        });
+      }, 100);
+    }
+
+    function updateCollaboratorsList(users) {
+      const list = document.getElementById('collaboratorsList');
+      const content = document.getElementById('collaboratorsContent');
+      const count = document.getElementById('collaboratorsCount');
+      
+      if (!users || users.length === 0) {
+        list.classList.remove('show');
+        return;
+      }
+      
+      list.classList.add('show');
+      count.textContent = users.length;
+      
+      content.innerHTML = users.map(user => `
+        <div class="collaborator-item">
+          <div class="collaborator-avatar">${user.name.charAt(0).toUpperCase()}</div>
+          <span class="collaborator-name">${user.name}</span>
+          <div class="collaborator-status ${user.status || 'online'}"></div>
+        </div>
+      `).join('');
+    }
+
+    function loadCollaborators() {
+      if (!currentGraph) return;
+      
+      // Simulate loading collaborators (replace with actual API call)
+      const collaborators = [
+        { name: 'John Doe', status: 'online' },
+        { name: 'Jane Smith', status: 'away' },
+        { name: 'Bob Johnson', status: 'online' }
+      ];
+      
+      updateCollaboratorsList(collaborators);
+    }
+
+    async function showCacheStatus() {
+      if (!currentGraph) return;
+      
+      try {
+        const token = localStorage.getItem('flowpad_token');
+        const res = await fetch(`/api/graphs/${currentGraph.id}/cache-status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+          const status = await res.json();
+          if (status.cached) {
+            const timeAgo = Math.round((Date.now() - status.lastModified) / 1000);
+            const dirtyText = status.dirty ? ' (unsaved changes)' : ' (saved)';
+            notify(`Cache: ${timeAgo}s ago${dirtyText}`, 'success');
+          } else {
+            notify('Graph not cached', 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to get cache status:', error);
+      }
+    }
+
+    function forceSave() {
+      if (!currentGraph) return;
+      
+      autoSaveGraph();
+      notify('Forcing save...', 'success');
+    }
+
+    // Add cache status button to toolbar
+    function addCacheStatusButton() {
+      const toolbar = document.getElementById('toolbar');
+      if (toolbar && !toolbar.querySelector('.cache-status-btn')) {
+        const cacheBtn = document.createElement('button');
+        cacheBtn.className = 'tool-btn cache-status-btn';
+        cacheBtn.title = 'Cache Status';
+        cacheBtn.textContent = '💾';
+        cacheBtn.onclick = showCacheStatus;
+        toolbar.appendChild(cacheBtn);
+        
+        const forceSaveBtn = document.createElement('button');
+        forceSaveBtn.className = 'tool-btn force-save-btn';
+        forceSaveBtn.title = 'Force Save';
+        forceSaveBtn.textContent = '💾!';
+        forceSaveBtn.onclick = forceSave;
+        toolbar.appendChild(forceSaveBtn);
+        
+        // Add snap toggles
+        const snapGridBtn = document.createElement('button');
+        snapGridBtn.className = 'tool-btn snap-grid-btn';
+        snapGridBtn.title = 'Snap to Grid';
+        snapGridBtn.textContent = '⊞';
+        snapGridBtn.onclick = toggleSnapToGrid;
+        snapGridBtn.classList.add('active'); // Default enabled
+        toolbar.appendChild(snapGridBtn);
+        
+        const snapTilesBtn = document.createElement('button');
+        snapTilesBtn.className = 'tool-btn snap-tiles-btn';
+        snapTilesBtn.title = 'Snap to Tiles';
+        snapTilesBtn.textContent = '⊟';
+        snapTilesBtn.onclick = toggleSnapToTiles;
+        snapTilesBtn.classList.add('active'); // Default enabled
+        toolbar.appendChild(snapTilesBtn);
+      }
+    }
+
+    function toggleSnapToGrid() {
+      snapToGrid = !snapToGrid;
+      const btn = document.querySelector('.snap-grid-btn');
+      btn.classList.toggle('active', snapToGrid);
+      btn.title = snapToGrid ? 'Snap to Grid (ON)' : 'Snap to Grid (OFF)';
+      notify(`Snap to Grid: ${snapToGrid ? 'ON' : 'OFF'}`, 'success');
+    }
+
+    function toggleSnapToTiles() {
+      snapToTiles = !snapToTiles;
+      const btn = document.querySelector('.snap-tiles-btn');
+      btn.classList.toggle('active', snapToTiles);
+      btn.title = snapToTiles ? 'Snap to Tiles (ON)' : 'Snap to Tiles (OFF)';
+      notify(`Snap to Tiles: ${snapToTiles ? 'ON' : 'OFF'}`, 'success');
+    }
+
+    function showAutoSaveStatus() {
+      const indicator = document.getElementById('autoSaveIndicator');
+      const text = document.getElementById('autoSaveText');
+      
+      if (isDirty) {
+        const timeSinceLastSave = Math.round((Date.now() - lastSaveTime) / 1000);
+        text.textContent = `Unsaved changes (${timeSinceLastSave}s ago)`;
+        indicator.classList.add('show', 'saving');
+      } else {
+        text.textContent = `Last saved at ${new Date(lastSaveTime).toLocaleTimeString()}`;
+        indicator.classList.add('show', 'saved');
+      }
+      
+      // Hide after 3 seconds
+      setTimeout(() => {
+        indicator.classList.remove('show', 'saving', 'saved');
+      }, 3000);
+    }
   </script>
 </body>
 </html>
+
