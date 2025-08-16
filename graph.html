@@ -177,6 +177,7 @@
     <div class="tool-label">Tools</div>
     <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
     <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">DEL</button>
+    <button class="tool-btn" onclick="centerCanvas()" title="Center Canvas">⌂</button>
     <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">AI</button>
   </div>
   
@@ -205,8 +206,8 @@
 
   <svg style="position:absolute;width:0;height:0;pointer-events:none">
     <defs>
-      <marker id="arrowhead" markerWidth="20" markerHeight="14" refX="18" refY="7" orient="auto">
-        <polygon points="0 0, 20 7, 0 14" fill="var(--accent-primary)"></polygon>
+      <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+        <polygon points="0 0, 12 4, 0 8" fill="var(--accent-primary)"></polygon>
       </marker>
     </defs>
   </svg>
@@ -763,6 +764,18 @@
       }
     }
 
+    function centerCanvas() {
+      // Reset canvas panning to center
+      canvasOffset.x = 0;
+      canvasOffset.y = 0;
+      canvas.style.transform = 'translate(0px, 0px)';
+      
+      // Re-render connections
+      renderConnections();
+      
+      notify('Canvas centered', 'success');
+    }
+
     function setConnectionMode(mode) {
       connectionMode = mode;
       document.querySelectorAll('.connection-mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -912,31 +925,22 @@
         
         // Add hover effect
         svg.addEventListener('mouseenter', () => {
-          path.style.strokeWidth = '5';
-          path.style.filter = 'drop-shadow(0 0 5px currentColor)';
+          path.style.strokeWidth = '4';
+          path.style.filter = 'drop-shadow(0 0 3px currentColor)';
+          svg.style.cursor = 'pointer';
         });
         
         svg.addEventListener('mouseleave', () => {
           path.style.strokeWidth = '3';
           path.style.filter = 'none';
+          svg.style.cursor = 'pointer';
         });
       }
       
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       
-      // Check if tiles are aligned (same X or Y coordinate)
-      const isAlignedX = Math.abs(fromX - toX) < 20; // Within 20px horizontally
-      const isAlignedY = Math.abs(fromY - toY) < 20; // Within 20px vertically
-      
-      let pathData;
-      
-      if (isAlignedX || isAlignedY) {
-        // Straight line when tiles are aligned
-        pathData = `M ${fromX} ${fromY} L ${toX} ${toY}`;
-      } else {
-        // Smart routing to avoid tiles
-        pathData = createSmartPath(fromX, fromY, toX, toY);
-      }
+      // Always use curved lines for better visual appeal
+      let pathData = createSmartPath(fromX, fromY, toX, toY);
       
       path.setAttribute('d', pathData);
       path.setAttribute('stroke', isPreview ? '#888' : (color || 'var(--accent-primary)'));
@@ -956,16 +960,17 @@
       if (obstacles.length === 0) {
         // No obstacles, use smooth S-curve with better control points
         const midX = (fromX + toX) / 2;
-        const distance = Math.abs(toX - fromX);
-        const curveIntensity = Math.min(distance * 0.4, 100); // Dynamic curve intensity
+        const midY = (fromY + toY) / 2;
+        const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+        const curveIntensity = Math.max(distance * 0.3, 40); // Minimum curve intensity
         
-        // Create smooth cubic bezier curve
+        // Create smooth cubic bezier curve with more pronounced curves
         const control1 = { 
-          x: fromX + (midX - fromX) * 0.6, 
+          x: fromX + (midX - fromX) * 0.5, 
           y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
         };
         const control2 = { 
-          x: toX - (toX - midX) * 0.6, 
+          x: toX - (toX - midX) * 0.5, 
           y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
         };
         
@@ -1099,11 +1104,22 @@
 
     function createPathFromWaypoints(fromX, fromY, toX, toY, waypoints) {
       if (waypoints.length === 0) {
-        // No waypoints, use simple S-curve
+        // No waypoints, use smooth S-curve
         const midX = (fromX + toX) / 2;
         const midY = (fromY + toY) / 2;
-        const offset = Math.min(Math.abs(toX - fromX) * 0.4, 60);
-        return `M ${fromX} ${fromY} C ${fromX + offset} ${fromY} ${midX} ${midY} ${toX - offset} ${toY} L ${toX} ${toY}`;
+        const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
+        const curveIntensity = Math.max(distance * 0.3, 40);
+        
+        const control1 = { 
+          x: fromX + (midX - fromX) * 0.5, 
+          y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
+        };
+        const control2 = { 
+          x: toX - (toX - midX) * 0.5, 
+          y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
+        };
+        
+        return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
       }
       
       // Create smooth path through waypoints using cubic bezier curves
