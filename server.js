@@ -12,32 +12,12 @@ const app = express();
 // Load environment variables
 require('dotenv').config();
 
-// CORS configuration - comprehensive solution
-app.use((req, res, next) => {
-  // Set CORS headers for all requests
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400'); // 24 hours
-
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-
-  next();
-});
-
-// Also use the cors middleware as backup
+// CORS configuration
 app.use(cors({
   origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
-  preflightContinue: false,
-  optionsSuccessStatus: 200
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
 }));
 app.use(express.json());
 
@@ -158,15 +138,7 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-// Global OPTIONS handler for all routes
-app.options('*', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.status(200).end();
-});
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -175,41 +147,11 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     database: pool ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0',
-    cookies: req.cookies ? 'enabled' : 'disabled',
-    cookieParser: typeof cookieParser !== 'undefined' ? 'loaded' : 'not loaded'
+    version: '1.0.0'
   });
 });
 
-// CORS test endpoint
-app.get('/api/cors-test', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.json({ 
-    message: 'CORS is working!',
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString()
-  });
-});
 
-// Test endpoint for Vercel
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'Flowpad API is working!',
-    timestamp: new Date().toISOString(),
-    cookieParser: typeof cookieParser !== 'undefined' ? 'loaded' : 'not loaded',
-    cookies: req.cookies ? 'enabled' : 'disabled'
-  });
-});
-
-// Simple CORS test endpoint
-app.get('/api/cors-simple', (req, res) => {
-  res.json({ 
-    message: 'CORS is working!',
-    origin: req.headers.origin,
-    timestamp: new Date().toISOString()
-  });
-});
 
 // Routes
 app.get('/', (req, res) => {
@@ -220,47 +162,15 @@ app.get('/graph', (req, res) => {
   res.sendFile(path.join(__dirname, 'graph.html'));
 });
 
-app.get('/cors-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'cors-test.html'));
-});
 
-app.get('/cors-debug', (req, res) => {
-  res.json({
-    message: 'CORS Debug Info',
-    headers: req.headers,
-    method: req.method,
-    url: req.url,
-    timestamp: new Date().toISOString()
-  });
-});
 
-app.get('/simple-test', (req, res) => {
-  res.sendFile(path.join(__dirname, 'simple-test.html'));
-});
 
-// Preflight handler for Google auth
-app.options('/api/auth/google', (req, res) => {
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Max-Age', '86400');
-  res.status(200).end();
-});
+
+
 
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
-              // Set CORS headers specifically for this endpoint
-            const origin = req.headers.origin;
-            if (origin) {
-                res.header('Access-Control-Allow-Origin', origin);
-                res.header('Access-Control-Allow-Credentials', 'true');
-            } else {
-                res.header('Access-Control-Allow-Origin', '*');
-            }
-            res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
-            res.header('Access-Control-Max-Age', '86400');
+  
 
   if (!pool) {
     return res.status(500).json({ error: 'Database connection not available' });
@@ -290,11 +200,7 @@ app.post('/api/auth/google', async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    // Set CORS headers for Google auth
-    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+
 
     // Set secure cookie with proper SameSite and Secure attributes
     try {
