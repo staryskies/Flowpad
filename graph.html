@@ -64,7 +64,8 @@
     .graph-meta{font-size:.8rem;color:var(--text-secondary)}
     
     .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
-    .canvas{width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;position:relative;transition:all 0.3s ease}
+    .canvas{width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;position:relative;transition:all 0.3s ease;cursor:grab}
+    .canvas.panning{cursor:grabbing}
     
     .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.3s ease;resize:both;overflow:hidden}
     .tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
@@ -72,6 +73,12 @@
     .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none}
     .tile-title{font-weight:600;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
     .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile)}
+    
+    .color-palette{position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0;transition:opacity 0.3s ease}
+    .tile:hover .color-palette{opacity:1}
+    .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease}
+    .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
+    .color-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-primary)}
     
     .connection-dot{position:absolute;width:12px;height:12px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease}
     .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
@@ -114,7 +121,7 @@
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
   </style>
 </head>
-<body data-theme="dark">
+<body>
   <div class="header">
     <div class="logo">Flowpad</div>
     <div class="user-info">
@@ -152,8 +159,8 @@
   <div class="toolbar" id="toolbar" style="display:none;">
     <div class="tool-label">Tools</div>
     <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
-    <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">🗑</button>
-    <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">🤖</button>
+    <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">DEL</button>
+    <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">AI</button>
   </div>
   
   <div class="ai-panel" id="aiPanel">
@@ -169,8 +176,8 @@
 
   <svg style="position:absolute;width:0;height:0;pointer-events:none">
     <defs>
-      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)"></polygon>
+      <marker id="arrowhead" markerWidth="20" markerHeight="14" refX="18" refY="7" orient="auto">
+        <polygon points="0 0, 20 7, 0 14" fill="var(--accent-primary)"></polygon>
       </marker>
     </defs>
   </svg>
@@ -181,6 +188,9 @@
     let isConnecting = false;
     let connectionStart = null;
     let hoveredTile = null;
+    let isPanning = false;
+    let panStart = {x: 0, y: 0};
+    let canvasOffset = {x: 0, y: 0};
     
     const canvas = document.getElementById('canvas');
 
@@ -195,14 +205,14 @@
 
     function setupTheme() {
       const savedTheme = localStorage.getItem('flowpad_theme') || 'dark';
-      document.body.setAttribute('data-theme', savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeIcon(savedTheme);
     }
 
     function toggleTheme() {
-      const currentTheme = document.body.getAttribute('data-theme');
+      const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.body.setAttribute('data-theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
       localStorage.setItem('flowpad_theme', newTheme);
       updateThemeIcon(newTheme);
     }
@@ -257,7 +267,18 @@
 
     function loadGraph(graph) {
       currentGraph = graph;
-      tiles = (graph.data?.tiles || []).map(t => createTile(t.x, t.y, t.title, t.content, t.id));
+      tiles = (graph.data?.tiles || []).map(t => {
+        const tile = createTile(t.x, t.y, t.title, t.content, t.id);
+        if (t.color) {
+          tile.style.background = t.color;
+          // Update selected color in palette
+          const colorOption = tile.querySelector(`[data-color="${t.color}"]`);
+          if (colorOption) {
+            colorOption.classList.add('selected');
+          }
+        }
+        return tile;
+      });
       connections = graph.data?.connections || [];
       document.getElementById('shareHeader').style.display = 'block';
       document.getElementById('shareEmail').style.display = 'block';
@@ -282,6 +303,9 @@
         startConnection(e, dot);
       } else if (tile) {
         startDragging(e, tile);
+      } else {
+        // Start panning when clicking on empty canvas
+        startPanning(e);
       }
     }
 
@@ -290,6 +314,8 @@
         updateConnectionPreview(e);
       } else if (isDragging && selectedTile) {
         updateDragging(e);
+      } else if (isPanning) {
+        updatePanning(e);
       }
     }
 
@@ -298,7 +324,9 @@
         finishConnection(e);
       }
       isDragging = false;
+      isPanning = false;
       selectedTile = null;
+      canvas.classList.remove('panning');
     }
 
     function handleCanvasClick(e) {
@@ -361,6 +389,13 @@
       connectionStart = null;
     }
 
+    function startPanning(e) {
+      isPanning = true;
+      canvas.classList.add('panning');
+      panStart.x = e.clientX - canvasOffset.x;
+      panStart.y = e.clientY - canvasOffset.y;
+    }
+
     function startDragging(e, tile) {
       isDragging = true;
       selectedTile = tile;
@@ -370,12 +405,35 @@
       dragOffset.y = e.clientY - r.top;
     }
 
+    function updatePanning(e) {
+      canvasOffset.x = e.clientX - panStart.x;
+      canvasOffset.y = e.clientY - panStart.y;
+      
+      // Apply pan offset to all tiles
+      tiles.forEach(tile => {
+        const currentX = parseInt(tile.style.left) || 0;
+        const currentY = parseInt(tile.style.top) || 0;
+        tile.style.left = (currentX + canvasOffset.x) + 'px';
+        tile.style.top = (currentY + canvasOffset.y) + 'px';
+      });
+      
+      // Reset offset for next pan
+      canvasOffset.x = 0;
+      canvasOffset.y = 0;
+      
+      // Update connections
+      renderConnections();
+    }
+
     function updateDragging(e) {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left - dragOffset.x;
       const y = e.clientY - rect.top - dragOffset.y;
       selectedTile.style.left = x + 'px';
       selectedTile.style.top = y + 'px';
+      
+      // Update connections immediately when tile moves
+      renderConnections();
       scheduleSave();
     }
 
@@ -387,6 +445,18 @@
       tile.style.top = y + 'px';
       
       tile.innerHTML = `
+        <div class="color-palette">
+          <div class="color-option" data-color="#ffffff" style="background:#ffffff" title="White"></div>
+          <div class="color-option" data-color="#f8f9fa" style="background:#f8f9fa" title="Light Gray"></div>
+          <div class="color-option" data-color="#e9ecef" style="background:#e9ecef" title="Gray"></div>
+          <div class="color-option" data-color="#dee2e6" style="background:#dee2e6" title="Medium Gray"></div>
+          <div class="color-option" data-color="#ced4da" style="background:#ced4da" title="Dark Gray"></div>
+          <div class="color-option" data-color="#adb5bd" style="background:#adb5bd" title="Charcoal"></div>
+          <div class="color-option" data-color="#6c757d" style="background:#6c757d" title="Slate"></div>
+          <div class="color-option" data-color="#495057" style="background:#495057" title="Dark Slate"></div>
+          <div class="color-option" data-color="#343a40" style="background:#343a40" title="Navy"></div>
+          <div class="color-option" data-color="#212529" style="background:#212529" title="Black"></div>
+        </div>
         <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
         <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
         <div class="connection-dot input" data-dot-type="input" title="Input connection"></div>
@@ -396,6 +466,22 @@
       `;
       
       tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
+      
+      // Add color selection functionality
+      tile.querySelectorAll('.color-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const color = option.dataset.color;
+          tile.style.background = color;
+          
+          // Update selected state
+          tile.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+          option.classList.add('selected');
+          
+          scheduleSave();
+        });
+      });
+      
       tile.addEventListener('click', (e) => {
         if (!isConnecting) {
           selectTile(tile);
@@ -536,13 +622,23 @@
       svg.style.pointerEvents = 'none';
       svg.style.zIndex = isPreview ? '15' : '5';
       
-      // Calculate control points for curved line
-      const midX = (fromX + toX) / 2;
-      const midY = (fromY + toY) / 2;
-      const offset = Math.min(Math.abs(toX - fromX) * 0.3, 50);
-      
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', `M ${fromX} ${fromY} Q ${midX} ${midY - offset} ${toX} ${toY}`);
+      
+      // Check if tiles are aligned (same X or Y coordinate)
+      const isAlignedX = Math.abs(fromX - toX) < 20; // Within 20px horizontally
+      const isAlignedY = Math.abs(fromY - toY) < 20; // Within 20px vertically
+      
+      let pathData;
+      
+      if (isAlignedX || isAlignedY) {
+        // Straight line when tiles are aligned
+        pathData = `M ${fromX} ${fromY} L ${toX} ${toY}`;
+      } else {
+        // Smart routing to avoid tiles
+        pathData = createSmartPath(fromX, fromY, toX, toY);
+      }
+      
+      path.setAttribute('d', pathData);
       path.setAttribute('stroke', isPreview ? '#888' : 'var(--accent-primary)');
       path.setAttribute('stroke-width', isPreview ? '2' : '3');
       path.setAttribute('fill', 'none');
@@ -553,6 +649,174 @@
       return svg;
     }
 
+    function createSmartPath(fromX, fromY, toX, toY) {
+      // Find obstacles (tiles) between the connection points
+      const obstacles = findObstacles(fromX, fromY, toX, toY);
+      
+      if (obstacles.length === 0) {
+        // No obstacles, use simple S-curve
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        const offset = Math.min(Math.abs(toX - fromX) * 0.4, 60);
+        return `M ${fromX} ${fromY} C ${fromX + offset} ${fromY} ${midX} ${midY} ${toX - offset} ${toY} L ${toX} ${toY}`;
+      }
+      
+      // Create path that avoids obstacles
+      const waypoints = calculateWaypoints(fromX, fromY, toX, toY, obstacles);
+      return createPathFromWaypoints(fromX, fromY, toX, toY, waypoints);
+    }
+
+    function findObstacles(fromX, fromY, toX, toY) {
+      const obstacles = [];
+      const canvasRect = canvas.getBoundingClientRect();
+      
+      tiles.forEach(tile => {
+        const tileRect = tile.getBoundingClientRect();
+        const tileX = tileRect.left - canvasRect.left;
+        const tileY = tileRect.top - canvasRect.top;
+        const tileWidth = tileRect.width;
+        const tileHeight = tileRect.height;
+        
+        // Check if line intersects with tile
+        if (lineIntersectsRect(fromX, fromY, toX, toY, tileX, tileY, tileWidth, tileHeight)) {
+          obstacles.push({
+            x: tileX,
+            y: tileY,
+            width: tileWidth,
+            height: tileHeight
+          });
+        }
+      });
+      
+      return obstacles;
+    }
+
+    function lineIntersectsRect(x1, y1, x2, y2, rx, ry, rw, rh) {
+      // Simple line-rectangle intersection test
+      const left = rx;
+      const right = rx + rw;
+      const top = ry;
+      const bottom = ry + rh;
+      
+      // Check if line endpoints are inside rectangle
+      if ((x1 >= left && x1 <= right && y1 >= top && y1 <= bottom) ||
+          (x2 >= left && x2 <= right && y2 >= top && y2 <= bottom)) {
+        return true;
+      }
+      
+      // Check line segments against rectangle edges
+      const lines = [
+        [left, top, right, top],     // top edge
+        [right, top, right, bottom], // right edge
+        [right, bottom, left, bottom], // bottom edge
+        [left, bottom, left, top]    // left edge
+      ];
+      
+      for (const line of lines) {
+        if (linesIntersect(x1, y1, x2, y2, line[0], line[1], line[2], line[3])) {
+          return true;
+        }
+      }
+      
+      return false;
+    }
+
+    function linesIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+      const den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+      if (den === 0) return false;
+      
+      const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / den;
+      const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
+      
+      return t >= 0 && t <= 1 && u >= 0 && u <= 1;
+    }
+
+    function calculateWaypoints(fromX, fromY, toX, toY, obstacles) {
+      const waypoints = [];
+      
+      // Sort obstacles by distance from start point
+      obstacles.sort((a, b) => {
+        const distA = Math.sqrt((a.x - fromX) ** 2 + (a.y - fromY) ** 2);
+        const distB = Math.sqrt((b.x - fromX) ** 2 + (b.y - fromY) ** 2);
+        return distA - distB;
+      });
+      
+      let currentX = fromX;
+      let currentY = fromY;
+      
+      for (const obstacle of obstacles) {
+        // Find best waypoint around this obstacle
+        const waypoint = findBestWaypoint(currentX, currentY, toX, toY, obstacle);
+        if (waypoint) {
+          waypoints.push(waypoint);
+          currentX = waypoint.x;
+          currentY = waypoint.y;
+        }
+      }
+      
+      return waypoints;
+    }
+
+    function findBestWaypoint(fromX, fromY, toX, toY, obstacle) {
+      // Try different positions around the obstacle
+      const positions = [
+        { x: obstacle.x - 20, y: obstacle.y - 20 }, // top-left
+        { x: obstacle.x + obstacle.width + 20, y: obstacle.y - 20 }, // top-right
+        { x: obstacle.x + obstacle.width + 20, y: obstacle.y + obstacle.height + 20 }, // bottom-right
+        { x: obstacle.x - 20, y: obstacle.y + obstacle.height + 20 }, // bottom-left
+        { x: obstacle.x - 20, y: (obstacle.y + obstacle.y + obstacle.height) / 2 }, // left-middle
+        { x: obstacle.x + obstacle.width + 20, y: (obstacle.y + obstacle.y + obstacle.height) / 2 }, // right-middle
+      ];
+      
+      // Find position with shortest total path length
+      let bestWaypoint = null;
+      let bestDistance = Infinity;
+      
+      for (const pos of positions) {
+        const distance1 = Math.sqrt((pos.x - fromX) ** 2 + (pos.y - fromY) ** 2);
+        const distance2 = Math.sqrt((pos.x - toX) ** 2 + (pos.y - toY) ** 2);
+        const totalDistance = distance1 + distance2;
+        
+        if (totalDistance < bestDistance) {
+          bestDistance = totalDistance;
+          bestWaypoint = pos;
+        }
+      }
+      
+      return bestWaypoint;
+    }
+
+    function createPathFromWaypoints(fromX, fromY, toX, toY, waypoints) {
+      if (waypoints.length === 0) {
+        // No waypoints, use simple S-curve
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        const offset = Math.min(Math.abs(toX - fromX) * 0.4, 60);
+        return `M ${fromX} ${fromY} C ${fromX + offset} ${fromY} ${midX} ${midY} ${toX - offset} ${toY} L ${toX} ${toY}`;
+      }
+      
+      // Create path through waypoints
+      let path = `M ${fromX} ${fromY}`;
+      
+      for (let i = 0; i < waypoints.length; i++) {
+        const wp = waypoints[i];
+        if (i === 0) {
+          path += ` L ${wp.x} ${wp.y}`;
+        } else {
+          const prevWp = waypoints[i - 1];
+          const midX = (prevWp.x + wp.x) / 2;
+          const midY = (prevWp.y + wp.y) / 2;
+          path += ` Q ${midX} ${midY} ${wp.x} ${wp.y}`;
+        }
+      }
+      
+      // Connect to final destination
+      const lastWp = waypoints[waypoints.length - 1];
+      path += ` L ${toX} ${toY}`;
+      
+      return path;
+    }
+
     function renderCanvas() {
       // Clear canvas
       canvas.innerHTML = '';
@@ -561,6 +825,13 @@
       tiles.forEach(t => canvas.appendChild(t));
       
       // Add connections
+      renderConnections();
+    }
+
+    function renderConnections() {
+      // Remove existing connections
+      document.querySelectorAll('.connection-svg').forEach(svg => svg.remove());
+      
       connections.forEach(conn => {
         const fromTile = tiles.find(t => t.dataset.tileId === conn.fromTile);
         const toTile = tiles.find(t => t.dataset.tileId === conn.toTile);
@@ -603,6 +874,7 @@
           
           if (fromX !== undefined && toX !== undefined) {
             const connectionLine = createConnectionLine(fromX, fromY, toX, toY);
+            connectionLine.classList.add('connection-svg');
             canvas.appendChild(connectionLine);
           }
         }
@@ -631,7 +903,8 @@
           x: parseInt(t.style.left) || 0,
           y: parseInt(t.style.top) || 0,
           title: t.querySelector('.tile-title').value || '',
-          content: t.querySelector('.tile-content').value || ''
+          content: t.querySelector('.tile-content').value || '',
+          color: t.style.background || '#ffffff'
         })),
         connections
       };

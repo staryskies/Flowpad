@@ -48,7 +48,7 @@
     .footer-links a{color:var(--text-secondary);text-decoration:none;margin:0 15px}
   </style>
 </head>
-  <body data-theme="dark">
+  <body>
   <div class="container">
     <div style="position: absolute; top: 20px; right: 20px;">
       <button onclick="toggleTheme()" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 16px;" title="Toggle theme">
@@ -145,9 +145,9 @@
     }
 
     function toggleTheme() {
-      const currentTheme = document.body.getAttribute('data-theme');
+      const currentTheme = document.documentElement.getAttribute('data-theme');
       const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-      document.body.setAttribute('data-theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
       localStorage.setItem('flowpad_theme', newTheme);
       updateThemeIcon(newTheme);
     }
@@ -161,7 +161,7 @@
     window.addEventListener('load', () => {
       // Setup theme
       const savedTheme = localStorage.getItem('flowpad_theme') || 'dark';
-      document.body.setAttribute('data-theme', savedTheme);
+      document.documentElement.setAttribute('data-theme', savedTheme);
       updateThemeIcon(savedTheme);
       
       const token = localStorage.getItem('flowpad_token');
