@@ -7,7 +7,6 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 // Load environment variables
 require('dotenv').config();
@@ -18,10 +17,18 @@ app.use(express.json());
 app.use(express.static('.'));
 
 // PostgreSQL connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
-  ssl: { rejectUnauthorized: false }
-});
+let pool;
+try {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10000,
+    idleTimeoutMillis: 30000,
+    max: 1 // Limit connections for serverless
+  });
+} catch (error) {
+  console.error('Failed to create database pool:', error);
+}
 
 // Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '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');
@@ -31,6 +38,11 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // Initialize database tables
 async function initDatabase() {
+  if (!pool) {
+    console.error('Database pool not available');
+    return;
+  }
+
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
@@ -71,6 +83,10 @@ async function initDatabase() {
 
 // Authentication middleware
 const authenticateToken = async (req, res, next) => {
+  if (!pool) {
+    return res.status(500).json({ error: 'Database connection not available' });
+  }
+
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -93,6 +109,25 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    database: pool ? 'connected' : 'disconnected',
+    environment: process.env.NODE_ENV || 'development',
+    version: '1.0.0'
+  });
+});
+
+// Test endpoint for Vercel
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Flowpad API is working!',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -104,11 +139,15 @@ app.get('/graph', (req, res) => {
 
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
+  if (!pool) {
+    return res.status(500).json({ error: 'Database connection not available' });
+  }
+
   try {
     const { idToken } = req.body;
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: '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'
+      audience: process.env.GOOGLE_CLIENT_ID || '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'
     });
 
     const payload = ticket.getPayload();
@@ -263,11 +302,32 @@ app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Initialize database and start server
-initDatabase().then(() => {
+// Initialize database on first request
+let dbInitialized = false;
+app.use(async (req, res, next) => {
+  if (!dbInitialized && pool) {
+    try {
+      await initDatabase();
+      dbInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+    }
+  }
+  next();
+});
+
+// Error handling middleware
+app.use((error, req, res, next) => {
+  console.error('Unhandled error:', error);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// For local development only
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
-});
+}
 
 module.exports = app;

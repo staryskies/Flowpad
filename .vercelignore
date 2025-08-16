@@ -1,0 +1,35 @@
+# Development files
+.env
+.env.local
+.env.*.local
+
+# Documentation
+README.md
+VERCEL_DEPLOYMENT.md
+env.example
+
+# Build artifacts
+vercel-build.js
+
+# Git files
+.git
+.gitignore
+.gitattributes
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp 
