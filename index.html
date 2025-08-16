@@ -297,6 +297,7 @@
        stroke: #3b82f6;
        stroke-width: 3;
        filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
+       marker-end: url(#arrowhead-active);
      }
      .connection-label {
        position: absolute;
@@ -391,6 +392,10 @@
          <defs>
            <marker id="arrowhead" markerWidth="10" markerHeight="7" 
                    refX="10" refY="3.5" orient="auto">
+             <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+           </marker>
+           <marker id="arrowhead-active" markerWidth="10" markerHeight="7" 
+                   refX="10" refY="3.5" orient="auto">
              <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
            </marker>
          </defs>
@@ -433,6 +438,7 @@
          this.svg = svgElement;
          this.connections = [];
          this.activeLabel = null;
+         this.scale = 1;
        }
        
        createConnection(fromTileId, toTileId, label = '') {
@@ -478,6 +484,7 @@
              if (!label.textContent.trim()) {
                label.style.display = 'none';
              }
+             connection.element.classList.remove('active');
              saveState();
            }
          });
@@ -497,6 +504,9 @@
          if (this.activeLabel) {
            this.activeLabel.style.display = 'none';
          }
+         if (connection.element) {
+           connection.element.classList.add('active');
+         }
          
          connection.labelElement.style.display = 'block';
          this.updateLabelPosition(connection);
@@ -507,7 +517,6 @@
                createSVGLine(fromHandle, toHandle) {
          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
          path.classList.add('connection-line');
-         path.setAttribute('stroke', '#3b82f6');
          path.setAttribute('stroke-width', '2.5');
          path.setAttribute('marker-end', 'url(#arrowhead)');
          this.updateLinePosition(path, fromHandle, toHandle);
@@ -564,9 +573,9 @@
         const svgRect = this.svg.getBoundingClientRect();
         const canvasRect = document.querySelector('.canvas-container').getBoundingClientRect();
         
-        // Calculate the absolute position
-        const x = midPoint.x + svgRect.left - canvasRect.left;
-        const y = midPoint.y + svgRect.top - canvasRect.top;
+        // Calculate the absolute position, accounting for scale
+        const x = (midPoint.x * this.scale) + svgRect.left - canvasRect.left;
+        const y = (midPoint.y * this.scale) + svgRect.top - canvasRect.top;
         
         // Position the label
         connection.labelElement.style.left = `${x}px`;
@@ -600,7 +609,7 @@
          path.setAttribute('stroke', '#3b82f6');
          path.setAttribute('stroke-width', '3');
          path.setAttribute('stroke-dasharray', '5,3');
-         path.setAttribute('marker-end', 'url(#arrowhead)');
+         path.setAttribute('marker-end', 'url(#arrowhead-active)');
          
          // Initial path with just the starting point
          const pathData = `M ${startX} ${startY}`;
@@ -650,6 +659,7 @@
        // Update transform on pan/zoom using the newer API
        canvas.addEventListener('panzoom', (e) => {
          currentTransform = panzoomInstance.getTransform();
+         connectionManager.scale = currentTransform.scale;
          connectionManager.updateAllConnections();
        });
        
@@ -874,8 +884,12 @@
              <svg class="connections-layer" id="connections-svg">
                <defs>
                  <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                         refX="9" refY="3.5" orient="auto">
+                         refX="10" refY="3.5" orient="auto">
                    <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                 </marker>
+                 <marker id="arrowhead-active" markerWidth="10" markerHeight="7" 
+                         refX="10" refY="3.5" orient="auto">
+                   <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
                  </marker>
                </defs>
              </svg>
@@ -1091,8 +1105,12 @@
              <svg class="connections-layer" id="connections-svg">
                <defs>
                  <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                         refX="9" refY="3.5" orient="auto">
+                         refX="10" refY="3.5" orient="auto">
                    <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                 </marker>
+                 <marker id="arrowhead-active" markerWidth="10" markerHeight="7" 
+                         refX="10" refY="3.5" orient="auto">
+                   <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
                  </marker>
                </defs>
              </svg>
