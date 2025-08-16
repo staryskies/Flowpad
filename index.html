@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.2.4/leader-line.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style id="app-style">
@@ -223,28 +223,65 @@
        if (missingLibraries.length > 0) {
          console.error(`Missing libraries: ${missingLibraries.join(', ')}. Loading fallbacks...`);
          
-         missingLibraries.forEach(lib => {
-           const script = document.createElement('script');
-           if (lib === 'Panzoom') {
-             script.src = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-           } else if (lib === 'LeaderLine') {
-             script.src = 'https://unpkg.com/leader-line@1.2.4/leader-line.min.js';
-           }
-           
-           script.onload = () => {
-             console.log(`${lib} loaded from fallback CDN`);
-             // Check again after loading
-             setTimeout(() => {
-               if (typeof Panzoom !== 'undefined' && typeof LeaderLine !== 'undefined') {
-                 initApp();
-               }
-             }, 100);
-           };
-           script.onerror = () => {
-             console.error(`Failed to load ${lib} library`);
-           };
-           document.head.appendChild(script);
-         });
+                   missingLibraries.forEach(lib => {
+            if (lib === 'Panzoom') {
+              loadScript('https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js', 'Panzoom');
+            } else if (lib === 'LeaderLine') {
+              // Try multiple CDN sources for LeaderLine
+              loadScriptWithFallback([
+                'https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.2.4/leader-line.min.js',
+                'https://unpkg.com/leader-line@1.2.4/leader-line.min.js',
+                'https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js'
+              ], 'LeaderLine');
+            }
+          });
+          
+          function loadScript(src, libName) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = () => {
+              console.log(`${libName} loaded from fallback CDN`);
+              checkAndInit();
+            };
+            script.onerror = () => {
+              console.error(`Failed to load ${libName} library from ${src}`);
+            };
+            document.head.appendChild(script);
+          }
+          
+          function loadScriptWithFallback(sources, libName) {
+            let currentIndex = 0;
+            
+            function tryNext() {
+              if (currentIndex >= sources.length) {
+                console.error(`Failed to load ${libName} from all sources`);
+                return;
+              }
+              
+              const script = document.createElement('script');
+              script.src = sources[currentIndex];
+              script.onload = () => {
+                console.log(`${libName} loaded from ${sources[currentIndex]}`);
+                checkAndInit();
+              };
+              script.onerror = () => {
+                console.error(`Failed to load ${libName} from ${sources[currentIndex]}`);
+                currentIndex++;
+                tryNext();
+              };
+              document.head.appendChild(script);
+            }
+            
+            tryNext();
+          }
+          
+          function checkAndInit() {
+            setTimeout(() => {
+              if (typeof Panzoom !== 'undefined' && typeof LeaderLine !== 'undefined') {
+                initApp();
+              }
+            }, 100);
+          }
          
          return false;
        }
