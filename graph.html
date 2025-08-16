@@ -5,39 +5,122 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Flowpad - Dashboard</title>
   <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --bg-tertiary: rgba(0,0,0,0.9);
+      --bg-sidebar: rgba(0,0,0,0.8);
+      --bg-tile: #fff;
+      --bg-tile-hover: #f8f9fa;
+      --text-primary: #fff;
+      --text-secondary: #ccc;
+      --text-tile: #000;
+      --border-primary: #333;
+      --border-secondary: #555;
+      --accent-primary: #4CAF50;
+      --accent-secondary: #45a049;
+      --shadow-primary: rgba(0,0,0,0.3);
+      --shadow-secondary: rgba(0,0,0,0.2);
+      --grid-color: rgba(255,255,255,0.03);
+    }
+
+    :root[data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: rgba(255,255,255,0.95);
+      --bg-sidebar: rgba(255,255,255,0.95);
+      --bg-tile: #2d3748;
+      --bg-tile-hover: #4a5568;
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tile: #fff;
+      --border-primary: #e2e8f0;
+      --border-secondary: #cbd5e0;
+      --shadow-primary: rgba(0,0,0,0.1);
+      --shadow-secondary: rgba(0,0,0,0.05);
+      --grid-color: rgba(0,0,0,0.03);
+    }
+
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#1a1a1a;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;color:#fff;overflow:hidden}
-    .header{position:fixed;inset:0 0 auto 0;height:60px;background:rgba(0,0,0,.9);backdrop-filter:blur(20px);border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000}
-    .logo{font-size:1.5rem;font-weight:700;background:linear-gradient(45deg,#fff,#ccc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:var(--bg-primary);background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
+    
+    .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;transition:all 0.3s ease}
+    .logo{font-size:1.5rem;font-weight:700;background:linear-gradient(45deg,var(--text-primary),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
     .user-info{display:flex;align-items:center;gap:15px}
-    .signout-btn{background:#333;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
-    .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:rgba(0,0,0,.8);backdrop-filter:blur(20px);border-right:1px solid #333;overflow-y:auto}
+    .signout-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;transition:all 0.3s ease}
+    .signout-btn:hover{background:var(--border-secondary)}
+    
+    .theme-toggle{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:10px;transition:all 0.3s ease}
+    .theme-toggle:hover{background:var(--border-secondary)}
+    
+    .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:var(--bg-sidebar);backdrop-filter:blur(20px);border-right:1px solid var(--border-primary);overflow-y:auto;transition:all 0.3s ease}
     .sidebar-content{padding:20px}
-    .section-title{font-size:1.1rem;font-weight:600;margin-bottom:15px}
-    .new-graph-btn{background:#4CAF50;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px}
-    .graph-item{background:rgba(255,255,255,.05);border:1px solid #333;border-radius:8px;padding:15px;margin-bottom:10px;cursor:pointer}
-    .graph-title{font-weight:600;margin-bottom:5px}
-    .graph-meta{font-size:.8rem;color:#888}
+    .section-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;color:var(--text-primary)}
+    .new-graph-btn{background:var(--accent-primary);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px;transition:all 0.3s ease}
+    .new-graph-btn:hover{background:var(--accent-secondary)}
+    .graph-item{background:rgba(255,255,255,0.05);border:1px solid var(--border-primary);border-radius:8px;padding:15px;margin-bottom:10px;cursor:pointer;transition:all 0.3s ease}
+    .graph-item:hover{background:rgba(255,255,255,0.1)}
+    .graph-title{font-weight:600;margin-bottom:5px;color:var(--text-primary)}
+    .graph-meta{font-size:.8rem;color:var(--text-secondary)}
+    
     .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
-    .canvas{width:100%;height:100%;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;position:relative}
-    .tile{position:absolute;background:#fff;color:#000;border:2px solid #333;border-radius:8px;padding:15px;min-width:120px;min-height:80px;cursor:move;user-select:none;box-shadow:0 4px 12px rgba(0,0,0,.2)}
-    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit}
-    .tile-title{font-weight:600;margin-bottom:8px;font-size:.9rem}
-    .tile-content{font-size:.8rem;line-height:1.4;min-height:40px}
+    .canvas{width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;position:relative;transition:all 0.3s ease}
+    
+    .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.3s ease;resize:both;overflow:hidden}
+    .tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
+    .tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(76, 175, 80, 0.3)}
+    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none}
+    .tile-title{font-weight:600;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
+    .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile)}
+    
+    .connection-dot{position:absolute;width:12px;height:12px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease}
+    .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
+    .connection-dot.input{left:-6px;top:50%;transform:translateY(-50%)}
+    .connection-dot.output{right:-6px;top:50%;transform:translateY(-50%)}
+    .connection-dot.top{top:-6px;left:50%;transform:translateX(-50%)}
+    .connection-dot.bottom{bottom:-6px;left:50%;transform:translateX(-50%)}
+    
     .connection{position:absolute;pointer-events:none;z-index:5}
-    .connection-line{stroke:#4CAF50;stroke-width:2;fill:none;marker-end:url(#arrowhead)}
-    .toolbar{position:fixed;top:70px;right:20px;background:rgba(0,0,0,.9);backdrop-filter:blur(20px);border:1px solid #333;border-radius:12px;padding:15px;z-index:1000;min-width:200px}
-    .tool-label{color:#ccc;font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:500}
-    .tool-btn{background:#333;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;margin:2px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem}
-    .notification{position:fixed;top:80px;right:20px;background:#4CAF50;color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
+    .connection-line{stroke:var(--accent-primary);stroke-width:3;fill:none;marker-end:url(#arrowhead);filter:drop-shadow(0 2px 4px var(--shadow-primary))}
+    .connection-line:hover{stroke:var(--accent-secondary);stroke-width:4}
+    
+    .toolbar{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;min-width:200px;transition:all 0.3s ease}
+    .tool-label{color:var(--text-secondary);font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:500}
+    .tool-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px;border-radius:6px;cursor:pointer;margin:2px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.3s ease}
+    .tool-btn:hover{background:var(--border-secondary)}
+    .tool-btn.active{background:var(--accent-primary);color:#fff}
+    
+    .ai-panel{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:20px;z-index:1000;width:300px;display:none;transition:all 0.3s ease}
+    .ai-panel.show{display:block}
+    .ai-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;color:var(--text-primary)}
+    .ai-input{width:100%;padding:10px;border:1px solid var(--border-secondary);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:15px;resize:vertical;min-height:80px}
+    .ai-btn{background:var(--accent-primary);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease}
+    .ai-btn:hover{background:var(--accent-secondary)}
+    .ai-btn:disabled{background:var(--border-secondary);cursor:not-allowed}
+    .ai-suggestions{margin-top:15px;max-height:200px;overflow-y:auto}
+    .ai-suggestion{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease}
+    .ai-suggestion:hover{background:var(--border-primary)}
+    
+    .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px var(--shadow-primary);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
     .notification.show{transform:translateX(0)}
     .notification.error{background:#f44336}
+    
+    .connection-mode{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;margin-bottom:10px}
+    .connection-mode-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin:2px;transition:all 0.3s ease}
+    .connection-mode-btn:hover{background:var(--border-secondary)}
+    .connection-mode-btn.active{background:var(--accent-primary);color:#fff}
+    
+    .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
   </style>
 </head>
-<body>
+<body data-theme="dark">
   <div class="header">
     <div class="logo">Flowpad</div>
     <div class="user-info">
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        <span id="theme-icon">🌙</span>
+      </button>
       <span id="userName">User</span>
       <button class="signout-btn" onclick="signOut()">Sign Out</button>
     </div>
@@ -51,7 +134,7 @@
       <div class="section-title">Shared With Me</div>
       <div id="sharedGraphs"></div>
       <div class="section-title" id="shareHeader" style="display:none;">Share Current Graph</div>
-      <input type="email" id="shareEmail" placeholder="Enter email address" style="display:none;width:100%;padding:8px;border-radius:6px;border:1px solid #555;color:#000"/>
+      <input type="email" id="shareEmail" placeholder="Enter email address" style="display:none;width:100%;padding:8px;border-radius:6px;border:1px solid var(--border-secondary);background:var(--bg-secondary);color:var(--text-primary)"/>
       <button id="shareBtn" style="display:none;margin-top:8px" class="new-graph-btn" onclick="shareGraph()">Share</button>
     </div>
   </div>
@@ -60,156 +143,505 @@
     <div class="canvas" id="canvas"></div>
   </div>
   
+  <div class="connection-mode" id="connectionMode" style="display:none;">
+    <div style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:8px;text-align:center;">Connection Mode</div>
+    <button class="connection-mode-btn" onclick="setConnectionMode('none')" id="modeNone">Select</button>
+    <button class="connection-mode-btn active" onclick="setConnectionMode('connect')" id="modeConnect">Connect</button>
+  </div>
+  
+  <div class="toolbar" id="toolbar" style="display:none;">
+    <div class="tool-label">Tools</div>
+    <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
+    <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">🗑</button>
+    <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">🤖</button>
+  </div>
+  
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-title">AI Suggestions</div>
+    <textarea class="ai-input" id="aiInput" placeholder="Describe what you want to add or connect..."></textarea>
+    <button class="ai-btn" onclick="getAISuggestions()" id="aiBtn">
+      <span id="aiBtnText">Get Suggestions</span>
+    </button>
+    <div class="ai-suggestions" id="aiSuggestions"></div>
+  </div>
+  
   <div id="notification" class="notification"></div>
 
-  <svg style="position:absolute;width:0;height:0">
-        <defs>
+  <svg style="position:absolute;width:0;height:0;pointer-events:none">
+    <defs>
       <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-        <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50"></polygon>
-          </marker>
-        </defs>
-      </svg>
+        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)"></polygon>
+      </marker>
+    </defs>
+  </svg>
 
   <script>
-    let currentUser=null,currentGraph=null,tiles=[],connections=[],selectedTile=null,isDragging=false,dragOffset={x:0,y:0};
-    const canvas=document.getElementById('canvas');
+    let currentUser = null, currentGraph = null, tiles = [], connections = [], selectedTile = null, isDragging = false, dragOffset = {x: 0, y: 0};
+    let connectionMode = 'connect';
+    let isConnecting = false;
+    let connectionStart = null;
+    let hoveredTile = null;
+    
+    const canvas = document.getElementById('canvas');
 
     document.addEventListener('DOMContentLoaded', init);
 
-    async function init(){
+    async function init() {
       await checkAuth();
       await loadGraphs();
       setupCanvas();
+      setupTheme();
     }
 
-    async function checkAuth(){
-      const token=localStorage.getItem('flowpad_token');
-      const user=localStorage.getItem('flowpad_user');
-      if(!token||!user){ window.location.href='/'; return; }
-      currentUser=JSON.parse(user);
-      document.getElementById('userName').textContent=currentUser.name;
-      const ok = await fetch('/api/graphs', { headers:{Authorization:`Bearer ${token}`} }).then(r=>r.ok).catch(()=>false);
-      if(!ok){ localStorage.clear(); window.location.href='/'; }
+    function setupTheme() {
+      const savedTheme = localStorage.getItem('flowpad_theme') || 'dark';
+      document.body.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
     }
 
-    function signOut(){ localStorage.clear(); window.location.href='/'; }
+    function toggleTheme() {
+      const currentTheme = document.body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('flowpad_theme', newTheme);
+      updateThemeIcon(newTheme);
+    }
 
-    function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
 
-    async function loadGraphs(){
-      const token=localStorage.getItem('flowpad_token');
-      const res=await fetch('/api/graphs', { headers:{Authorization:`Bearer ${token}`} });
-      if(!res.ok) return;
-      const data=await res.json();
+    async function checkAuth() {
+      const token = localStorage.getItem('flowpad_token');
+      const user = localStorage.getItem('flowpad_user');
+      if (!token || !user) { window.location.href = '/'; return; }
+      currentUser = JSON.parse(user);
+      document.getElementById('userName').textContent = currentUser.name;
+      const ok = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.ok).catch(() => false);
+      if (!ok) { localStorage.clear(); window.location.href = '/'; }
+    }
+
+    function signOut() { localStorage.clear(); window.location.href = '/'; }
+
+    function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+
+    async function loadGraphs() {
+      const token = localStorage.getItem('flowpad_token');
+      const res = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const data = await res.json();
       renderGraphList(data.own, 'ownGraphs');
       renderGraphList(data.shared, 'sharedGraphs');
     }
 
-    function renderGraphList(list, id){
-      const c=document.getElementById(id); c.innerHTML='';
-      list.forEach(g=>{
-        const item=el(`<div class="graph-item"><div class="graph-title">${g.title}</div><div class="graph-meta">Updated: ${new Date(g.updated_at).toLocaleString()}</div></div>`);
-        item.addEventListener('click', ()=>loadGraph(g));
+    function renderGraphList(list, id) {
+      const c = document.getElementById(id); c.innerHTML = '';
+      list.forEach(g => {
+        const item = el(`<div class="graph-item"><div class="graph-title">${g.title}</div><div class="graph-meta">Updated: ${new Date(g.updated_at).toLocaleString()}</div></div>`);
+        item.addEventListener('click', () => loadGraph(g));
         c.appendChild(item);
       });
     }
 
-    async function createNewGraph(){
-      const title=prompt('Enter graph title:');
-      if(!title) return;
-      const token=localStorage.getItem('flowpad_token');
-      const res=await fetch('/api/graphs',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({title,data:{tiles:[],connections:[]}})});
-      if(!res.ok) return;
-      const graph=await res.json();
+    async function createNewGraph() {
+      const title = prompt('Enter graph title:');
+      if (!title) return;
+      const token = localStorage.getItem('flowpad_token');
+      const res = await fetch('/api/graphs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title, data: { tiles: [], connections: [] } }) });
+      if (!res.ok) return;
+      const graph = await res.json();
       await loadGraphs();
       loadGraph(graph);
     }
 
-    function loadGraph(graph){
-      currentGraph=graph;
-      tiles=(graph.data?.tiles||[]).map(t=>createTile(t.x,t.y,t.title,t.content));
-      connections=graph.data?.connections||[];
-      document.getElementById('shareHeader').style.display='block';
-      document.getElementById('shareEmail').style.display='block';
-      document.getElementById('shareBtn').style.display='inline-block';
+    function loadGraph(graph) {
+      currentGraph = graph;
+      tiles = (graph.data?.tiles || []).map(t => createTile(t.x, t.y, t.title, t.content, t.id));
+      connections = graph.data?.connections || [];
+      document.getElementById('shareHeader').style.display = 'block';
+      document.getElementById('shareEmail').style.display = 'block';
+      document.getElementById('shareBtn').style.display = 'inline-block';
+      document.getElementById('connectionMode').style.display = 'block';
+      document.getElementById('toolbar').style.display = 'block';
       renderCanvas();
     }
 
-    function setupCanvas(){
-      canvas.addEventListener('mousedown', e=>{
-        const tile=e.target.closest('.tile');
-        if(tile){ startDragging(e,tile); }
-      });
-      canvas.addEventListener('mousemove', handleMouseMove);
-      canvas.addEventListener('mouseup', ()=>{ isDragging=false; selectedTile=null; });
+    function setupCanvas() {
+      canvas.addEventListener('mousedown', handleCanvasMouseDown);
+      canvas.addEventListener('mousemove', handleCanvasMouseMove);
+      canvas.addEventListener('mouseup', handleCanvasMouseUp);
+      canvas.addEventListener('click', handleCanvasClick);
     }
 
-    function createTile(x=100,y=100,title='',content=''){
-      const tile=document.createElement('div');
-      tile.className='tile';
-      tile.style.left=x+'px'; tile.style.top=y+'px';
-      tile.innerHTML=`
-        <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
-        <textarea class="tile-content" placeholder="Content">${content||''}</textarea>`;
-      tile.querySelectorAll('textarea').forEach(t=>t.addEventListener('input', scheduleSave));
-      tile.addEventListener('mousedown', e=>startDragging(e,tile));
-        return tile;
+    function handleCanvasMouseDown(e) {
+      const tile = e.target.closest('.tile');
+      const dot = e.target.closest('.connection-dot');
+      
+      if (dot) {
+        startConnection(e, dot);
+      } else if (tile) {
+        startDragging(e, tile);
       }
-
-    function startDragging(e,tile){
-      isDragging=true; selectedTile=tile;
-      const r=tile.getBoundingClientRect();
-      dragOffset.x=e.clientX-r.left; dragOffset.y=e.clientY-r.top;
     }
 
-    function handleMouseMove(e){
-      if(!isDragging||!selectedTile) return;
-      const rect=canvas.getBoundingClientRect();
-      const x=e.clientX-rect.left-dragOffset.x;
-      const y=e.clientY-rect.top-dragOffset.y;
-      selectedTile.style.left=x+'px';
-      selectedTile.style.top=y+'px';
+    function handleCanvasMouseMove(e) {
+      if (isConnecting && connectionStart) {
+        updateConnectionPreview(e);
+      } else if (isDragging && selectedTile) {
+        updateDragging(e);
+      }
+    }
+
+    function handleCanvasMouseUp(e) {
+      if (isConnecting) {
+        finishConnection(e);
+      }
+      isDragging = false;
+      selectedTile = null;
+    }
+
+    function handleCanvasClick(e) {
+      if (e.target === canvas) {
+        clearSelection();
+      }
+    }
+
+    function startConnection(e, dot) {
+      isConnecting = true;
+      connectionStart = {
+        tile: dot.closest('.tile'),
+        dot: dot,
+        x: e.clientX,
+        y: e.clientY
+      };
+      e.stopPropagation();
+    }
+
+    function updateConnectionPreview(e) {
+      // Remove existing preview
+      const existingPreview = document.querySelector('.connection-preview');
+      if (existingPreview) existingPreview.remove();
+      
+      // Create preview line
+      const rect = canvas.getBoundingClientRect();
+      const startX = connectionStart.x - rect.left;
+      const startY = connectionStart.y - rect.top;
+      const endX = e.clientX - rect.left;
+      const endY = e.clientY - rect.top;
+      
+      const preview = createConnectionLine(startX, startY, endX, endY, true);
+      preview.classList.add('connection-preview');
+      canvas.appendChild(preview);
+    }
+
+    function finishConnection(e) {
+      const targetTile = e.target.closest('.tile');
+      const targetDot = e.target.closest('.connection-dot');
+      
+      if (targetTile && targetDot && targetTile !== connectionStart.tile) {
+        const connection = {
+          id: 'conn_' + Date.now(),
+          fromTile: connectionStart.tile.dataset.tileId,
+          fromDot: connectionStart.dot.dataset.dotType,
+          toTile: targetTile.dataset.tileId,
+          toDot: targetDot.dataset.dotType
+        };
+        
+        connections.push(connection);
+        renderCanvas();
+        scheduleSave();
+      }
+      
+      // Clean up
+      const preview = document.querySelector('.connection-preview');
+      if (preview) preview.remove();
+      
+      isConnecting = false;
+      connectionStart = null;
+    }
+
+    function startDragging(e, tile) {
+      isDragging = true;
+      selectedTile = tile;
+      selectTile(tile);
+      const r = tile.getBoundingClientRect();
+      dragOffset.x = e.clientX - r.left;
+      dragOffset.y = e.clientY - r.top;
+    }
+
+    function updateDragging(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left - dragOffset.x;
+      const y = e.clientY - rect.top - dragOffset.y;
+      selectedTile.style.left = x + 'px';
+      selectedTile.style.top = y + 'px';
       scheduleSave();
     }
 
-    function renderCanvas(){
-      canvas.innerHTML='';
-      tiles.forEach(t=>canvas.appendChild(t));
-      // connections drawing omitted for brevity
+    function createTile(x = 100, y = 100, title = '', content = '', id = null) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.tileId = id || 'tile_' + Date.now();
+      tile.style.left = x + 'px';
+      tile.style.top = y + 'px';
+      
+      tile.innerHTML = `
+        <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
+        <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
+        <div class="connection-dot input" data-dot-type="input" title="Input connection"></div>
+        <div class="connection-dot output" data-dot-type="output" title="Output connection"></div>
+        <div class="connection-dot top" data-dot-type="top" title="Top connection"></div>
+        <div class="connection-dot bottom" data-dot-type="bottom" title="Bottom connection"></div>
+      `;
+      
+      tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
+      tile.addEventListener('click', (e) => {
+        if (!isConnecting) {
+          selectTile(tile);
+        }
+      });
+      
+      return tile;
     }
 
-    async function shareGraph(){
-      if(!currentGraph) return;
-      const email=document.getElementById('shareEmail').value.trim();
-      if(!email) return notify('Please enter an email','error');
-      const token=localStorage.getItem('flowpad_token');
-      const res=await fetch(`/api/graphs/${currentGraph.id}/share`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({email})});
-      notify(res.ok?'Graph shared successfully':'Failed to share graph', res.ok?'success':'error');
-      if(res.ok) document.getElementById('shareEmail').value='';
+    function selectTile(tile) {
+      // Clear previous selection
+      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
+      tile.classList.add('selected');
+      selectedTile = tile;
+    }
+
+    function clearSelection() {
+      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
+      selectedTile = null;
+    }
+
+    function addTile() {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.random() * (rect.width - 200) + 100;
+      const y = Math.random() * (rect.height - 200) + 100;
+      const tile = createTile(x, y, 'New Tile', 'Add content here...');
+      tiles.push(tile);
+      renderCanvas();
+      scheduleSave();
+    }
+
+    function deleteSelected() {
+      if (selectedTile) {
+        const tileId = selectedTile.dataset.tileId;
+        tiles = tiles.filter(t => t !== selectedTile);
+        connections = connections.filter(c => c.fromTile !== tileId && c.toTile !== tileId);
+        selectedTile = null;
+        renderCanvas();
+        scheduleSave();
+      }
+    }
+
+    function setConnectionMode(mode) {
+      connectionMode = mode;
+      document.querySelectorAll('.connection-mode-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
+    }
+
+    function toggleAIPanel() {
+      const panel = document.getElementById('aiPanel');
+      panel.classList.toggle('show');
+    }
+
+    async function getAISuggestions() {
+      if (!currentGraph || !selectedTile) {
+        notify('Please select a tile first', 'error');
+        return;
+      }
+
+      const aiInput = document.getElementById('aiInput').value.trim();
+      if (!aiInput) {
+        notify('Please describe what you want to add', 'error');
+        return;
+      }
+
+      const aiBtn = document.getElementById('aiBtn');
+      const aiBtnText = document.getElementById('aiBtnText');
+      aiBtn.disabled = true;
+      aiBtnText.innerHTML = '<span class="loading"></span>Getting suggestions...';
+
+      try {
+        const token = localStorage.getItem('flowpad_token');
+        const response = await fetch('/api/ai-suggestions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            targetTile: {
+              id: selectedTile.dataset.tileId,
+              content: selectedTile.querySelector('.tile-content').value
+            },
+            existingTiles: tiles.map(t => ({
+              id: t.dataset.tileId,
+              content: t.querySelector('.tile-content').value
+            })),
+            connections: connections
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to get AI suggestions');
+        }
+
+        const data = await response.json();
+        displayAISuggestions(data);
+      } catch (error) {
+        notify('Failed to get AI suggestions: ' + error.message, 'error');
+      } finally {
+        aiBtn.disabled = false;
+        aiBtnText.textContent = 'Get Suggestions';
+      }
+    }
+
+    function displayAISuggestions(suggestions) {
+      const container = document.getElementById('aiSuggestions');
+      container.innerHTML = '';
+      
+      if (suggestions.suggestions && suggestions.suggestions.length > 0) {
+        suggestions.suggestions.forEach(suggestion => {
+          const div = document.createElement('div');
+          div.className = 'ai-suggestion';
+          div.textContent = suggestion;
+          div.addEventListener('click', () => applyAISuggestion(suggestion));
+          container.appendChild(div);
+        });
+      } else {
+        container.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">No suggestions available</div>';
+      }
+    }
+
+    function applyAISuggestion(suggestion) {
+      if (selectedTile) {
+        selectedTile.querySelector('.tile-content').value = suggestion;
+        scheduleSave();
+        notify('Suggestion applied!', 'success');
+      }
+    }
+
+    function createConnectionLine(fromX, fromY, toX, toY, isPreview = false) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.position = 'absolute';
+      svg.style.left = '0';
+      svg.style.top = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      svg.style.zIndex = isPreview ? '15' : '5';
+      
+      // Calculate control points for curved line
+      const midX = (fromX + toX) / 2;
+      const midY = (fromY + toY) / 2;
+      const offset = Math.min(Math.abs(toX - fromX) * 0.3, 50);
+      
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${fromX} ${fromY} Q ${midX} ${midY - offset} ${toX} ${toY}`);
+      path.setAttribute('stroke', isPreview ? '#888' : 'var(--accent-primary)');
+      path.setAttribute('stroke-width', isPreview ? '2' : '3');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('marker-end', isPreview ? 'none' : 'url(#arrowhead)');
+      path.classList.add('connection-line');
+      
+      svg.appendChild(path);
+      return svg;
+    }
+
+    function renderCanvas() {
+      // Clear canvas
+      canvas.innerHTML = '';
+      
+      // Add tiles
+      tiles.forEach(t => canvas.appendChild(t));
+      
+      // Add connections
+      connections.forEach(conn => {
+        const fromTile = tiles.find(t => t.dataset.tileId === conn.fromTile);
+        const toTile = tiles.find(t => t.dataset.tileId === conn.toTile);
+        
+        if (fromTile && toTile) {
+          const fromRect = fromTile.getBoundingClientRect();
+          const toRect = toTile.getBoundingClientRect();
+          const canvasRect = canvas.getBoundingClientRect();
+          
+          let fromX, fromY, toX, toY;
+          
+          // Calculate connection points based on dot types
+          if (conn.fromDot === 'output') {
+            fromX = fromRect.right - canvasRect.left;
+            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+          } else if (conn.fromDot === 'input') {
+            fromX = fromRect.left - canvasRect.left;
+            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+          } else if (conn.fromDot === 'top') {
+            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+            fromY = fromRect.top - canvasRect.top;
+          } else if (conn.fromDot === 'bottom') {
+            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+            fromY = fromRect.bottom - canvasRect.top;
+          }
+          
+          if (conn.toDot === 'input') {
+            toX = toRect.left - canvasRect.left;
+            toY = toRect.top + toRect.height / 2 - canvasRect.top;
+          } else if (conn.toDot === 'output') {
+            toX = toRect.right - canvasRect.left;
+            toY = toRect.top + toRect.height / 2 - canvasRect.top;
+          } else if (conn.toDot === 'top') {
+            toX = toRect.left + toRect.width / 2 - canvasRect.left;
+            toY = toRect.top - canvasRect.top;
+          } else if (conn.toDot === 'bottom') {
+            toX = toRect.left + toRect.width / 2 - canvasRect.left;
+            toY = toRect.bottom - canvasRect.top;
+          }
+          
+          if (fromX !== undefined && toX !== undefined) {
+            const connectionLine = createConnectionLine(fromX, fromY, toX, toY);
+            canvas.appendChild(connectionLine);
+          }
+        }
+      });
+    }
+
+    async function shareGraph() {
+      if (!currentGraph) return;
+      const email = document.getElementById('shareEmail').value.trim();
+      if (!email) return notify('Please enter an email', 'error');
+      const token = localStorage.getItem('flowpad_token');
+      const res = await fetch(`/api/graphs/${currentGraph.id}/share`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ email }) });
+      notify(res.ok ? 'Graph shared successfully' : 'Failed to share graph', res.ok ? 'success' : 'error');
+      if (res.ok) document.getElementById('shareEmail').value = '';
     }
 
     let saveTimer;
-    function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveGraph, 500); }
+    function scheduleSave() { clearTimeout(saveTimer); saveTimer = setTimeout(saveGraph, 500); }
 
-    async function saveGraph(){
-      if(!currentGraph) return;
-      const token=localStorage.getItem('flowpad_token');
-      const data={
-        tiles:[...canvas.querySelectorAll('.tile')].map(t=>({
-          x:parseInt(t.style.left)||0,
-          y:parseInt(t.style.top)||0,
-          title:t.querySelector('.tile-title').value||'',
-          content:t.querySelector('.tile-content').value||''
+    async function saveGraph() {
+      if (!currentGraph) return;
+      const token = localStorage.getItem('flowpad_token');
+      const data = {
+        tiles: [...canvas.querySelectorAll('.tile')].map(t => ({
+          id: t.dataset.tileId,
+          x: parseInt(t.style.left) || 0,
+          y: parseInt(t.style.top) || 0,
+          title: t.querySelector('.tile-title').value || '',
+          content: t.querySelector('.tile-content').value || ''
         })),
         connections
       };
-      await fetch(`/api/graphs/${currentGraph.id}`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({title:currentGraph.title,data})});
+      await fetch(`/api/graphs/${currentGraph.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title: currentGraph.title, data }) });
     }
 
-    function notify(msg,type='success',ms=2500){
-      const n=document.getElementById('notification');
-      n.textContent=msg; n.className=`notification ${type}`; n.classList.add('show');
-      setTimeout(()=>n.classList.remove('show'), ms);
+    function notify(msg, type = 'success', ms = 2500) {
+      const n = document.getElementById('notification');
+      n.textContent = msg; n.className = `notification ${type}`; n.classList.add('show');
+      setTimeout(() => n.classList.remove('show'), ms);
     }
   </script>
 </body>

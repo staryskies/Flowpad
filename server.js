@@ -210,6 +210,35 @@ app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
   res.json({ message: 'Graph shared successfully' });
 });
 
+// ----- AI Suggestions API -----
+app.post('/api/ai-suggestions', authenticateToken, async (req, res) => {
+  try {
+    const { targetTile, existingTiles, connections } = req.body;
+    
+    const response = await fetch('https://magicloops.dev/api/loop/b43cee3e-e9c9-49cb-a87a-4411bfab1542/run', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        targetTile,
+        existingTiles,
+        connections
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Magic Loop API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    console.error('AI suggestions error:', err);
+    res.status(500).json({ error: 'Failed to get AI suggestions' });
+  }
+});
+
 // ----- Errors -----
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);

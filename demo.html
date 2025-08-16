@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flowpad - Feature Demo</title>
+  <style>
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #2d2d2d;
+      --bg-tertiary: rgba(0,0,0,0.9);
+      --bg-tile: #fff;
+      --bg-tile-hover: #f8f9fa;
+      --text-primary: #fff;
+      --text-secondary: #ccc;
+      --text-tile: #000;
+      --border-primary: #333;
+      --border-secondary: #555;
+      --accent-primary: #4CAF50;
+      --accent-secondary: #45a049;
+      --shadow-primary: rgba(0,0,0,0.3);
+      --shadow-secondary: rgba(0,0,0,0.2);
+      --grid-color: rgba(255,255,255,0.03);
+    }
+
+    :root[data-theme="light"] {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8f9fa;
+      --bg-tertiary: rgba(255,255,255,0.95);
+      --bg-tile: #2d3748;
+      --bg-tile-hover: #4a5568;
+      --text-primary: #2d3748;
+      --text-secondary: #4a5568;
+      --text-tile: #fff;
+      --border-primary: #e2e8f0;
+      --border-secondary: #cbd5e0;
+      --shadow-primary: rgba(0,0,0,0.1);
+      --shadow-secondary: rgba(0,0,0,0.05);
+      --grid-color: rgba(0,0,0,0.03);
+    }
+
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:var(--bg-primary);background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
+    
+    .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;transition:all 0.3s ease}
+    .logo{font-size:1.5rem;font-weight:700;background:linear-gradient(45deg,var(--text-primary),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .theme-toggle{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 12px;border-radius:6px;cursor:pointer;transition:all 0.3s ease}
+    .theme-toggle:hover{background:var(--border-secondary)}
+    
+    .demo-container{position:fixed;top:60px;left:0;right:0;bottom:0;overflow:hidden}
+    .demo-content{width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;position:relative;transition:all 0.3s ease;padding:40px}
+    
+    .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.3s ease;resize:both;overflow:hidden}
+    .tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
+    .tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(76, 175, 80, 0.3)}
+    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;pointer-events:none}
+    .tile-title{font-weight:600;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
+    .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile)}
+    
+    .connection-dot{position:absolute;width:12px;height:12px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease}
+    .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
+    .connection-dot.input{left:-6px;top:50%;transform:translateY(-50%)}
+    .connection-dot.output{right:-6px;top:50%;transform:translateY(-50%)}
+    .connection-dot.top{top:-6px;left:50%;transform:translateX(-50%)}
+    .connection-dot.bottom{bottom:-6px;left:50%;transform:translateX(-50%)}
+    
+    .connection-line{stroke:var(--accent-primary);stroke-width:3;fill:none;marker-end:url(#arrowhead);filter:drop-shadow(0 2px 4px var(--shadow-primary))}
+    
+    .features-panel{position:fixed;top:80px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:20px;z-index:1000;width:300px}
+    .feature-title{font-size:1.1rem;font-weight:600;margin-bottom:15px;color:var(--text-primary)}
+    .feature-item{margin-bottom:15px;padding:10px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-primary)}
+    .feature-name{font-weight:600;margin-bottom:5px;color:var(--text-primary)}
+    .feature-desc{font-size:0.9rem;color:var(--text-secondary);line-height:1.4}
+    
+    .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="header">
+    <div class="logo">Flowpad Demo</div>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <span id="theme-icon">🌙</span>
+    </button>
+  </div>
+
+  <div class="demo-container">
+    <div class="demo-content" id="demoContent">
+      <!-- Demo tiles will be added here -->
+    </div>
+  </div>
+  
+  <div class="features-panel">
+    <div class="feature-title">🎨 Features Demo</div>
+    
+    <div class="feature-item">
+      <div class="feature-name">Dark/Light Mode</div>
+      <div class="feature-desc">Click the theme toggle button to switch between dark and light themes. The theme preference is automatically saved.</div>
+    </div>
+    
+    <div class="feature-item">
+      <div class="feature-name">Enhanced Tiles</div>
+      <div class="feature-desc">Beautiful tiles with connection dots on all sides. Hover over tiles to see smooth animations and effects.</div>
+    </div>
+    
+    <div class="feature-item">
+      <div class="feature-name">Curved Connections</div>
+      <div class="feature-desc">SVG-based curved connection lines using quadratic Bézier curves for smooth, professional-looking diagrams.</div>
+    </div>
+    
+    <div class="feature-item">
+      <div class="feature-name">Responsive Design</div>
+      <div class="feature-desc">All components automatically adapt to the selected theme with smooth transitions and consistent styling.</div>
+    </div>
+    
+    <div class="feature-item">
+      <div class="feature-name">Modern UI</div>
+      <div class="feature-desc">Glassmorphism effects, backdrop filters, and modern CSS features for a premium user experience.</div>
+    </div>
+  </div>
+
+  <svg style="position:absolute;width:0;height:0;pointer-events:none">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)"></polygon>
+      </marker>
+    </defs>
+  </svg>
+
+  <script>
+    let tiles = [];
+    let connections = [];
+    let selectedTile = null;
+    let isDragging = false;
+    let dragOffset = {x: 0, y: 0};
+    
+    const demoContent = document.getElementById('demoContent');
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      setupTheme();
+      createDemoTiles();
+      createDemoConnections();
+      setupCanvas();
+    }
+
+    function setupTheme() {
+      const savedTheme = localStorage.getItem('flowpad_theme') || 'dark';
+      document.body.setAttribute('data-theme', savedTheme);
+      updateThemeIcon(savedTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.body.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      document.body.setAttribute('data-theme', newTheme);
+      localStorage.setItem('flowpad_theme', newTheme);
+      updateThemeIcon(newTheme);
+    }
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('theme-icon');
+      icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+    }
+
+    function createDemoTiles() {
+      const tileData = [
+        { x: 100, y: 100, title: 'Start Project', content: 'Define project scope and objectives' },
+        { x: 400, y: 100, title: 'Planning', content: 'Create project timeline and milestones' },
+        { x: 700, y: 100, title: 'Development', content: 'Build and implement features' },
+        { x: 100, y: 300, title: 'Testing', content: 'Quality assurance and bug fixes' },
+        { x: 400, y: 300, title: 'Deployment', content: 'Release to production environment' },
+        { x: 700, y: 300, title: 'Maintenance', content: 'Ongoing support and updates' }
+      ];
+
+      tileData.forEach(data => {
+        const tile = createTile(data.x, data.y, data.title, data.content);
+        tiles.push(tile);
+        demoContent.appendChild(tile);
+      });
+    }
+
+    function createDemoConnections() {
+      const connectionData = [
+        { from: 0, fromDot: 'output', to: 1, toDot: 'input' },
+        { from: 1, fromDot: 'output', to: 2, toDot: 'input' },
+        { from: 0, fromDot: 'bottom', to: 3, toDot: 'top' },
+        { from: 3, fromDot: 'output', to: 4, toDot: 'input' },
+        { from: 4, fromDot: 'output', to: 5, toDot: 'input' },
+        { from: 2, fromDot: 'bottom', to: 4, toDot: 'top' }
+      ];
+
+      connectionData.forEach(conn => {
+        connections.push({
+          fromTile: tiles[conn.from].dataset.tileId,
+          fromDot: conn.fromDot,
+          toTile: tiles[conn.to].dataset.tileId,
+          toDot: conn.toDot
+        });
+      });
+
+      renderConnections();
+    }
+
+    function createTile(x, y, title, content) {
+      const tile = document.createElement('div');
+      tile.className = 'tile';
+      tile.dataset.tileId = 'tile_' + Date.now() + Math.random().toString(36).substr(2, 9);
+      tile.style.left = x + 'px';
+      tile.style.top = y + 'px';
+      
+      tile.innerHTML = `
+        <div class="tile-title">${title}</div>
+        <div class="tile-content">${content}</div>
+        <div class="connection-dot input" data-dot-type="input" title="Input connection"></div>
+        <div class="connection-dot output" data-dot-type="output" title="Output connection"></div>
+        <div class="connection-dot top" data-dot-type="top" title="Top connection"></div>
+        <div class="connection-dot bottom" data-dot-type="bottom" title="Bottom connection"></div>
+      `;
+      
+      tile.addEventListener('click', () => selectTile(tile));
+      
+      return tile;
+    }
+
+    function selectTile(tile) {
+      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
+      tile.classList.add('selected');
+      selectedTile = tile;
+    }
+
+    function setupCanvas() {
+      demoContent.addEventListener('mousedown', e => {
+        const tile = e.target.closest('.tile');
+        if (tile) {
+          startDragging(e, tile);
+        }
+      });
+      
+      demoContent.addEventListener('mousemove', handleMouseMove);
+      demoContent.addEventListener('mouseup', () => {
+        isDragging = false;
+        selectedTile = null;
+      });
+    }
+
+    function startDragging(e, tile) {
+      isDragging = true;
+      selectedTile = tile;
+      selectTile(tile);
+      const r = tile.getBoundingClientRect();
+      dragOffset.x = e.clientX - r.left;
+      dragOffset.y = e.clientY - r.top;
+    }
+
+    function handleMouseMove(e) {
+      if (!isDragging || !selectedTile) return;
+      const rect = demoContent.getBoundingClientRect();
+      const x = e.clientX - rect.left - dragOffset.x;
+      const y = e.clientY - rect.top - dragOffset.y;
+      selectedTile.style.left = x + 'px';
+      selectedTile.style.top = y + 'px';
+      renderConnections();
+    }
+
+    function createConnectionLine(fromX, fromY, toX, toY) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.style.position = 'absolute';
+      svg.style.left = '0';
+      svg.style.top = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      svg.style.zIndex = '5';
+      
+      // Calculate control points for curved line
+      const midX = (fromX + toX) / 2;
+      const midY = (fromY + toY) / 2;
+      const offset = Math.min(Math.abs(toX - fromX) * 0.3, 50);
+      
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M ${fromX} ${fromY} Q ${midX} ${midY - offset} ${toX} ${toY}`);
+      path.setAttribute('stroke', 'var(--accent-primary)');
+      path.setAttribute('stroke-width', '3');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('marker-end', 'url(#arrowhead)');
+      path.classList.add('connection-line');
+      
+      svg.appendChild(path);
+      return svg;
+    }
+
+    function renderConnections() {
+      // Remove existing connections
+      document.querySelectorAll('.connection-svg').forEach(svg => svg.remove());
+      
+      // Add connections
+      connections.forEach(conn => {
+        const fromTile = tiles.find(t => t.dataset.tileId === conn.fromTile);
+        const toTile = tiles.find(t => t.dataset.tileId === conn.toTile);
+        
+        if (fromTile && toTile) {
+          const fromRect = fromTile.getBoundingClientRect();
+          const toRect = toTile.getBoundingClientRect();
+          const canvasRect = demoContent.getBoundingClientRect();
+          
+          let fromX, fromY, toX, toY;
+          
+          // Calculate connection points based on dot types
+          if (conn.fromDot === 'output') {
+            fromX = fromRect.right - canvasRect.left;
+            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+          } else if (conn.fromDot === 'input') {
+            fromX = fromRect.left - canvasRect.left;
+            fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
+          } else if (conn.fromDot === 'top') {
+            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+            fromY = fromRect.top - canvasRect.top;
+          } else if (conn.fromDot === 'bottom') {
+            fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
+            fromY = fromRect.bottom - canvasRect.top;
+          }
+          
+          if (conn.toDot === 'input') {
+            toX = toRect.left - canvasRect.left;
+            toY = toRect.top + toRect.height / 2 - canvasRect.top;
+          } else if (conn.toDot === 'output') {
+            toX = toRect.right - canvasRect.left;
+            toY = toRect.top + toRect.height / 2 - canvasRect.top;
+          } else if (conn.toDot === 'top') {
+            toX = toRect.left + toRect.width / 2 - canvasRect.left;
+            toY = toRect.top - canvasRect.top;
+          } else if (conn.toDot === 'bottom') {
+            toX = toRect.left + toRect.width / 2 - canvasRect.left;
+            toY = toRect.bottom - canvasRect.top;
+          }
+          
+          if (fromX !== undefined && toX !== undefined) {
+            const connectionLine = createConnectionLine(fromX, fromY, toX, toY);
+            connectionLine.classList.add('connection-svg');
+            demoContent.appendChild(connectionLine);
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>
