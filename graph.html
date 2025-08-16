@@ -238,7 +238,41 @@
             cursor: move;
             user-select: none;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: box-shadow 0.3s ease;
+            transition: all 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .tile:hover {
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .tile.selected {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .tile.process {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-color: #2196F3;
+        }
+
+        .tile.decision {
+            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+            border-color: #ff9800;
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+
+        .tile.start-end {
+            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+            border-color: #4CAF50;
+            border-radius: 50%;
+        }
+
+        .tile.data {
+            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
+            border-color: #9c27b0;
+            border-radius: 0;
         }
 
         .tile:hover {
@@ -357,12 +391,29 @@
             position: fixed;
             top: 70px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(20px);
             border: 1px solid #333;
-            border-radius: 8px;
-            padding: 10px;
+            border-radius: 12px;
+            padding: 15px;
             z-index: 1000;
+            min-width: 200px;
+        }
+
+        .tool-section {
+            margin-bottom: 15px;
+        }
+
+        .tool-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .tool-label {
+            color: #cccccc;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+            text-align: center;
+            font-weight: 500;
         }
 
         .tool-btn {
@@ -372,21 +423,24 @@
             padding: 8px;
             border-radius: 6px;
             cursor: pointer;
-            margin-bottom: 5px;
+            margin: 2px;
             width: 40px;
             height: 40px;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            transition: background 0.3s ease;
+            transition: all 0.3s ease;
+            font-size: 1rem;
         }
 
         .tool-btn:hover {
             background: #555;
+            transform: translateY(-1px);
         }
 
         .tool-btn.active {
             background: #4CAF50;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
         /* Responsive */
@@ -403,6 +457,107 @@
             .canvas-container {
                 left: 0;
             }
+        }
+
+        /* Notification System */
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #4CAF50;
+            color: #ffffff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #f44336;
+        }
+
+        .notification.warning {
+            background: #ff9800;
+        }
+
+        .notification.info {
+            background: #2196F3;
+        }
+
+        /* Mini-map */
+        .mini-map {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid #333;
+            border-radius: 8px;
+            z-index: 999;
+            overflow: hidden;
+        }
+
+        .mini-map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid #333;
+            font-size: 0.8rem;
+            color: #cccccc;
+        }
+
+        .mini-map-toggle {
+            background: none;
+            border: none;
+            color: #cccccc;
+            cursor: pointer;
+            font-size: 1rem;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mini-map-toggle:hover {
+            color: #ffffff;
+        }
+
+        .mini-map-content {
+            width: 100%;
+            height: calc(100% - 35px);
+            background: #1a1a1a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mini-map-tile {
+            position: absolute;
+            background: #4CAF50;
+            border: 1px solid #ffffff;
+            border-radius: 2px;
+            transform: scale(0.1);
+            transform-origin: top left;
+        }
+
+        .mini-map.collapsed {
+            height: 35px;
+        }
+
+        .mini-map.collapsed .mini-map-content {
+            display: none;
         }
     </style>
 </head>
@@ -438,23 +593,51 @@
         </div>
     </div>
 
-    <!-- Main Canvas -->
-    <div class="canvas-container" id="canvasContainer">
-        <div class="canvas" id="canvas"></div>
-    </div>
+            <!-- Main Canvas -->
+        <div class="canvas-container" id="canvasContainer">
+            <div class="canvas" id="canvas"></div>
+            
+            <!-- Mini-map -->
+            <div class="mini-map" id="miniMap">
+                <div class="mini-map-header">
+                    <span>Mini-map</span>
+                    <button class="mini-map-toggle" onclick="toggleMiniMap()">−</button>
+                </div>
+                <div class="mini-map-content" id="miniMapContent"></div>
+            </div>
+        </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-        <button class="tool-btn" title="Add Tile" onclick="addTile()">+</button>
-        <button class="tool-btn" title="Delete Selected" onclick="deleteSelected()">🗑</button>
-        <button class="tool-btn" title="Toggle Grid" onclick="toggleGrid()">⊞</button>
-    </div>
+            <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="tool-section">
+                <div class="tool-label">Add Tile</div>
+                <button class="tool-btn" title="Process Tile" onclick="addTile('process')">□</button>
+                <button class="tool-btn" title="Decision Tile" onclick="addTile('decision')">◇</button>
+                <button class="tool-btn" title="Start/End Tile" onclick="addTile('start-end')">○</button>
+                <button class="tool-btn" title="Data Tile" onclick="addTile('data')">▭</button>
+            </div>
+            <div class="tool-section">
+                <div class="tool-label">Actions</div>
+                <button class="tool-btn" title="Delete Selected" onclick="deleteSelected()">🗑</button>
+                <button class="tool-btn" title="Duplicate Selected" onclick="duplicateSelected()">⎘</button>
+                <button class="tool-btn" title="Toggle Grid" onclick="toggleGrid()">⊞</button>
+            </div>
+            <div class="tool-section">
+                <div class="tool-label">View</div>
+                <button class="tool-btn" title="Zoom In" onclick="zoomIn()">🔍+</button>
+                <button class="tool-btn" title="Zoom Out" onclick="zoomOut()">🔍-</button>
+                <button class="tool-btn" title="Reset Zoom" onclick="resetZoom()">🔍</button>
+            </div>
+        </div>
 
     <!-- Context Menu -->
     <div class="context-menu" id="contextMenu">
         <div class="context-menu-item" onclick="deleteTile()">Delete</div>
         <div class="context-menu-item" onclick="duplicateTile()">Duplicate</div>
     </div>
+
+    <!-- Notification System -->
+    <div id="notification" class="notification"></div>
 
     <!-- SVG Definitions -->
     <svg style="position: absolute; width: 0; height: 0;">
@@ -671,18 +854,19 @@
         }
 
         // Tile Management
-        function addTile() {
-            const tile = createTile(100, 100);
+        function addTile(type = 'process') {
+            const tile = createTile(100, 100, type);
             tiles.push(tile);
             renderCanvas();
             saveGraph();
         }
 
-        function createTile(x, y) {
+        function createTile(x, y, type = 'process') {
             const tile = document.createElement('div');
-            tile.className = 'tile';
+            tile.className = `tile ${type}`;
             tile.style.left = x + 'px';
             tile.style.top = y + 'px';
+            tile.dataset.type = type;
             
             tile.innerHTML = `
                 <textarea class="tile-title" placeholder="Title" oninput="autoResize(this)"></textarea>
@@ -720,7 +904,8 @@
         function duplicateTile(tile) {
             const newTile = createTile(
                 parseInt(tile.style.left) + 20,
-                parseInt(tile.style.top) + 20
+                parseInt(tile.style.top) + 20,
+                tile.dataset.type
             );
             
             newTile.querySelector('.tile-title').value = tile.querySelector('.tile-title').value;
@@ -729,6 +914,12 @@
             tiles.push(newTile);
             renderCanvas();
             saveGraph();
+        }
+
+        function duplicateSelected() {
+            if (selectedTile) {
+                duplicateTile(selectedTile);
+            }
         }
 
         // Connection Management
@@ -844,6 +1035,7 @@
             });
             
             updateConnections();
+            updateMiniMap();
         }
 
         // Context Menu
@@ -902,11 +1094,11 @@
                 });
 
                 if (response.ok) {
-                    alert('Graph shared successfully!');
+                    showNotification('Graph shared successfully!', 'success');
                     document.getElementById('shareEmail').value = '';
                 } else {
                     const error = await response.json();
-                    alert(error.error || 'Failed to share graph');
+                    showNotification(error.error || 'Failed to share graph', 'error');
                 }
             } catch (error) {
                 console.error('Failed to share graph:', error);
@@ -946,12 +1138,135 @@
             }
         }
 
+        // Notification system
+        function showNotification(message, type = 'success', duration = 3000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
         // Auto-save on changes
         let saveTimeout;
         function scheduleSave() {
             clearTimeout(saveTimeout);
             saveTimeout = setTimeout(saveGraph, 1000);
         }
+
+        // Zoom functionality
+        let currentZoom = 1;
+        const canvas = document.getElementById('canvas');
+
+        function zoomIn() {
+            currentZoom = Math.min(currentZoom * 1.2, 3);
+            updateZoom();
+        }
+
+        function zoomOut() {
+            currentZoom = Math.max(currentZoom / 1.2, 0.3);
+            updateZoom();
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            updateZoom();
+        }
+
+        function updateZoom() {
+            canvas.style.transform = `scale(${currentZoom})`;
+            canvas.style.transformOrigin = 'center center';
+            updateMiniMap();
+        }
+
+        // Mini-map functionality
+        function updateMiniMap() {
+            const miniMapContent = document.getElementById('miniMapContent');
+            if (!miniMapContent) return;
+            
+            miniMapContent.innerHTML = '';
+            
+            tiles.forEach(tile => {
+                const miniTile = document.createElement('div');
+                miniTile.className = 'mini-map-tile';
+                
+                const x = parseInt(tile.style.left) * 0.1;
+                const y = parseInt(tile.style.top) * 0.1;
+                const width = tile.offsetWidth * 0.1;
+                const height = tile.offsetHeight * 0.1;
+                
+                miniTile.style.left = x + 'px';
+                miniTile.style.top = y + 'px';
+                miniTile.style.width = width + 'px';
+                miniTile.style.height = height + 'px';
+                
+                miniMapContent.appendChild(miniTile);
+            });
+        }
+
+        function toggleMiniMap() {
+            const miniMap = document.getElementById('miniMap');
+            const toggle = miniMap.querySelector('.mini-map-toggle');
+            
+            if (miniMap.classList.contains('collapsed')) {
+                miniMap.classList.remove('collapsed');
+                toggle.textContent = '−';
+            } else {
+                miniMap.classList.add('collapsed');
+                toggle.textContent = '+';
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.target.tagName === 'TEXTAREA') return; // Don't trigger shortcuts when editing text
+            
+            switch(e.key) {
+                case 'Delete':
+                case 'Backspace':
+                    if (selectedTile) {
+                        deleteSelected();
+                    }
+                    break;
+                case 'd':
+                case 'D':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        duplicateSelected();
+                    }
+                    break;
+                case 'g':
+                case 'G':
+                    e.preventDefault();
+                    toggleGrid();
+                    break;
+                case 'Escape':
+                    clearSelection();
+                    break;
+                case '=':
+                case '+':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        zoomIn();
+                    }
+                    break;
+                case '-':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        zoomOut();
+                    }
+                    break;
+                case '0':
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        resetZoom();
+                    }
+                    break;
+            }
+        });
 
         // Event listeners for auto-save
         document.addEventListener('input', scheduleSave);
