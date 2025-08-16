@@ -182,6 +182,14 @@ app.get('/graph', (req, res) => {
   res.sendFile(path.join(__dirname, 'graph.html'));
 });
 
+app.get('/privacy', (req, res) => {
+  res.sendFile(path.join(__dirname, 'privacy-policy.html'));
+});
+
+app.get('/terms', (req, res) => {
+  res.sendFile(path.join(__dirname, 'terms-of-service.html'));
+});
+
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
   if (!pool || !dbInitialized) {

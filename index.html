@@ -226,6 +226,49 @@
             border-radius: 8px;
         }
 
+        .footer {
+            margin-top: 40px;
+            padding: 20px 0;
+            border-top: 1px solid #444;
+            text-align: center;
+        }
+
+        .footer-links {
+            margin-bottom: 15px;
+        }
+
+        .footer-links a {
+            color: #888;
+            text-decoration: none;
+            margin: 0 15px;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: #3498db;
+        }
+
+        .footer-copyright {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .light-mode .footer {
+            border-top-color: #ddd;
+        }
+
+        .light-mode .footer-links a {
+            color: #666;
+        }
+
+        .light-mode .footer-links a:hover {
+            color: #2980b9;
+        }
+
+        .light-mode .footer-copyright {
+            color: #888;
+        }
+
         @media (max-width: 480px) {
             .container {
                 padding: 2rem;
@@ -284,6 +327,17 @@
 
         <div class="loading" id="loading">Signing in...</div>
         <div class="error" id="error"></div>
+
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="/privacy">Privacy Policy</a>
+                <a href="/terms">Terms of Service</a>
+                <a href="mailto:yichen.zuo10@gmail.com">Contact</a>
+            </div>
+            <div class="footer-copyright">
+                © 2024 Flowpad. All rights reserved.
+            </div>
+        </footer>
     </div>
 
     <script>
