@@ -9,6 +9,9 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Load environment variables
+require('dotenv').config();
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -16,12 +19,12 @@ app.use(express.static('.'));
 
 // PostgreSQL connection
 const pool = new Pool({
-  connectionString: 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
+  connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
   ssl: { rejectUnauthorized: false }
 });
 
 // Google OAuth client
-const googleClient = new OAuth2Client('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');
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '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');
 
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
