@@ -281,7 +281,7 @@
         }
     </style>
 </head>
-<body>
+<body class="dark-mode">
     <div class="container">
         <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
             🌙 Dark Mode
@@ -352,9 +352,11 @@
             
             if (isDarkMode) {
                 body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
                 themeToggle.innerHTML = '🌙 Dark Mode';
                 localStorage.setItem('flowpad_theme', 'dark');
             } else {
+                body.classList.remove('dark-mode');
                 body.classList.add('light-mode');
                 themeToggle.innerHTML = '☀️ Light Mode';
                 localStorage.setItem('flowpad_theme', 'light');
@@ -368,6 +370,10 @@
                 isDarkMode = false;
                 document.body.classList.add('light-mode');
                 document.getElementById('themeToggle').innerHTML = '☀️ Light Mode';
+            } else {
+                // Ensure dark mode is applied by default
+                document.body.classList.add('dark-mode');
+                document.getElementById('themeToggle').innerHTML = '🌙 Dark Mode';
             }
         }
 

@@ -173,6 +173,15 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint for debugging
+app.get('/api/test-auth', (req, res) => {
+  res.json({ 
+    message: 'Test endpoint working',
+    database: dbInitialized ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
