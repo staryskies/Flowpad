@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-  <script src="https://unpkg.com/leader-line@1.2.4/leader-line.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style id="app-style">
@@ -209,38 +209,47 @@
   </div>
 
   <script id="app-script">
-    // Check if required libraries are loaded
-    function checkDependencies() {
-      if (typeof Panzoom === 'undefined') {
-        console.error('Panzoom library not loaded. Loading fallback...');
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
-        script.onload = () => {
-          console.log('Panzoom loaded from fallback CDN');
-          initApp();
-        };
-        script.onerror = () => {
-          alert('Failed to load Panzoom library. Please check your internet connection.');
-        };
-        document.head.appendChild(script);
-        return false;
-      }
-      if (typeof LeaderLine === 'undefined') {
-        console.error('LeaderLine library not loaded. Loading fallback...');
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js';
-        script.onload = () => {
-          console.log('LeaderLine loaded from fallback CDN');
-          initApp();
-        };
-        script.onerror = () => {
-          alert('Failed to load LeaderLine library. Please check your internet connection.');
-        };
-        document.head.appendChild(script);
-        return false;
-      }
-      return true;
-    }
+         // Check if required libraries are loaded
+     function checkDependencies() {
+       let missingLibraries = [];
+       
+       if (typeof Panzoom === 'undefined') {
+         missingLibraries.push('Panzoom');
+       }
+       if (typeof LeaderLine === 'undefined') {
+         missingLibraries.push('LeaderLine');
+       }
+       
+       if (missingLibraries.length > 0) {
+         console.error(`Missing libraries: ${missingLibraries.join(', ')}. Loading fallbacks...`);
+         
+         missingLibraries.forEach(lib => {
+           const script = document.createElement('script');
+           if (lib === 'Panzoom') {
+             script.src = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+           } else if (lib === 'LeaderLine') {
+             script.src = 'https://unpkg.com/leader-line@1.2.4/leader-line.min.js';
+           }
+           
+           script.onload = () => {
+             console.log(`${lib} loaded from fallback CDN`);
+             // Check again after loading
+             setTimeout(() => {
+               if (typeof Panzoom !== 'undefined' && typeof LeaderLine !== 'undefined') {
+                 initApp();
+               }
+             }, 100);
+           };
+           script.onerror = () => {
+             console.error(`Failed to load ${lib} library`);
+           };
+           document.head.appendChild(script);
+         });
+         
+         return false;
+       }
+       return true;
+     }
 
     function initApp() {
       if (!checkDependencies()) return;
@@ -764,12 +773,15 @@
      });
      }
      
-     // Initialize the app when the page loads
-     if (document.readyState === 'loading') {
-       document.addEventListener('DOMContentLoaded', initApp);
-     } else {
-       initApp();
-     }
+           // Initialize the app when the page loads
+      // Note: Tailwind CSS CDN warning is expected in development
+      // For production, consider installing Tailwind CSS locally
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initApp);
+      } else {
+        // Add a small delay to ensure all scripts are loaded
+        setTimeout(initApp, 100);
+      }
    </script>
 </body>
 </html>
