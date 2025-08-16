@@ -5,6 +5,7 @@ const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 
@@ -39,7 +40,15 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 app.use(express.json());
-app.use(cookieParser());
+
+// Initialize cookie parser with error handling
+try {
+  app.use(cookieParser());
+} catch (error) {
+  console.error('Failed to initialize cookie parser:', error);
+  // Continue without cookie parser if it fails
+}
+
 app.use(express.static('.'));
 
 // PostgreSQL connection
@@ -113,12 +122,19 @@ const authenticateToken = async (req, res, next) => {
     return res.status(500).json({ error: 'Database connection not available' });
   }
 
-  // Check for token in Authorization header first
+  // Check for token in Authorization header first (primary method)
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   
-  // If no token in header, check for cookie
-  const cookieToken = req.cookies?.auth_token;
+  // If no token in header, try to check for cookie (fallback method)
+  let cookieToken = null;
+  try {
+    if (req.cookies) {
+      cookieToken = req.cookies.auth_token;
+    }
+  } catch (error) {
+    console.log('Cookie access failed, continuing with header token only');
+  }
   
   const tokenToVerify = token || cookieToken;
   
@@ -137,6 +153,7 @@ const authenticateToken = async (req, res, next) => {
     req.user = result.rows[0];
     next();
   } catch (error) {
+    console.error('Token verification failed:', error.message);
     return res.status(403).json({ error: 'Invalid token' });
   }
 };
@@ -158,7 +175,9 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
     database: pool ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
-    version: '1.0.0'
+    version: '1.0.0',
+    cookies: req.cookies ? 'enabled' : 'disabled',
+    cookieParser: typeof cookieParser !== 'undefined' ? 'loaded' : 'not loaded'
   });
 });
 
@@ -177,7 +196,9 @@ app.get('/api/cors-test', (req, res) => {
 app.get('/api/test', (req, res) => {
   res.json({ 
     message: 'Flowpad API is working!',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    cookieParser: typeof cookieParser !== 'undefined' ? 'loaded' : 'not loaded',
+    cookies: req.cookies ? 'enabled' : 'disabled'
   });
 });
 
@@ -276,13 +297,18 @@ app.post('/api/auth/google', async (req, res) => {
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
 
     // Set secure cookie with proper SameSite and Secure attributes
-    res.cookie('auth_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production', // true in production
-        sameSite: 'none', // Required for cross-origin requests
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/'
-    });
+    try {
+      res.cookie('auth_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production', // true in production
+          sameSite: 'none', // Required for cross-origin requests
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          path: '/'
+      });
+    } catch (error) {
+      console.error('Failed to set cookie:', error);
+      // Continue without cookie if it fails
+    }
 
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
