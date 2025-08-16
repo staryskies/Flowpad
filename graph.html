@@ -55,20 +55,20 @@
       <button id="shareBtn" style="display:none;margin-top:8px" class="new-graph-btn" onclick="shareGraph()">Share</button>
     </div>
   </div>
-
+  
   <div class="canvas-container">
     <div class="canvas" id="canvas"></div>
   </div>
-
+  
   <div id="notification" class="notification"></div>
 
   <svg style="position:absolute;width:0;height:0">
-    <defs>
+        <defs>
       <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
         <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50"></polygon>
-      </marker>
-    </defs>
-  </svg>
+          </marker>
+        </defs>
+      </svg>
 
   <script>
     let currentUser=null,currentGraph=null,tiles=[],connections=[],selectedTile=null,isDragging=false,dragOffset={x:0,y:0};
@@ -153,8 +153,8 @@
         <textarea class="tile-content" placeholder="Content">${content||''}</textarea>`;
       tile.querySelectorAll('textarea').forEach(t=>t.addEventListener('input', scheduleSave));
       tile.addEventListener('mousedown', e=>startDragging(e,tile));
-      return tile;
-    }
+        return tile;
+      }
 
     function startDragging(e,tile){
       isDragging=true; selectedTile=tile;
