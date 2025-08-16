@@ -41,7 +41,7 @@ async function initializeDatabase() {
     console.log('Attempting to connect to database...');
     
     pool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vchiees73dauq4g-a/flowpad',
+      connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_n12z_user:0rnsR2CXHUkuYHQIb4z4Xme0Tx0BZKlb@dpg-d2gcuk0dl3ps73f6l8t0-a/flowpad_n12z',
       ssl: { rejectUnauthorized: false },
       connectionTimeoutMillis: 10000,
       idleTimeoutMillis: 30000,
