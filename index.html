@@ -334,8 +334,6 @@
      }
 
      function initApp() {
-      
-      document.addEventListener('DOMContentLoaded', function() {
              const state = {
          tiles: [],
          connections: [],
@@ -846,7 +844,6 @@
        }
        connectionManager.updateAllConnections();
        panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
-     });
      }
      
                   // Initialize the app when the page loads
