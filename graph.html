@@ -74,7 +74,7 @@
     .tile-title{font-weight:600;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
     .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile)}
     
-    .color-palette{position:absolute;top:10px;right:10px;display:flex;gap:5px;opacity:0;transition:opacity 0.3s ease}
+    .color-palette{position:absolute;top:10px;right:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;width:120px}
     .tile:hover .color-palette{opacity:1}
     .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease}
     .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
@@ -119,6 +119,23 @@
     
     .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
     @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+    
+    .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:10000;display:none;align-items:center;justify-content:center}
+    .modal-overlay.show{display:flex}
+    .modal{background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:12px;padding:30px;min-width:400px;max-width:600px;box-shadow:0 20px 40px var(--shadow-primary)}
+    .modal-title{font-size:1.3rem;font-weight:600;margin-bottom:20px;color:var(--text-primary)}
+    .modal-input{width:100%;padding:15px;border:1px solid var(--border-secondary);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:1rem;margin-bottom:20px;outline:none;transition:border-color 0.3s ease}
+    .modal-input:focus{border-color:var(--accent-primary)}
+    .modal-buttons{display:flex;gap:10px;justify-content:flex-end}
+    .modal-btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s ease}
+    .modal-btn.primary{background:var(--accent-primary);color:#fff}
+    .modal-btn.primary:hover{background:var(--accent-secondary)}
+    .modal-btn.secondary{background:var(--border-primary);color:var(--text-primary)}
+    .modal-btn.secondary:hover{background:var(--border-secondary)}
+    
+    .recent-colors-popup{position:absolute;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:10px;box-shadow:0 10px 25px var(--shadow-primary);z-index:1000;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;min-width:200px}
+    .recent-colors-popup .color-option{width:25px;height:25px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all 0.2s ease}
+    .recent-colors-popup .color-option:hover{border-color:var(--accent-primary);transform:scale(1.1)}
   </style>
 </head>
 <body>
@@ -173,6 +190,18 @@
   </div>
   
   <div id="notification" class="notification"></div>
+
+  <!-- New Graph Modal -->
+  <div class="modal-overlay" id="newGraphModal">
+    <div class="modal">
+      <div class="modal-title">Create New Graph</div>
+      <input type="text" class="modal-input" id="newGraphTitle" placeholder="Enter graph title..." maxlength="100">
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" onclick="closeNewGraphModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="confirmNewGraph()">Create</button>
+      </div>
+    </div>
+  </div>
 
   <svg style="position:absolute;width:0;height:0;pointer-events:none">
     <defs>
@@ -254,15 +283,65 @@
       });
     }
 
-    async function createNewGraph() {
-      const title = prompt('Enter graph title:');
-      if (!title) return;
-      const token = localStorage.getItem('flowpad_token');
-      const res = await fetch('/api/graphs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title, data: { tiles: [], connections: [] } }) });
-      if (!res.ok) return;
-      const graph = await res.json();
-      await loadGraphs();
-      loadGraph(graph);
+    function createNewGraph() {
+      const modal = document.getElementById('newGraphModal');
+      const input = document.getElementById('newGraphTitle');
+      input.value = '';
+      modal.classList.add('show');
+      input.focus();
+      
+      // Handle Enter key
+      input.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+          confirmNewGraph();
+        } else if (e.key === 'Escape') {
+          closeNewGraphModal();
+        }
+      };
+      
+      // Handle click outside to close
+      modal.onclick = (e) => {
+        if (e.target === modal) {
+          closeNewGraphModal();
+        }
+      };
+    }
+
+    function closeNewGraphModal() {
+      const modal = document.getElementById('newGraphModal');
+      modal.classList.remove('show');
+    }
+
+    async function confirmNewGraph() {
+      const title = document.getElementById('newGraphTitle').value.trim();
+      if (!title) {
+        document.getElementById('newGraphTitle').focus();
+        return;
+      }
+      
+      const createBtn = document.querySelector('#newGraphModal .modal-btn.primary');
+      const originalText = createBtn.textContent;
+      createBtn.textContent = 'Creating...';
+      createBtn.disabled = true;
+      
+      try {
+        const token = localStorage.getItem('flowpad_token');
+        const res = await fetch('/api/graphs', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ title, data: { tiles: [], connections: [] } }) });
+        if (!res.ok) {
+          notify('Failed to create graph', 'error');
+          return;
+        }
+        const graph = await res.json();
+        await loadGraphs();
+        loadGraph(graph);
+        closeNewGraphModal();
+        notify('Graph created successfully!', 'success');
+      } catch (error) {
+        notify('Failed to create graph: ' + error.message, 'error');
+      } finally {
+        createBtn.textContent = originalText;
+        createBtn.disabled = false;
+      }
     }
 
     function loadGraph(graph) {
@@ -301,9 +380,10 @@
       
       if (dot) {
         startConnection(e, dot);
-      } else if (tile) {
+      } else if (tile && e.target.tagName !== 'TEXTAREA') {
+        // Only start dragging if not clicking on textarea
         startDragging(e, tile);
-      } else {
+      } else if (!tile) {
         // Start panning when clicking on empty canvas
         startPanning(e);
       }
@@ -373,7 +453,8 @@
           fromTile: connectionStart.tile.dataset.tileId,
           fromDot: connectionStart.dot.dataset.dotType,
           toTile: targetTile.dataset.tileId,
-          toDot: targetDot.dataset.dotType
+          toDot: targetDot.dataset.dotType,
+          color: getRandomConnectionColor()
         };
         
         connections.push(connection);
@@ -387,6 +468,111 @@
       
       isConnecting = false;
       connectionStart = null;
+    }
+
+    function getRandomConnectionColor() {
+      const colors = [
+        '#3b82f6', // Blue
+        '#ef4444', // Red
+        '#10b981', // Green
+        '#f59e0b', // Amber
+        '#8b5cf6', // Purple
+        '#ec4899', // Pink
+        '#06b6d4', // Cyan
+        '#84cc16', // Lime
+        '#f97316', // Orange
+        '#6366f1'  // Indigo
+      ];
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    function saveRecentColor(color) {
+      let recentColors = JSON.parse(localStorage.getItem('flowpad_recent_colors') || '[]');
+      // Remove if already exists
+      recentColors = recentColors.filter(c => c !== color);
+      // Add to beginning
+      recentColors.unshift(color);
+      // Keep only last 10
+      recentColors = recentColors.slice(0, 10);
+      localStorage.setItem('flowpad_recent_colors', JSON.stringify(recentColors));
+    }
+
+    function getRecentColors() {
+      return JSON.parse(localStorage.getItem('flowpad_recent_colors') || '[]');
+    }
+
+    function showRecentColorsPopup(tile, optionElement) {
+      const recentColors = getRecentColors();
+      
+      // Create popup
+      const popup = document.createElement('div');
+      popup.className = 'recent-colors-popup';
+      popup.style.cssText = `
+        position: absolute;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-primary);
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 10px 25px var(--shadow-primary);
+        z-index: 1000;
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 5px;
+        min-width: 200px;
+      `;
+      
+      // Position popup near the recent colors button
+      const rect = optionElement.getBoundingClientRect();
+      popup.style.left = (rect.left - 100) + 'px';
+      popup.style.top = (rect.bottom + 5) + 'px';
+      
+      // Add recent colors
+      recentColors.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.style.cssText = `
+          width: 25px;
+          height: 25px;
+          background: ${color};
+          border-radius: 4px;
+          cursor: pointer;
+          border: 2px solid transparent;
+        `;
+        colorOption.title = color;
+        
+        colorOption.addEventListener('click', () => {
+          tile.style.background = color;
+          tile.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+          optionElement.classList.add('selected');
+          saveRecentColor(color);
+          scheduleSave();
+          popup.remove();
+        });
+        
+        popup.appendChild(colorOption);
+      });
+      
+      // Add close button
+      if (recentColors.length === 0) {
+        const noColors = document.createElement('div');
+        noColors.textContent = 'No recent colors';
+        noColors.style.cssText = `
+          grid-column: 1 / -1;
+          text-align: center;
+          color: var(--text-secondary);
+          padding: 10px;
+        `;
+        popup.appendChild(noColors);
+      }
+      
+      // Close popup when clicking outside
+      document.addEventListener('click', function closePopup(e) {
+        if (!popup.contains(e.target) && !optionElement.contains(e.target)) {
+          popup.remove();
+          document.removeEventListener('click', closePopup);
+        }
+      });
+      
+      document.body.appendChild(popup);
     }
 
     function startPanning(e) {
@@ -406,22 +592,21 @@
     }
 
     function updatePanning(e) {
-      canvasOffset.x = e.clientX - panStart.x;
-      canvasOffset.y = e.clientY - panStart.y;
+      const deltaX = e.clientX - panStart.x;
+      const deltaY = e.clientY - panStart.y;
       
-      // Apply pan offset to all tiles
-      tiles.forEach(tile => {
-        const currentX = parseInt(tile.style.left) || 0;
-        const currentY = parseInt(tile.style.top) || 0;
-        tile.style.left = (currentX + canvasOffset.x) + 'px';
-        tile.style.top = (currentY + canvasOffset.y) + 'px';
-      });
+      // Update pan start for next frame
+      panStart.x = e.clientX;
+      panStart.y = e.clientY;
       
-      // Reset offset for next pan
-      canvasOffset.x = 0;
-      canvasOffset.y = 0;
+      // Apply pan offset to canvas view (not individual tiles)
+      canvasOffset.x += deltaX;
+      canvasOffset.y += deltaY;
       
-      // Update connections
+      // Transform the canvas container instead of individual tiles
+      canvas.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px)`;
+      
+      // Update connections with new canvas offset
       renderConnections();
     }
 
@@ -456,6 +641,17 @@
           <div class="color-option" data-color="#495057" style="background:#495057" title="Dark Slate"></div>
           <div class="color-option" data-color="#343a40" style="background:#343a40" title="Navy"></div>
           <div class="color-option" data-color="#212529" style="background:#212529" title="Black"></div>
+          <div class="color-option" data-color="#ff6b6b" style="background:#ff6b6b" title="Coral"></div>
+          <div class="color-option" data-color="#4ecdc4" style="background:#4ecdc4" title="Turquoise"></div>
+          <div class="color-option" data-color="#45b7d1" style="background:#45b7d1" title="Sky Blue"></div>
+          <div class="color-option" data-color="#96ceb4" style="background:#96ceb4" title="Mint"></div>
+          <div class="color-option" data-color="#feca57" style="background:#feca57" title="Yellow"></div>
+          <div class="color-option" data-color="#ff9ff3" style="background:#ff9ff3" title="Pink"></div>
+          <div class="color-option" data-color="#54a0ff" style="background:#54a0ff" title="Blue"></div>
+          <div class="color-option" data-color="#5f27cd" style="background:#5f27cd" title="Purple"></div>
+          <div class="color-option" data-color="#00d2d3" style="background:#00d2d3" title="Teal"></div>
+          <div class="color-option" data-color="#ff9f43" style="background:#ff9f43" title="Orange"></div>
+          <div class="color-option recent-colors" data-color="custom" style="background:linear-gradient(45deg, #ff6b6b, #4ecdc4)" title="Recent Colors"></div>
         </div>
         <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
         <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
@@ -471,14 +667,23 @@
       tile.querySelectorAll('.color-option').forEach(option => {
         option.addEventListener('click', (e) => {
           e.stopPropagation();
-          const color = option.dataset.color;
-          tile.style.background = color;
           
-          // Update selected state
-          tile.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
-          option.classList.add('selected');
-          
-          scheduleSave();
+          if (option.dataset.color === 'custom') {
+            // Show recent colors popup
+            showRecentColorsPopup(tile, option);
+          } else {
+            const color = option.dataset.color;
+            tile.style.background = color;
+            
+            // Update selected state
+            tile.querySelectorAll('.color-option').forEach(opt => opt.classList.remove('selected'));
+            option.classList.add('selected');
+            
+            // Save to recent colors
+            saveRecentColor(color);
+            
+            scheduleSave();
+          }
         });
       });
       
@@ -486,6 +691,15 @@
         if (!isConnecting) {
           selectTile(tile);
         }
+      });
+      
+      // Prevent tile movement when selecting text
+      tile.addEventListener('mousedown', (e) => {
+        if (e.target.tagName === 'TEXTAREA') {
+          e.stopPropagation();
+          return;
+        }
+        startDragging(e, tile);
       });
       
       return tile;
@@ -516,11 +730,36 @@
     function deleteSelected() {
       if (selectedTile) {
         const tileId = selectedTile.dataset.tileId;
+        
+        // Remove the tile from DOM
+        selectedTile.remove();
+        
+        // Remove from tiles array
         tiles = tiles.filter(t => t !== selectedTile);
+        
+        // Remove all connections involving this tile
         connections = connections.filter(c => c.fromTile !== tileId && c.toTile !== tileId);
+        
+        // Clear selection
         selectedTile = null;
+        
+        // Re-render and save
         renderCanvas();
         scheduleSave();
+        
+        notify('Tile deleted successfully', 'success');
+      } else {
+        notify('No tile selected for deletion', 'error');
+      }
+    }
+
+    function deleteConnection(connectionId) {
+      const connectionIndex = connections.findIndex(c => c.id === connectionId);
+      if (connectionIndex !== -1) {
+        connections.splice(connectionIndex, 1);
+        renderCanvas();
+        scheduleSave();
+        notify('Connection deleted successfully', 'success');
       }
     }
 
@@ -591,11 +830,34 @@
       const container = document.getElementById('aiSuggestions');
       container.innerHTML = '';
       
-      if (suggestions.suggestions && suggestions.suggestions.length > 0) {
-        suggestions.suggestions.forEach(suggestion => {
+      console.log('AI Response:', suggestions); // Debug log
+      
+      // Handle different response formats
+      let suggestionsArray = [];
+      
+      if (suggestions.suggestions && Array.isArray(suggestions.suggestions)) {
+        suggestionsArray = suggestions.suggestions;
+      } else if (suggestions.data && Array.isArray(suggestions.data)) {
+        suggestionsArray = suggestions.data;
+      } else if (Array.isArray(suggestions)) {
+        suggestionsArray = suggestions;
+      } else if (typeof suggestions === 'string') {
+        suggestionsArray = [suggestions];
+      } else if (suggestions.text) {
+        suggestionsArray = [suggestions.text];
+      } else if (suggestions.content) {
+        suggestionsArray = [suggestions.content];
+      } else {
+        // Fallback: try to extract any text content
+        const suggestionText = JSON.stringify(suggestions, null, 2);
+        suggestionsArray = [suggestionText];
+      }
+      
+      if (suggestionsArray.length > 0) {
+        suggestionsArray.forEach(suggestion => {
           const div = document.createElement('div');
           div.className = 'ai-suggestion';
-          div.textContent = suggestion;
+          div.textContent = typeof suggestion === 'string' ? suggestion : JSON.stringify(suggestion);
           div.addEventListener('click', () => applyAISuggestion(suggestion));
           container.appendChild(div);
         });
@@ -606,21 +868,59 @@
 
     function applyAISuggestion(suggestion) {
       if (selectedTile) {
-        selectedTile.querySelector('.tile-content').value = suggestion;
+        let content = '';
+        
+        if (typeof suggestion === 'string') {
+          content = suggestion;
+        } else if (suggestion.text) {
+          content = suggestion.text;
+        } else if (suggestion.content) {
+          content = suggestion.content;
+        } else if (suggestion.description) {
+          content = suggestion.description;
+        } else {
+          content = JSON.stringify(suggestion, null, 2);
+        }
+        
+        selectedTile.querySelector('.tile-content').value = content;
         scheduleSave();
         notify('Suggestion applied!', 'success');
       }
     }
 
-    function createConnectionLine(fromX, fromY, toX, toY, isPreview = false) {
+    function createConnectionLine(fromX, fromY, toX, toY, isPreview = false, color = null, connectionId = null) {
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.style.position = 'absolute';
       svg.style.left = '0';
       svg.style.top = '0';
       svg.style.width = '100%';
       svg.style.height = '100%';
-      svg.style.pointerEvents = 'none';
       svg.style.zIndex = isPreview ? '15' : '5';
+      
+      if (!isPreview) {
+        svg.style.pointerEvents = 'auto';
+        svg.style.cursor = 'pointer';
+        svg.dataset.connectionId = connectionId;
+        
+        // Add click handler for deletion
+        svg.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (confirm('Delete this connection?')) {
+            deleteConnection(connectionId);
+          }
+        });
+        
+        // Add hover effect
+        svg.addEventListener('mouseenter', () => {
+          path.style.strokeWidth = '5';
+          path.style.filter = 'drop-shadow(0 0 5px currentColor)';
+        });
+        
+        svg.addEventListener('mouseleave', () => {
+          path.style.strokeWidth = '3';
+          path.style.filter = 'none';
+        });
+      }
       
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       
@@ -639,7 +939,7 @@
       }
       
       path.setAttribute('d', pathData);
-      path.setAttribute('stroke', isPreview ? '#888' : 'var(--accent-primary)');
+      path.setAttribute('stroke', isPreview ? '#888' : (color || 'var(--accent-primary)'));
       path.setAttribute('stroke-width', isPreview ? '2' : '3');
       path.setAttribute('fill', 'none');
       path.setAttribute('marker-end', isPreview ? 'none' : 'url(#arrowhead)');
@@ -654,11 +954,22 @@
       const obstacles = findObstacles(fromX, fromY, toX, toY);
       
       if (obstacles.length === 0) {
-        // No obstacles, use simple S-curve
+        // No obstacles, use smooth S-curve with better control points
         const midX = (fromX + toX) / 2;
-        const midY = (fromY + toY) / 2;
-        const offset = Math.min(Math.abs(toX - fromX) * 0.4, 60);
-        return `M ${fromX} ${fromY} C ${fromX + offset} ${fromY} ${midX} ${midY} ${toX - offset} ${toY} L ${toX} ${toY}`;
+        const distance = Math.abs(toX - fromX);
+        const curveIntensity = Math.min(distance * 0.4, 100); // Dynamic curve intensity
+        
+        // Create smooth cubic bezier curve
+        const control1 = { 
+          x: fromX + (midX - fromX) * 0.6, 
+          y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
+        };
+        const control2 = { 
+          x: toX - (toX - midX) * 0.6, 
+          y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
+        };
+        
+        return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
       }
       
       // Create path that avoids obstacles
@@ -795,24 +1106,35 @@
         return `M ${fromX} ${fromY} C ${fromX + offset} ${fromY} ${midX} ${midY} ${toX - offset} ${toY} L ${toX} ${toY}`;
       }
       
-      // Create path through waypoints
+      // Create smooth path through waypoints using cubic bezier curves
       let path = `M ${fromX} ${fromY}`;
       
       for (let i = 0; i < waypoints.length; i++) {
         const wp = waypoints[i];
         if (i === 0) {
-          path += ` L ${wp.x} ${wp.y}`;
+          // First waypoint: smooth curve from start
+          const midX = (fromX + wp.x) / 2;
+          const midY = (fromY + wp.y) / 2;
+          const offset = Math.min(Math.abs(wp.x - fromX) * 0.3, 50);
+          path += ` C ${fromX + offset} ${fromY}, ${midX} ${midY}, ${wp.x} ${wp.y}`;
         } else {
+          // Subsequent waypoints: smooth curves between them
           const prevWp = waypoints[i - 1];
           const midX = (prevWp.x + wp.x) / 2;
           const midY = (prevWp.y + wp.y) / 2;
-          path += ` Q ${midX} ${midY} ${wp.x} ${wp.y}`;
+          const offset = Math.min(Math.abs(wp.x - prevWp.x) * 0.3, 50);
+          path += ` C ${prevWp.x + offset} ${prevWp.y}, ${midX} ${midY}, ${wp.x} ${wp.y}`;
         }
       }
       
-      // Connect to final destination
-      const lastWp = waypoints[waypoints.length - 1];
-      path += ` L ${toX} ${toY}`;
+      // Connect to final destination with smooth curve
+      if (waypoints.length > 0) {
+        const lastWp = waypoints[waypoints.length - 1];
+        const midX = (lastWp.x + toX) / 2;
+        const midY = (lastWp.y + toY) / 2;
+        const offset = Math.min(Math.abs(toX - lastWp.x) * 0.3, 50);
+        path += ` C ${lastWp.x + offset} ${lastWp.y}, ${midX} ${midY}, ${toX} ${toY}`;
+      }
       
       return path;
     }
@@ -873,7 +1195,7 @@
           }
           
           if (fromX !== undefined && toX !== undefined) {
-            const connectionLine = createConnectionLine(fromX, fromY, toX, toY);
+            const connectionLine = createConnectionLine(fromX, fromY, toX, toY, false, conn.color, conn.id);
             connectionLine.classList.add('connection-svg');
             canvas.appendChild(connectionLine);
           }
