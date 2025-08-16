@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MindFlow | Interactive Planning Canvas</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@9.4.3/dist/panzoom.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style id="app-style">
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    .canvas.html2canvas-container {
+      width: 5000px !important;
+      height: 3000px !important;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .canvas {
+      position: relative;
+      width: 5000px;
+      height: 3000px;
+      transform-origin: 0 0;
+      background-color: #f8fafc;
+      background-image:
+        linear-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .tile {
+      position: absolute;
+      width: 220px;
+      border-radius: 8px;
+      background: white;
+      box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+      user-select: none;
+      overflow: hidden;
+      transition: box-shadow 0.2s ease, transform 0.1s ease;
+      padding: 10px;
+    }
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .tile-content {
+      min-height: 50px;
+      word-wrap: break-word;
+      white-space: pre-line;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background-color: #e2e8f0;
+      border-bottom: 1px solid #ccc;
+    }
+    .toolbar-button {
+      display: flex;
+      align-items: center;
+      padding: 5px 10px;
+      background-color: #fff;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .zoom-controls {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #34d399;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .toast.show {
+      display: flex;
+      align-items: center;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+    }
+    .modal.show {
+      display: block;
+    }
+    .modal-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 500px;
+    }
+    .connector-handle {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background-color: #94a3b8;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+    .input {
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .output {
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .loader {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #3498db;
+      border-radius: 50%;
+      width: 12px;
+      height: 12px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-slate-50">
+  <div class="toolbar">
+    <div class="flex items-center">
+      <div class="font-semibold text-slate-800 mr-6 text-lg">MindFlow</div>
+      <button id="add-tile" class="toolbar-button primary">
+        <i class="fa-solid fa-plus"></i> Add Tile
+      </button>
+      <button id="export-json" class="toolbar-button">
+        <i class="fa-solid fa-file-export"></i> Export JSON
+      </button>
+      <button id="export-png" class="toolbar-button">
+        <i class="fa-solid fa-image"></i> Export PNG
+      </button>
+    </div>
+    <div>
+      <button id="clear-all" class="toolbar-button text-red-600 hover:bg-red-50">
+        <i class="fa-solid fa-trash-can"></i> Clear All
+      </button>
+    </div>
+  </div>
+
+  <div class="canvas-container">
+    <div id="canvas" class="canvas html2canvas-container"></div>
+  </div>
+
+  <div class="zoom-controls">
+    <button id="zoom-in"><i class="fa-solid fa-plus"></i></button>
+    <button id="zoom-out"><i class="fa-solid fa-minus"></i></button>
+    <button id="zoom-reset"><i class="fa-solid fa-arrows-to-dot"></i></button>
+  </div>
+
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-message"></span>
+  </div>
+
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <h3 class="text-xl font-semibold text-slate-800 mb-4">Export JSON</h3>
+      <div class="mb-4">
+        <textarea id="json-content" class="w-full h-64 p-3 border border-slate-300 rounded-md font-mono text-sm" readonly></textarea>
+      </div>
+      <div class="flex justify-end">
+        <button id="copy-json" class="toolbar-button mr-2">
+          <i class="fa-solid fa-copy"></i> Copy
+        </button>
+        <button id="close-modal" class="toolbar-button">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script id="app-script">
+    document.addEventListener('DOMContentLoaded', function() {
+      const state = {
+        tiles: [],
+        connections: [],
+        activeConnection: null,
+        activeTile: null,
+        nextId: 1,
+        zoomLevel: 1
+      };
+      const canvas = document.getElementById('canvas');
+      const container = document.querySelector('.canvas-container');
+      const addTileBtn = document.getElementById('add-tile');
+      const exportJsonBtn = document.getElementById('export-json');
+      const exportPngBtn = document.getElementById('export-png');
+      const clearAllBtn = document.getElementById('clear-all');
+      const zoomInBtn = document.getElementById('zoom-in');
+      const zoomOutBtn = document.getElementById('zoom-out');
+      const zoomResetBtn = document.getElementById('zoom-reset');
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      const modal = document.getElementById('modal');
+      const jsonContent = document.getElementById('json-content');
+      const copyJsonBtn = document.getElementById('copy-json');
+      const closeModalBtn = document.getElementById('close-modal');
+
+      const panzoomInstance = Panzoom(canvas, {
+        maxZoom: 4,
+        minZoom: 0.1,
+        zoomDoubleClickSpeed: 1,
+        smoothScroll: false
+      });
+      let currentTransform = { x: 0, y: 0, scale: 1 };
+      panzoomInstance.on('transform', (e) => {
+        currentTransform = e.getTransform();
+        updateAllConnections();
+      });
+
+      function showToast(message, type = 'success') {
+        toastMessage.textContent = message;
+        toast.className = `toast ${type} show`;
+        if (type === 'error') {
+          toast.style.backgroundColor = '#ef4444';
+        } else {
+          toast.style.backgroundColor = '#34d399';
+        }
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      function createTile(id, x, y, title = 'New Task', content = 'Click to edit description') {
+        const gridSize = 20;
+        const snappedX = Math.round(x / gridSize) * gridSize;
+        const snappedY = Math.round(y / gridSize) * gridSize;
+        const tileElement = document.createElement('div');
+        tileElement.className = 'tile';
+        tileElement.id = `tile-${id}`;
+        tileElement.dataset.id = id;
+        tileElement.style.left = `${snappedX}px`;
+        tileElement.style.top = `${snappedY}px`;
+        tileElement.innerHTML = `
+          <div class="tile-header" draggable="true">
+            <div class="font-medium text-slate-700" contenteditable="true">${title}</div>
+            <div class="flex">
+              <button class="text-slate-400 hover:text-slate-700 tile-ai-suggest ml-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+              </button>
+              <button class="text-slate-400 hover:text-red-500 tile-delete ml-2">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+          <div class="tile-content" contenteditable="true">${content}</div>
+          <div class="connector-handle input" data-tile="${id}"></div>
+          <div class="connector-handle output" data-tile="${id}"></div>
+        `;
+        canvas.appendChild(tileElement);
+        const tile = { id, element: tileElement, x: snappedX, y: snappedY, title, content };
+        state.tiles.push(tile);
+        makeElementDraggable(tileElement);
+        return tile;
+      }
+
+      function makeElementDraggable(element) {
+        const header = element.querySelector('.tile-header');
+        let startX, startY, startMouseX, startMouseY, isDragging = false;
+
+        header.addEventListener('mousedown', startDrag);
+        header.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+          e.preventDefault();
+          startX = parseFloat(element.style.left) || 0;
+          startY = parseFloat(element.style.top) || 0;
+          startMouseX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+          startMouseY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+          isDragging = true;
+          setActiveTile(element);
+          document.addEventListener('mousemove', drag);
+          document.addEventListener('touchmove', drag, { passive: false });
+          document.addEventListener('mouseup', endDrag);
+          document.addEventListener('touchend', endDrag);
+          element.style.zIndex = '100';
+        }
+
+        function drag(e) {
+          if (!isDragging) return;
+          e.preventDefault();
+          const clientX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+          const clientY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+          const deltaX = (clientX - startMouseX) / currentTransform.scale;
+          const deltaY = (clientY - startMouseY) / currentTransform.scale;
+          const newX = startX + deltaX;
+          const newY = startY + deltaY;
+          element.style.left = `${newX}px`;
+          element.style.top = `${newY}px`;
+          const tileId = parseInt(element.dataset.id);
+          const tile = state.tiles.find(t => t.id === tileId);
+          if (tile) {
+            tile.x = newX;
+            tile.y = newY;
+          }
+          updateConnections(tileId);
+        }
+
+        function endDrag() {
+          isDragging = false;
+          document.removeEventListener('mousemove', drag);
+          document.removeEventListener('touchmove', drag);
+          document.removeEventListener('mouseup', endDrag);
+          document.removeEventListener('touchend', endDrag);
+          element.style.zIndex = '';
+          const tileId = parseInt(element.dataset.id);
+          const tile = state.tiles.find(t => t.id === tileId);
+          const gridSize = 20;
+          tile.x = Math.round(tile.x / gridSize) * gridSize;
+          tile.y = Math.round(tile.y / gridSize) * gridSize;
+          element.style.left = `${tile.x}px`;
+          element.style.top = `${tile.y}px`;
+          updateConnections(tileId);
+          saveState();
+        }
+      }
+
+      function setActiveTile(element) {
+        document.querySelectorAll('.tile.active').forEach(t => t.classList.remove('active'));
+        if (element) {
+          element.classList.add('active');
+          state.activeTile = parseInt(element.dataset.id);
+        } else {
+          state.activeTile = null;
+        }
+      }
+
+      function createConnection(fromTileId, toTileId) {
+        if (state.connections.some(conn => conn.from === fromTileId && conn.to === toTileId)) return null;
+        const connection = {
+          id: `conn-${fromTileId}-${toTileId}`,
+          from: fromTileId,
+          to: toTileId,
+          line: new LeaderLine(
+            document.querySelector(`.connector-handle.output[data-tile="${fromTileId}"]`),
+            document.querySelector(`.connector-handle.input[data-tile="${toTileId}"]`),
+            {
+              color: '#94a3b8',
+              size: 2,
+              path: 'straight',
+              startSocket: 'bottom',
+              endSocket: 'top',
+              startPlug: 'behind',
+              endPlug: 'arrow1',
+              endPlugSize: 1,
+              animOptions: { duration: 300, timing: 'linear' }
+            }
+          )
+        };
+        connection.line.element.classList.add('connection-line');
+        state.connections.push(connection);
+        return connection;
+      }
+
+      function updateConnections(tileId) {
+        state.connections
+          .filter(conn => conn.from === tileId || conn.to === tileId)
+          .forEach(conn => conn.line.position());
+      }
+
+      function updateAllConnections() {
+        state.connections.forEach(conn => conn.line.position());
+      }
+
+      function removeTile(tileId) {
+        state.connections.filter(conn => conn.from === tileId || conn.to === tileId)
+          .forEach(conn => conn.line.remove());
+        state.connections = state.connections.filter(conn => conn.from !== tileId && conn.to !== tileId);
+
+        const tileIndex = state.tiles.findIndex(t => t.id === tileId);
+        if (tileIndex !== -1) {
+          state.tiles[tileIndex].element.remove();
+          state.tiles.splice(tileIndex, 1);
+        }
+        saveState();
+      }
+
+      function saveState() {
+        const dataToSave = {
+          tiles: state.tiles.map(tile => ({
+            id: tile.id,
+            x: tile.x,
+            y: tile.y,
+            title: tile.element.querySelector('.tile-header div[contenteditable]').textContent,
+            content: tile.element.querySelector('.tile-content').textContent
+          })),
+          connections: state.connections.map(conn => ({ from: conn.from, to: conn.to })),
+          nextId: state.nextId
+        };
+        localStorage.setItem('mindflow-state', JSON.stringify(dataToSave));
+      }
+
+      function loadState() {
+        try {
+          const savedData = localStorage.getItem('mindflow-state');
+          if (!savedData) return false;
+          const parsedData = JSON.parse(savedData);
+          canvas.innerHTML = '';
+          state.tiles = [];
+          state.connections.forEach(conn => conn.line.remove());
+          state.connections = [];
+          parsedData.tiles.forEach(tileData =>
+            createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content)
+          );
+          parsedData.connections.forEach(conn =>
+            createConnection(conn.from, conn.to)
+          );
+          state.nextId = parsedData.nextId;
+          return true;
+        } catch (err) {
+          console.error('Failed to load saved state:', err);
+          return false;
+        }
+      }
+
+      function exportAsJson() {
+        const dataToExport = {
+          tiles: state.tiles.map(tile => ({
+            id: tile.id,
+            x: tile.x,
+            y: tile.y,
+            title: tile.element.querySelector('.tile-header div[contenteditable]').textContent,
+            content: tile.element.querySelector('.tile-content').textContent
+          })),
+          connections: state.connections.map(conn => ({
+            from: conn.from,
+            to: conn.to
+          }))
+        };
+        jsonContent.value = JSON.stringify(dataToExport, null, 2);
+        modal.classList.add('show');
+      }
+
+      async function exportAsPng() {
+        try {
+          showToast('Preparing export...', 'success');
+          const zoomControls = document.querySelector('.zoom-controls');
+          zoomControls.style.display = 'none';
+
+          const originalTransform = canvas.style.transform;
+          canvas.style.transform = 'translate(0px, 0px) scale(1)';
+          updateAllConnections();
+
+          const originalContainerStyle = {
+            overflow: container.style.overflow,
+            height: container.style.height,
+            width: container.style.width
+          };
+          container.style.overflow = 'visible';
+
+          let minX = 0, minY = 0, maxX = 0, maxY = 0;
+          state.tiles.forEach(tile => {
+            const x = tile.x;
+            const y = tile.y;
+            const w = tile.element.offsetWidth;
+            const h = tile.element.offsetHeight;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + w);
+            maxY = Math.max(maxY, y + h);
+          });
+          const margin = 50;
+          const exportWidth = maxX - minX + margin * 2;
+          const exportHeight = maxY - minY + margin * 2;
+
+          const originalPositions = state.tiles.map(tile => ({ x: tile.x, y: tile.y }));
+          state.tiles.forEach(tile => {
+            tile.x = tile.x - minX + margin;
+            tile.y = tile.y - minY + margin;
+            tile.element.style.left = `${tile.x}px`;
+            tile.element.style.top = `${tile.y}px`;
+          });
+          updateAllConnections();
+
+          const originalCanvasWidth = canvas.style.width;
+          const originalCanvasHeight = canvas.style.height;
+          canvas.style.width = `${exportWidth}px`;
+          canvas.style.height = `${exportHeight}px`;
+          container.style.width = `${exportWidth}px`;
+          container.style.height = `${exportHeight}px`;
+
+          const screenshot = await html2canvas(canvas, {
+            useCORS: true,
+            allowTaint: false,
+            scale: 2
+          });
+
+          canvas.style.width = originalCanvasWidth;
+          canvas.style.height = originalCanvasHeight;
+          state.tiles.forEach((tile, index) => {
+            tile.x = originalPositions[index].x;
+            tile.y = originalPositions[index].y;
+            tile.element.style.left = `${tile.x}px`;
+            tile.element.style.top = `${tile.y}px`;
+          });
+          updateAllConnections();
+
+          container.style.overflow = originalContainerStyle.overflow;
+          container.style.height = originalContainerStyle.height;
+          container.style.width = originalContainerStyle.width;
+
+          canvas.style.transform = originalTransform;
+          updateAllConnections();
+
+          zoomControls.style.display = 'flex';
+
+          const link = document.createElement('a');
+          link.download = 'mindflow-canvas.png';
+          link.href = screenshot.toDataURL('image/png');
+          link.click();
+
+          showToast('Export successful!', 'success');
+        } catch (err) {
+          console.error('Failed to export as PNG:', err);
+          // Basic restore in case of error
+          canvas.style.transform = originalTransform || '';
+          container.style.overflow = originalContainerStyle.overflow || '';
+          container.style.height = originalContainerStyle.height || '';
+          container.style.width = originalContainerStyle.width || '';
+          zoomControls.style.display = 'flex';
+          showToast('Export failed. Please try again.', 'error');
+        }
+      }
+
+      function requestAISuggestions(tileId) {
+        const tileElement = document.getElementById(`tile-${tileId}`);
+        const aiButton = tileElement.querySelector('.tile-ai-suggest');
+        const title = tileElement.querySelector('.tile-header div[contenteditable]').textContent;
+
+        aiButton.innerHTML = `<div class="loader"></div>`;
+        setTimeout(() => {
+          aiButton.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i>`;
+          let suggestionsContainer = tileElement.querySelector('.suggestions-container');
+          if (!suggestionsContainer) {
+            suggestionsContainer = document.createElement('div');
+            suggestionsContainer.className = 'suggestions-container p-3 bg-blue-50 mt-2 rounded-md';
+            suggestionsContainer.innerHTML = `
+              <div class="text-sm font-medium mb-2 text-blue-700">AI Suggestions</div>
+              <div class="suggestions-list"></div>
+            `;
+            tileElement.querySelector('.tile-content').after(suggestionsContainer);
+          }
+          const suggestionsList = suggestionsContainer.querySelector('.suggestions-list');
+          suggestionsList.innerHTML = '';
+          const suggestions = generateFakeSuggestions(title);
+          suggestions.forEach((suggestion, index) => {
+            const suggestionEl = document.createElement('div');
+            suggestionEl.className = 'suggestion';
+            suggestionEl.innerHTML = `
+              <div class="flex items-center justify-between">
+                <div>${suggestion}</div>
+                <button class="text-blue-500 hover:text-blue-700 add-suggestion" data-suggestion="${index}">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>`;
+            suggestionsList.appendChild(suggestionEl);
+          });
+          suggestionsContainer.querySelectorAll('.add-suggestion').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              const suggestionIndex = parseInt(e.currentTarget.dataset.suggestion);
+              const suggestionText = suggestions[suggestionIndex];
+              const newX = parseInt(tileElement.style.left) + 250;
+              const newY = parseInt(tileElement.style.top) + 50;
+              const gridSize = 20;
+              const snappedNewX = Math.round(newX / gridSize) * gridSize;
+              const snappedNewY = Math.round(newY / gridSize) * gridSize;
+              const newTile = createTile(state.nextId++, snappedNewX, snappedNewY, suggestionText, 'Generated from AI suggestion');
+              createConnection(tileId, newTile.id);
+              saveState();
+              showToast('Added suggested task!', 'success');
+              e.currentTarget.closest('.suggestion').remove();
+            });
+          });
+        }, 1500);
+      }
+
+      function generateFakeSuggestions(title) {
+        return [
+          `Research ${title} options`,
+          `Create ${title} plan`,
+          `Schedule ${title} meeting`
+        ];
+      }
+
+      addTileBtn.addEventListener('click', () => {
+        const centerX = (container.clientWidth / 2 - currentTransform.x) / currentTransform.scale;
+        const centerY = (container.clientHeight / 2 - currentTransform.y) / currentTransform.scale;
+        createTile(state.nextId++, centerX, centerY);
+        saveState();
+        showToast('New tile added!');
+      });
+      exportJsonBtn.addEventListener('click', exportAsJson);
+      exportPngBtn.addEventListener('click', exportAsPng);
+      clearAllBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to clear all tiles and connections?')) {
+          state.connections.forEach(conn => conn.line.remove());
+          canvas.innerHTML = '';
+          state.tiles = [];
+          state.connections = [];
+          state.nextId = 1;
+          panzoomInstance.moveTo(0, 0);
+          panzoomInstance.zoomAbs(0, 0, 1);
+          localStorage.removeItem('mindflow-state');
+          showToast('All content cleared!');
+        }
+      });
+      zoomInBtn.addEventListener('click', () => {
+        const { scale } = panzoomInstance.getTransform();
+        panzoomInstance.zoomTo(container.clientWidth / 2, container.clientHeight / 2, scale * 1.2);
+      });
+      zoomOutBtn.addEventListener('click', () => {
+        const { scale } = panzoomInstance.getTransform();
+        panzoomInstance.zoomTo(container.clientWidth / 2, container.clientHeight / 2, scale / 1.2);
+      });
+      zoomResetBtn.addEventListener('click', () => {
+        panzoomInstance.moveTo(0, 0);
+        panzoomInstance.zoomAbs(0, 0, 1);
+      });
+      copyJsonBtn.addEventListener('click', () => {
+        const text = jsonContent.value;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text)
+            .then(() => showToast('JSON copied to clipboard!', 'success'))
+            .catch(() => showToast('Copy failed.', 'error'));
+        } else {
+          jsonContent.select();
+          try {
+            document.execCommand('copy');
+            showToast('JSON copied (legacy fallback)!', 'success');
+          } catch {
+            showToast('Copy not supported.', 'error');
+          }
+        }
+      });
+      closeModalBtn.addEventListener('click', () => modal.classList.remove('show'));
+      canvas.addEventListener('click', (e) => {
+        if (e.target.closest('.tile-delete')) {
+          removeTile(parseInt(e.target.closest('.tile').dataset.id));
+          return;
+        }
+        if (e.target.closest('.tile-ai-suggest')) {
+          requestAISuggestions(parseInt(e.target.closest('.tile').dataset.id));
+          return;
+        }
+        const tile = e.target.closest('.tile');
+        tile ? setActiveTile(tile) : setActiveTile(null);
+      });
+      canvas.addEventListener('mousedown', (e) => {
+        const handle = e.target.closest('.connector-handle');
+        if (!handle) return;
+        e.preventDefault();
+        const tileId = parseInt(handle.dataset.tile);
+        if (handle.classList.contains('output')) {
+          state.activeConnection = { from: tileId, startElement: handle };
+          state.activeConnection.line = new LeaderLine(
+            handle,
+            LeaderLine.pointAnchor(document, { x: e.clientX, y: e.clientY }),
+            { color: '#94a3b8', size: 2, path: 'straight', startSocket: 'bottom', endPlug: 'arrow1', endPlugSize: 1 }
+          );
+        }
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!state.activeConnection) return;
+        state.activeConnection.line.end = LeaderLine.pointAnchor(document, { x: e.clientX, y: e.clientY });
+        state.activeConnection.line.position();
+      });
+      document.addEventListener('mouseup', (e) => {
+        if (!state.activeConnection) return;
+        const handle = e.target.closest('.connector-handle');
+        if (handle && handle.classList.contains('input')) {
+          const toTileId = parseInt(handle.dataset.tile);
+          if (state.activeConnection.from !== toTileId) {
+            createConnection(state.activeConnection.from, toTileId);
+            saveState();
+          }
+        }
+        state.activeConnection.line.remove();
+        state.activeConnection = null;
+      });
+      canvas.addEventListener('blur', (e) => {
+        if (e.target.getAttribute('contenteditable') === 'true') saveState();
+      }, true);
+
+      if (!loadState()) {
+        createTile(state.nextId++, 100, 100, 'Welcome to MindFlow!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
+        saveState();
+      }
+      updateAllConnections();
+      panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
+    });
+  </script>
+</body>
+</html>
