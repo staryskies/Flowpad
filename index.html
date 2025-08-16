@@ -1,532 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowpad - Sign In</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode {
-            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%) !important;
-            background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
-            background-size: 20px 20px !important;
-            color: #333333 !important;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 3rem;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            max-width: 400px;
-            width: 90%;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .container {
-            background: rgba(0, 0, 0, 0.05) !important;
-            border: 1px solid rgba(0, 0, 0, 0.1) !important;
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .logo {
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            background: linear-gradient(45deg, #ffffff, #cccccc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .logo {
-            background: linear-gradient(45deg, #333333, #666666) !important;
-            -webkit-background-clip: text !important;
-            -webkit-text-fill-color: transparent !important;
-            background-clip: text !important;
-        }
-
-        .tagline {
-            font-size: 1.1rem;
-            color: #cccccc;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .tagline {
-            color: #666666 !important;
-        }
-
-        .theme-toggle {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border-radius: 50px;
-            padding: 10px 15px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
-        }
-
-        .theme-toggle:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        body.light-mode .theme-toggle {
-            background: rgba(0, 0, 0, 0.1) !important;
-            border: 1px solid rgba(0, 0, 0, 0.2) !important;
-            color: #333333 !important;
-        }
-
-        body.light-mode .theme-toggle:hover {
-            background: rgba(0, 0, 0, 0.2) !important;
-        }
-
-        .signin-section {
-            margin-top: 2rem;
-        }
-
-        .google-btn {
-            background: #ffffff;
-            color: #333333;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            margin-bottom: 1rem;
-        }
-
-        .google-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-        }
-
-        .google-btn:active {
-            transform: translateY(0);
-        }
-
-
-
-        .google-icon {
-            width: 20px;
-            height: 20px;
-        }
-
-        .divider {
-            margin: 2rem 0;
-            display: flex;
-            align-items: center;
-            color: #666666;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: #444444;
-        }
-
-        .divider span {
-            padding: 0 1rem;
-            font-size: 0.9rem;
-        }
-
-        .features {
-            margin-top: 2rem;
-            text-align: left;
-        }
-
-        .feature {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding: 0.5rem 0;
-        }
-
-        .feature-icon {
-            width: 20px;
-            height: 20px;
-            margin-right: 12px;
-            color: #4CAF50;
-        }
-
-        .feature-text {
-            color: #cccccc;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .feature-text {
-            color: #666666 !important;
-        }
-
-        body.light-mode .divider {
-            color: #999999 !important;
-        }
-
-        body.light-mode .divider::before,
-        body.light-mode .divider::after {
-            background: #cccccc !important;
-        }
-
-        .loading {
-            display: none;
-            margin-top: 1rem;
-            color: #4CAF50;
-        }
-
-        .error {
-            display: none;
-            margin-top: 1rem;
-            color: #f44336;
-            background: rgba(244, 67, 54, 0.1);
-            padding: 0.5rem;
-            border-radius: 8px;
-        }
-
-        .footer {
-            margin-top: 40px;
-            padding: 20px 0;
-            border-top: 1px solid #444;
-            text-align: center;
-        }
-
-        .footer-links {
-            margin-bottom: 15px;
-        }
-
-        .footer-links a {
-            color: #888;
-            text-decoration: none;
-            margin: 0 15px;
-            transition: color 0.3s;
-        }
-
-        .footer-links a:hover {
-            color: #3498db;
-        }
-
-        .footer-copyright {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .light-mode .footer {
-            border-top-color: #ddd;
-        }
-
-        .light-mode .footer-links a {
-            color: #666;
-        }
-
-        .light-mode .footer-links a:hover {
-            color: #2980b9;
-        }
-
-        .light-mode .footer-copyright {
-            color: #888;
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 2rem;
-                margin: 1rem;
-            }
-            
-            .logo {
-                font-size: 2.5rem;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flowpad - Sign In</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:linear-gradient(135deg,#1a1a1a 0%,#2d2d2d 100%);background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;min-height:100vh;display:flex;align-items:center;justify-content:center;color:#fff;transition:.3s all}
+    .container{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border-radius:20px;padding:3rem;box-shadow:0 25px 50px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);text-align:center;max-width:400px;width:90%}
+    .logo{font-size:3rem;font-weight:700;margin-bottom:1rem;background:linear-gradient(45deg,#fff,#ccc);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .tagline{font-size:1.1rem;color:#ccc;margin-bottom:2rem;line-height:1.6}
+    .google-btn{background:#fff;color:#333;border:none;padding:12px 24px;border-radius:50px;font-size:1rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-bottom:1rem}
+    .google-icon{width:20px;height:20px}
+    .divider{margin:2rem 0;display:flex;align-items:center;color:#666}
+    .divider::before,.divider::after{content:'';flex:1;height:1px;background:#444}
+    .divider span{padding:0 1rem;font-size:.9rem}
+    .feature{display:flex;align-items:center;margin-bottom:1rem;padding:.5rem 0}
+    .feature-icon{width:20px;height:20px;margin-right:12px;color:#4CAF50}
+    .feature-text{color:#ccc;font-size:.9rem}
+    .loading{display:none;margin-top:1rem;color:#4CAF50}
+    .error{display:none;margin-top:1rem;color:#f44336;background:rgba(244,67,54,.1);padding:.5rem;border-radius:8px}
+    .footer{margin-top:40px;padding:20px 0;border-top:1px solid #444;text-align:center}
+    .footer-links{margin-bottom:15px}
+    .footer-links a{color:#888;text-decoration:none;margin:0 15px}
+  </style>
 </head>
 <body class="dark-mode">
-    <div class="container">
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
-            🌙 Dark Mode
-        </button>
-        
-        <div class="logo">Flowpad</div>
-        <div class="tagline">Create, connect, and collaborate with beautiful flow diagrams</div>
-        
-        <div class="signin-section" id="signin-section">
-            <button class="google-btn" onclick="signInWithGoogle()">
-                <svg class="google-icon" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                Sign in with Google
-            </button>
-        </div>
+  <div class="container">
+    <div class="logo">Flowpad</div>
+    <div class="tagline">Create, connect, and collaborate with beautiful flow diagrams</div>
 
-        <div class="divider">
-            <span>Features</span>
-        </div>
-
-        <div class="features">
-            <div class="feature">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">Drag & drop flow tiles with connection dots</span>
-            </div>
-            <div class="feature">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">Unlimited connections and beautiful curves</span>
-            </div>
-            <div class="feature">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">Real-time collaboration and sharing</span>
-            </div>
-            <div class="feature">
-                <span class="feature-icon">✓</span>
-                <span class="feature-text">Editable titles and text that auto-resizes</span>
-            </div>
-        </div>
-
-        <div class="loading" id="loading">Signing in...</div>
-        <div class="error" id="error"></div>
-
-        <footer class="footer">
-            <div class="footer-links">
-                <a href="/privacy">Privacy Policy</a>
-                <a href="/terms">Terms of Service</a>
-                <a href="mailto:yichen.zuo10@gmail.com">Contact</a>
-            </div>
-            <div class="footer-copyright">
-                © 2024 Flowpad. All rights reserved.
-            </div>
-        </footer>
+    <div class="signin-section" id="signin-section">
+      <button class="google-btn" onclick="signInWithGoogle()">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign in with Google
+      </button>
     </div>
 
-    <script>
-        let currentUser = null;
-        let isDarkMode = true; // Start with dark mode
+    <div class="divider"><span>Features</span></div>
+    <div class="feature"><span class="feature-icon">✓</span><span class="feature-text">Drag & drop tiles with connection dots</span></div>
+    <div class="feature"><span class="feature-icon">✓</span><span class="feature-text">Real-time collaboration (coming soon)</span></div>
+    <div class="feature"><span class="feature-icon">✓</span><span class="feature-text">Editable titles and auto-resizing text</span></div>
 
-        // Theme toggle functionality
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            const body = document.body;
-            const themeToggle = document.getElementById('themeToggle');
-            
-            if (isDarkMode) {
-                body.classList.remove('light-mode');
-                body.classList.add('dark-mode');
-                themeToggle.innerHTML = '🌙 Dark Mode';
-                localStorage.setItem('flowpad_theme', 'dark');
-            } else {
-                body.classList.remove('dark-mode');
-                body.classList.add('light-mode');
-                themeToggle.innerHTML = '☀️ Light Mode';
-                localStorage.setItem('flowpad_theme', 'light');
-            }
+    <div class="loading" id="loading">Signing in...</div>
+    <div class="error" id="error"></div>
+
+    <footer class="footer">
+      <div class="footer-links">
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+        <a href="mailto:yichen.zuo10@gmail.com">Contact</a>
+      </div>
+      <div style="color:#666;font-size:14px">© 2024 Flowpad. All rights reserved.</div>
+    </footer>
+  </div>
+
+  <script>
+    function signInWithGoogle() {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      loading.style.display = 'block';
+      error.style.display = 'none';
+
+      google.accounts.id.initialize({
+        client_id: '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com',
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        prompt_parent_id: 'signin-section',
+        use_fedcm_for_prompt: true,
+        context: 'signin'
+      });
+
+      google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed()) {
+          error.textContent = `Google Sign-In not displayed: ${notification.getNotDisplayedReason()}`;
+          error.style.display = 'block';
+          loading.style.display = 'none';
+        } else if (notification.isSkippedMoment()) {
+          error.textContent = `Sign-In was skipped: ${notification.getSkippedReason()}`;
+          error.style.display = 'block';
+          loading.style.display = 'none';
+        } else if (notification.isDismissedMoment()) {
+          error.textContent = `Sign-In was dismissed: ${notification.getDismissedReason()}`;
+          error.style.display = 'block';
+          loading.style.display = 'none';
         }
+      });
+    }
 
-        // Load saved theme preference
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('flowpad_theme');
-            if (savedTheme === 'light') {
-                isDarkMode = false;
-                document.body.classList.add('light-mode');
-                document.getElementById('themeToggle').innerHTML = '☀️ Light Mode';
-            } else {
-                // Ensure dark mode is applied by default
-                document.body.classList.add('dark-mode');
-                document.getElementById('themeToggle').innerHTML = '🌙 Dark Mode';
-            }
-        }
-
-
-
-        function signInWithGoogle() {
-            const loading = document.getElementById('loading');
-            const error = document.getElementById('error');
-            
-            loading.style.display = 'block';
-            error.style.display = 'none';
-
-            // Initialize Google Sign-In with proper FedCM configuration
-            google.accounts.id.initialize({
-                client_id: '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com',
-                callback: handleCredentialResponse,
-                auto_select: false,
-                cancel_on_tap_outside: true,
-                prompt_parent_id: 'signin-section',
-                // FedCM compatibility - explicitly opt in
-                use_fedcm_for_prompt: true,
-                // Context for FedCM
-                context: 'signin'
-            });
-
-            // Use the new FedCM-compatible prompt method with proper error handling
-            google.accounts.id.prompt((notification) => {
-                if (notification.isNotDisplayed()) {
-                    const reason = notification.getNotDisplayedReason();
-                    console.log('Google Sign-In not displayed:', reason);
-                    
-                    if (reason === 'browser_not_supported') {
-                        error.textContent = 'Your browser does not support Google Sign-In. Please try a different browser.';
-                    } else if (reason === 'invalid_client') {
-                        error.textContent = 'Google Sign-In configuration error. Please contact support.';
-                    } else if (reason === 'opt_out_or_no_session') {
-                        error.textContent = 'No active Google session. Please sign in to Google first.';
-                    } else if (reason === 'secure_http_required') {
-                        error.textContent = 'HTTPS is required for Google Sign-In.';
-                    } else if (reason === 'suppressed_by_user') {
-                        error.textContent = 'Google Sign-In was blocked by your browser. Please allow popups.';
-                    } else if (reason === 'unregistered_origin') {
-                        error.textContent = 'This domain is not registered for Google Sign-In.';
-                    } else if (reason === 'unknown_reason') {
-                        error.textContent = 'Google Sign-In failed for an unknown reason. Please try again.';
-                    } else {
-                        error.textContent = `Google Sign-In not available: ${reason}`;
-                    }
-                    error.style.display = 'block';
-                    loading.style.display = 'none';
-                } else if (notification.isSkippedMoment()) {
-                    const reason = notification.getSkippedReason();
-                    console.log('Google Sign-In skipped:', reason);
-                    
-                    if (reason === 'auto_cancel') {
-                        error.textContent = 'Sign-In was automatically cancelled. Please try again.';
-                    } else if (reason === 'user_cancel') {
-                        error.textContent = 'Sign-In was cancelled by user. Please try again.';
-                    } else if (reason === 'tap_outside') {
-                        error.textContent = 'Sign-In was cancelled. Please click the button again.';
-                    } else {
-                        error.textContent = `Sign-In was skipped: ${reason}`;
-                    }
-                    error.style.display = 'block';
-                    loading.style.display = 'none';
-                } else if (notification.isDismissedMoment()) {
-                    const reason = notification.getDismissedReason();
-                    console.log('Google Sign-In dismissed:', reason);
-                    error.textContent = `Sign-In was dismissed: ${reason}. Please try again.`;
-                    error.style.display = 'block';
-                    loading.style.display = 'none';
-                }
-            });
-        }
-
-        async function handleCredentialResponse(response) {
-            console.log('Google Sign-In response received:', response);
-            
-            try {
-                console.log('Making request to /api/auth/google');
-                const result = await fetch('/api/auth/google', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    credentials: 'include', // Include cookies for session management
-                    body: JSON.stringify({
-                        idToken: response.credential
-                    })
-                });
-                
-                console.log('Response status:', result.status);
-                console.log('Response headers:', result.headers);
-
-                if (!result.ok) {
-                    const errorText = await result.text();
-                    console.error('Backend error response:', errorText);
-                    throw new Error(`Authentication failed: ${result.status} ${result.statusText}`);
-                }
-
-                const data = await result.json();
-                console.log('Authentication successful, user data:', data);
-                
-                // Store token in localStorage as backup
-                localStorage.setItem('flowpad_token', data.token);
-                localStorage.setItem('flowpad_user', JSON.stringify(data.user));
-
-                // The cookie is automatically set by the server
-                console.log('Redirecting to graph page...');
-                window.location.href = '/graph';
-                
-            } catch (err) {
-                console.error('Sign-in error:', err);
-                console.error('Error details:', {
-                    name: err.name,
-                    message: err.message,
-                    stack: err.stack
-                });
-                document.getElementById('error').textContent = `Sign-in failed: ${err.message}. Please try again.`;
-                document.getElementById('error').style.display = 'block';
-                document.getElementById('loading').style.display = 'none';
-            }
-        }
-
-        // Check if user is already signed in
-        window.addEventListener('load', () => {
-            // Load saved theme preference
-            loadTheme();
-            
-            const token = localStorage.getItem('flowpad_token');
-            const user = localStorage.getItem('flowpad_user');
-            
-            if (token && user) {
-                // Verify token is still valid
-                fetch('/api/graphs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }).then(response => {
-                    if (response.ok) {
-                        window.location.href = '/graph';
-                    } else {
-                        // Token expired, clear storage
-                        localStorage.removeItem('flowpad_token');
-                        localStorage.removeItem('flowpad_user');
-                    }
-                }).catch(() => {
-                    localStorage.removeItem('flowpad_token');
-                    localStorage.removeItem('flowpad_user');
-                });
-            }
+    async function handleCredentialResponse(response) {
+      try {
+        const result = await fetch('/api/auth/google', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json','Accept':'application/json'},
+          credentials: 'include',
+          body: JSON.stringify({ idToken: response.credential })
         });
-    </script>
+
+        if (!result.ok) throw new Error(await result.text() || 'Authentication failed');
+
+        const data = await result.json();
+        localStorage.setItem('flowpad_token', data.token);
+        localStorage.setItem('flowpad_user', JSON.stringify(data.user));
+        window.location.href = '/graph';
+      } catch (err) {
+        document.getElementById('error').textContent = `Sign-in failed: ${err.message}`;
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    // Auto-redirect if already signed in
+    window.addEventListener('load', () => {
+      const token = localStorage.getItem('flowpad_token');
+      const user = localStorage.getItem('flowpad_user');
+      if (token && user) {
+        fetch('/api/graphs', { headers: { 'Authorization': `Bearer ${token}` } })
+          .then(r => r.ok ? window.location.href = '/graph' : null)
+          .catch(() => {});
+      }
+    });
+  </script>
 </body>
 </html>

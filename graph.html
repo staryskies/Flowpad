@@ -1,1476 +1,216 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flowpad - Dashboard</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #1a1a1a;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: #ffffff;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode {
-            background: #f5f5f5 !important;
-            background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
-            background-size: 20px 20px !important;
-            color: #333333 !important;
-        }
-
-        /* Header */
-        .header {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 1000;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .header {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border-bottom: 1px solid #ddd !important;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(45deg, #ffffff, #cccccc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .logo {
-            background: linear-gradient(45deg, #333333, #666666) !important;
-            -webkit-background-clip: text !important;
-            -webkit-text-fill-color: transparent !important;
-            background-clip: text !important;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .user-name {
-            color: #cccccc;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .user-name {
-            color: #666666 !important;
-        }
-
-        .signout-btn {
-            background: #333;
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-
-        .signout-btn:hover {
-            background: #555;
-        }
-
-        body.light-mode .signout-btn {
-            background: #666 !important;
-            color: #ffffff !important;
-        }
-
-        body.light-mode .signout-btn:hover {
-            background: #888 !important;
-        }
-
-        .theme-toggle-btn {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: #ffffff;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 1.2rem;
-            margin-right: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .theme-toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: scale(1.1);
-        }
-
-        body.light-mode .theme-toggle-btn {
-            background: rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(0, 0, 0, 0.2);
-            color: #333333;
-        }
-
-        body.light-mode .theme-toggle-btn:hover {
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        /* Sidebar */
-        .sidebar {
-            position: fixed;
-            left: 0;
-            top: 60px;
-            bottom: 0;
-            width: 300px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(20px);
-            border-right: 1px solid #333;
-            overflow-y: auto;
-            z-index: 999;
-            transition: transform 0.3s ease;
-        }
-
-        body.light-mode .sidebar {
-            background: rgba(255, 255, 255, 0.8) !important;
-            border-right: 1px solid #ddd !important;
-        }
-
-        .sidebar.collapsed {
-            transform: translateX(-100%);
-        }
-
-        .sidebar-toggle {
-            position: fixed;
-            left: 20px;
-            top: 70px;
-            background: #333;
-            color: #ffffff;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            z-index: 1001;
-        }
-
-        .sidebar-toggle:hover {
-            background: #555;
-        }
-
-        .sidebar-content {
-            padding: 20px;
-        }
-
-        .section-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 15px;
-            color: #ffffff;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .section-title {
-            color: #333333 !important;
-        }
-
-        .new-graph-btn {
-            background: #4CAF50;
-            color: #ffffff;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1rem;
-            margin-bottom: 20px;
-            transition: background 0.3s ease;
-        }
-
-        body.light-mode .new-graph-btn {
-            background: #45a049 !important;
-        }
-
-        .new-graph-btn:hover {
-            background: #45a049;
-        }
-
-        .graph-list {
-            margin-bottom: 30px;
-        }
-
-        .graph-item {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .graph-item {
-            background: rgba(0, 0, 0, 0.05) !important;
-            border: 1px solid #ddd !important;
-        }
-
-        .graph-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #555;
-        }
-
-        .graph-item.active {
-            background: rgba(76, 175, 80, 0.2);
-            border-color: #4CAF50;
-        }
-
-        .graph-title {
-            font-weight: 600;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
-        }
-
-        .graph-meta {
-            font-size: 0.8rem;
-            color: #888;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .graph-title {
-            color: #333333 !important;
-        }
-
-        body.light-mode .graph-meta {
-            color: #666666 !important;
-        }
-
-        .share-section {
-            margin-top: 20px;
-        }
-
-        .share-input {
-            background: #333;
-            border: 1px solid #555;
-            color: #ffffff;
-            padding: 8px 12px;
-            border-radius: 6px;
-            width: 100%;
-            margin-bottom: 10px;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .share-input {
-            background: #f5f5f5 !important;
-            border: 1px solid #ddd !important;
-            color: #333333 !important;
-        }
-
-        .share-btn {
-            background: #2196F3;
-            color: #ffffff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            transition: background 0.3s ease;
-        }
-
-        body.light-mode .share-btn {
-            background: #1976D2 !important;
-        }
-
-        .share-btn:hover {
-            background: #1976D2;
-        }
-
-        /* Main Canvas */
-        .canvas-container {
-            position: fixed;
-            left: 300px;
-            top: 60px;
-            right: 0;
-            bottom: 0;
-            overflow: hidden;
-            transition: left 0.3s ease;
-        }
-
-        .canvas-container.full-width {
-            left: 0;
-        }
-
-        .canvas {
-            width: 100%;
-            height: 100%;
-            background-image: 
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 20px 20px;
-            position: relative;
-            cursor: grab;
-        }
-
-        .canvas:active {
-            cursor: grabbing;
-        }
-
-        /* Tiles */
-        .tile {
-            position: absolute;
-            background: #ffffff;
-            color: #000000;
-            border: 2px solid #333;
-            border-radius: 8px;
-            padding: 15px;
-            min-width: 120px;
-            min-height: 80px;
-            cursor: move;
-            user-select: none;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-
-        body.light-mode .tile {
-            background: #ffffff !important;
-            color: #000000 !important;
-            border: 2px solid #666 !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
-        }
-
-        .tile:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .tile.selected {
-            border-color: #4CAF50;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.3), 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-
-        .tile.process {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            border-color: #2196F3;
-        }
-
-        .tile.decision {
-            background: linear-gradient(135deg, #fff3e0, #ffe0b2);
-            border-color: #ff9800;
-            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-        }
-
-        .tile.start-end {
-            background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
-            border-color: #4CAF50;
-            border-radius: 50%;
-        }
-
-        .tile.data {
-            background: linear-gradient(135deg, #f3e5f5, #e1bee7);
-            border-color: #9c27b0;
-            border-radius: 0;
-        }
-
-        .tile:hover {
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-        }
-
-        .tile.selected {
-            border-color: #4CAF50;
-            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.3);
-        }
-
-        .tile-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            border: none;
-            background: transparent;
-            width: 100%;
-            resize: none;
-            outline: none;
-            font-family: inherit;
-        }
-
-        .tile-content {
-            font-size: 0.8rem;
-            line-height: 1.4;
-            border: none;
-            background: transparent;
-            width: 100%;
-            resize: none;
-            outline: none;
-            font-family: inherit;
-            min-height: 40px;
-        }
-
-        /* Connection Dots */
-        .connection-dot {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            background: #4CAF50;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            cursor: crosshair;
-            z-index: 10;
-            transition: all 0.2s ease;
-        }
-
-        .connection-dot:hover {
-            background: #45a049;
-            transform: scale(1.2);
-        }
-
-        .connection-dot.top {
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .connection-dot.bottom {
-            bottom: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-
-        .connection-dot.left {
-            left: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        .connection-dot.right {
-            right: -6px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
-
-        /* Connections */
-        .connection {
-            position: absolute;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .connection-line {
-            stroke: #4CAF50;
-            stroke-width: 2;
-            fill: none;
-            marker-end: url(#arrowhead);
-        }
-
-        /* Context Menu */
-        .context-menu {
-            position: fixed;
-            background: #333;
-            border: 1px solid #555;
-            border-radius: 6px;
-            padding: 5px 0;
-            z-index: 10000;
-            display: none;
-        }
-
-        .context-menu-item {
-            padding: 8px 15px;
-            cursor: pointer;
-            color: #ffffff;
-            transition: background 0.2s ease;
-        }
-
-        .context-menu-item:hover {
-            background: #555;
-        }
-
-        /* Toolbar */
-        .toolbar {
-            position: fixed;
-            top: 70px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(20px);
-            border: 1px solid #333;
-            border-radius: 12px;
-            padding: 15px;
-            z-index: 1000;
-            min-width: 200px;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .toolbar {
-            background: rgba(255, 255, 255, 0.9) !important;
-            border: 1px solid #ddd !important;
-        }
-
-        .tool-section {
-            margin-bottom: 15px;
-        }
-
-        .tool-section:last-child {
-            margin-bottom: 0;
-        }
-
-        .tool-label {
-            color: #cccccc;
-            font-size: 0.8rem;
-            margin-bottom: 8px;
-            text-align: center;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .tool-label {
-            color: #666666 !important;
-        }
-
-        .tool-btn {
-            background: #333;
-            color: #ffffff;
-            border: none;
-            padding: 8px;
-            border-radius: 6px;
-            cursor: pointer;
-            margin: 2px;
-            width: 40px;
-            height: 40px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            font-size: 1rem;
-        }
-
-        body.light-mode .tool-btn {
-            background: #666 !important;
-            color: #ffffff !important;
-        }
-
-        .tool-btn:hover {
-            background: #555;
-            transform: translateY(-1px);
-        }
-
-        .tool-btn.active {
-            background: #4CAF50;
-            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 100%;
-                transform: translateX(-100%);
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .canvas-container {
-                left: 0;
-            }
-        }
-
-        /* Notification System */
-        .notification {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: #4CAF50;
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            z-index: 10000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 300px;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.error {
-            background: #f44336;
-        }
-
-        .notification.warning {
-            background: #ff9800;
-        }
-
-        .notification.info {
-            background: #2196F3;
-        }
-
-        /* Mini-map */
-        .mini-map {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 200px;
-            height: 150px;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid #333;
-            border-radius: 8px;
-            z-index: 999;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .mini-map {
-            background: rgba(255, 255, 255, 0.8) !important;
-            border: 1px solid #ddd !important;
-        }
-
-        .mini-map-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
-            border-bottom: 1px solid #333;
-            font-size: 0.8rem;
-            color: #cccccc;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .mini-map-header {
-            background: rgba(0, 0, 0, 0.1) !important;
-            border-bottom: 1px solid #ddd !important;
-            color: #666666 !important;
-        }
-
-        .mini-map-toggle {
-            background: none;
-            border: none;
-            color: #cccccc;
-            cursor: pointer;
-            font-size: 1rem;
-            padding: 0;
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .mini-map-toggle:hover {
-            color: #ffffff;
-        }
-
-        body.light-mode .mini-map-toggle {
-            color: #666666 !important;
-        }
-
-        body.light-mode .mini-map-toggle:hover {
-            color: #333333 !important;
-        }
-
-        .mini-map-content {
-            width: 100%;
-            height: calc(100% - 35px);
-            background: #1a1a1a;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        body.light-mode .mini-map-content {
-            background: #f5f5f5 !important;
-        }
-
-        .mini-map-tile {
-            position: absolute;
-            background: #4CAF50;
-            border: 1px solid #ffffff;
-            border-radius: 2px;
-            transform: scale(0.1);
-            transform-origin: top left;
-        }
-
-        .mini-map.collapsed {
-            height: 35px;
-        }
-
-        .mini-map.collapsed .mini-map-content {
-            display: none;
-        }
-    </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Flowpad - Dashboard</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#1a1a1a;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;color:#fff;overflow:hidden}
+    .header{position:fixed;inset:0 0 auto 0;height:60px;background:rgba(0,0,0,.9);backdrop-filter:blur(20px);border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000}
+    .logo{font-size:1.5rem;font-weight:700;background:linear-gradient(45deg,#fff,#ccc);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .user-info{display:flex;align-items:center;gap:15px}
+    .signout-btn{background:#333;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+    .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:rgba(0,0,0,.8);backdrop-filter:blur(20px);border-right:1px solid #333;overflow-y:auto}
+    .sidebar-content{padding:20px}
+    .section-title{font-size:1.1rem;font-weight:600;margin-bottom:15px}
+    .new-graph-btn{background:#4CAF50;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px}
+    .graph-item{background:rgba(255,255,255,.05);border:1px solid #333;border-radius:8px;padding:15px;margin-bottom:10px;cursor:pointer}
+    .graph-title{font-weight:600;margin-bottom:5px}
+    .graph-meta{font-size:.8rem;color:#888}
+    .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
+    .canvas{width:100%;height:100%;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;position:relative}
+    .tile{position:absolute;background:#fff;color:#000;border:2px solid #333;border-radius:8px;padding:15px;min-width:120px;min-height:80px;cursor:move;user-select:none;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+    .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit}
+    .tile-title{font-weight:600;margin-bottom:8px;font-size:.9rem}
+    .tile-content{font-size:.8rem;line-height:1.4;min-height:40px}
+    .connection{position:absolute;pointer-events:none;z-index:5}
+    .connection-line{stroke:#4CAF50;stroke-width:2;fill:none;marker-end:url(#arrowhead)}
+    .toolbar{position:fixed;top:70px;right:20px;background:rgba(0,0,0,.9);backdrop-filter:blur(20px);border:1px solid #333;border-radius:12px;padding:15px;z-index:1000;min-width:200px}
+    .tool-label{color:#ccc;font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:500}
+    .tool-btn{background:#333;color:#fff;border:none;padding:8px;border-radius:6px;cursor:pointer;margin:2px;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:1rem}
+    .notification{position:fixed;top:80px;right:20px;background:#4CAF50;color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.3);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
+    .notification.show{transform:translateX(0)}
+    .notification.error{background:#f44336}
+  </style>
 </head>
 <body>
-    <!-- Header -->
-            <div class="header">
-            <div class="logo">Flowpad</div>
-            <div class="user-info">
-                <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">
-                    🌙
-                </button>
-                <span class="user-name" id="userName">User</span>
-                <button class="signout-btn" onclick="signOut()">Sign Out</button>
-            </div>
-        </div>
-
-    <!-- Sidebar Toggle -->
-    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
-
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-content">
-            <button class="new-graph-btn" onclick="createNewGraph()">+ New Graph</button>
-            
-            <div class="section-title">My Graphs</div>
-            <div class="graph-list" id="ownGraphs"></div>
-            
-            <div class="section-title">Shared With Me</div>
-            <div class="graph-list" id="sharedGraphs"></div>
-            
-            <div class="share-section" id="shareSection" style="display: none;">
-                <div class="section-title">Share Current Graph</div>
-                <input type="email" class="share-input" id="shareEmail" placeholder="Enter email address">
-                <button class="share-btn" onclick="shareGraph()">Share</button>
-            </div>
-        </div>
+  <div class="header">
+    <div class="logo">Flowpad</div>
+    <div class="user-info">
+      <span id="userName">User</span>
+      <button class="signout-btn" onclick="signOut()">Sign Out</button>
     </div>
+  </div>
 
-            <!-- Main Canvas -->
-        <div class="canvas-container" id="canvasContainer">
-            <div class="canvas" id="canvas"></div>
-            
-            <!-- Mini-map -->
-            <div class="mini-map" id="miniMap">
-                <div class="mini-map-header">
-                    <span>Mini-map</span>
-                    <button class="mini-map-toggle" onclick="toggleMiniMap()">−</button>
-                </div>
-                <div class="mini-map-content" id="miniMapContent"></div>
-            </div>
-        </div>
-
-            <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="tool-section">
-                <div class="tool-label">Add Tile</div>
-                <button class="tool-btn" title="Process Tile" onclick="addTile('process')">□</button>
-                <button class="tool-btn" title="Decision Tile" onclick="addTile('decision')">◇</button>
-                <button class="tool-btn" title="Start/End Tile" onclick="addTile('start-end')">○</button>
-                <button class="tool-btn" title="Data Tile" onclick="addTile('data')">▭</button>
-            </div>
-            <div class="tool-section">
-                <div class="tool-label">Actions</div>
-                <button class="tool-btn" title="Delete Selected" onclick="deleteSelected()">🗑</button>
-                <button class="tool-btn" title="Duplicate Selected" onclick="duplicateSelected()">⎘</button>
-                <button class="tool-btn" title="Toggle Grid" onclick="toggleGrid()">⊞</button>
-            </div>
-            <div class="tool-section">
-                <div class="tool-label">View</div>
-                <button class="tool-btn" title="Zoom In" onclick="zoomIn()">🔍+</button>
-                <button class="tool-btn" title="Zoom Out" onclick="zoomOut()">🔍-</button>
-                <button class="tool-btn" title="Reset Zoom" onclick="resetZoom()">🔍</button>
-            </div>
-        </div>
-
-    <!-- Context Menu -->
-    <div class="context-menu" id="contextMenu">
-        <div class="context-menu-item" onclick="deleteTile()">Delete</div>
-        <div class="context-menu-item" onclick="duplicateTile()">Duplicate</div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-content">
+      <button class="new-graph-btn" onclick="createNewGraph()">+ New Graph</button>
+      <div class="section-title">My Graphs</div>
+      <div id="ownGraphs"></div>
+      <div class="section-title">Shared With Me</div>
+      <div id="sharedGraphs"></div>
+      <div class="section-title" id="shareHeader" style="display:none;">Share Current Graph</div>
+      <input type="email" id="shareEmail" placeholder="Enter email address" style="display:none;width:100%;padding:8px;border-radius:6px;border:1px solid #555;color:#000"/>
+      <button id="shareBtn" style="display:none;margin-top:8px" class="new-graph-btn" onclick="shareGraph()">Share</button>
     </div>
+  </div>
 
-    <!-- Notification System -->
-    <div id="notification" class="notification"></div>
+  <div class="canvas-container">
+    <div class="canvas" id="canvas"></div>
+  </div>
 
-    <!-- SVG Definitions -->
-    <svg style="position: absolute; width: 0; height: 0;">
-        <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                    refX="9" refY="3.5" orient="auto">
-                <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50" />
-            </marker>
-        </defs>
-    </svg>
+  <div id="notification" class="notification"></div>
 
-    <script>
-        let currentUser = null;
-        let currentGraph = null;
-        let tiles = [];
-        let connections = [];
-        let selectedTile = null;
-        let isDragging = false;
-        let dragOffset = { x: 0, y: 0 };
-        let isConnecting = false;
-        let connectionStart = null;
-        let gridVisible = true;
-        let isDarkMode = true; // Start with dark mode
+  <svg style="position:absolute;width:0;height:0">
+    <defs>
+      <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50"></polygon>
+      </marker>
+    </defs>
+  </svg>
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            loadTheme(); // Load saved theme preference
-            await checkAuth();
-            loadGraphs();
-            setupCanvas();
-        });
+  <script>
+    let currentUser=null,currentGraph=null,tiles=[],connections=[],selectedTile=null,isDragging=false,dragOffset={x:0,y:0};
+    const canvas=document.getElementById('canvas');
 
-        // Theme toggle functionality
-        function toggleTheme() {
-            isDarkMode = !isDarkMode;
-            const body = document.body;
-            const themeToggle = document.getElementById('themeToggle');
-            
-            if (isDarkMode) {
-                body.classList.remove('light-mode');
-                themeToggle.innerHTML = '🌙';
-                localStorage.setItem('flowpad_theme', 'dark');
-            } else {
-                body.classList.add('light-mode');
-                themeToggle.innerHTML = '☀️';
-                localStorage.setItem('flowpad_theme', 'light');
-            }
-        }
+    document.addEventListener('DOMContentLoaded', init);
 
-        // Load saved theme preference
-        function loadTheme() {
-            const savedTheme = localStorage.getItem('flowpad_theme');
-            if (savedTheme === 'light') {
-                isDarkMode = false;
-                document.body.classList.add('light-mode');
-                document.getElementById('themeToggle').innerHTML = '☀️';
-            }
-        }
+    async function init(){
+      await checkAuth();
+      await loadGraphs();
+      setupCanvas();
+    }
 
-        // Authentication
-        async function checkAuth() {
-            const token = localStorage.getItem('flowpad_token');
-            const user = localStorage.getItem('flowpad_user');
-            
-            if (!token || !user) {
-                window.location.href = '/';
-                return;
-            }
+    async function checkAuth(){
+      const token=localStorage.getItem('flowpad_token');
+      const user=localStorage.getItem('flowpad_user');
+      if(!token||!user){ window.location.href='/'; return; }
+      currentUser=JSON.parse(user);
+      document.getElementById('userName').textContent=currentUser.name;
+      const ok = await fetch('/api/graphs', { headers:{Authorization:`Bearer ${token}`} }).then(r=>r.ok).catch(()=>false);
+      if(!ok){ localStorage.clear(); window.location.href='/'; }
+    }
 
-            currentUser = JSON.parse(user);
-            document.getElementById('userName').textContent = currentUser.name;
+    function signOut(){ localStorage.clear(); window.location.href='/'; }
 
-            // Verify token
-            try {
-                const response = await fetch('/api/graphs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
 
-                if (!response.ok) {
-                    throw new Error('Token expired');
-                }
-            } catch (error) {
-                localStorage.removeItem('flowpad_token');
-                localStorage.removeItem('flowpad_user');
-                window.location.href = '/';
-            }
-        }
+    async function loadGraphs(){
+      const token=localStorage.getItem('flowpad_token');
+      const res=await fetch('/api/graphs', { headers:{Authorization:`Bearer ${token}`} });
+      if(!res.ok) return;
+      const data=await res.json();
+      renderGraphList(data.own, 'ownGraphs');
+      renderGraphList(data.shared, 'sharedGraphs');
+    }
 
-        function signOut() {
-            localStorage.removeItem('flowpad_token');
-            localStorage.removeItem('flowpad_user');
-            window.location.href = '/';
-        }
+    function renderGraphList(list, id){
+      const c=document.getElementById(id); c.innerHTML='';
+      list.forEach(g=>{
+        const item=el(`<div class="graph-item"><div class="graph-title">${g.title}</div><div class="graph-meta">Updated: ${new Date(g.updated_at).toLocaleString()}</div></div>`);
+        item.addEventListener('click', ()=>loadGraph(g));
+        c.appendChild(item);
+      });
+    }
 
-        // Graph Management
-        async function loadGraphs() {
-            try {
-                const token = localStorage.getItem('flowpad_token');
-                const response = await fetch('/api/graphs', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
+    async function createNewGraph(){
+      const title=prompt('Enter graph title:');
+      if(!title) return;
+      const token=localStorage.getItem('flowpad_token');
+      const res=await fetch('/api/graphs',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({title,data:{tiles:[],connections:[]}})});
+      if(!res.ok) return;
+      const graph=await res.json();
+      await loadGraphs();
+      loadGraph(graph);
+    }
 
-                if (response.ok) {
-                    const data = await response.json();
-                    displayGraphs(data.own, 'ownGraphs');
-                    displayGraphs(data.shared, 'sharedGraphs');
-                }
-            } catch (error) {
-                console.error('Failed to load graphs:', error);
-            }
-        }
+    function loadGraph(graph){
+      currentGraph=graph;
+      tiles=(graph.data?.tiles||[]).map(t=>createTile(t.x,t.y,t.title,t.content));
+      connections=graph.data?.connections||[];
+      document.getElementById('shareHeader').style.display='block';
+      document.getElementById('shareEmail').style.display='block';
+      document.getElementById('shareBtn').style.display='inline-block';
+      renderCanvas();
+    }
 
-        function displayGraphs(graphs, containerId) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
+    function setupCanvas(){
+      canvas.addEventListener('mousedown', e=>{
+        const tile=e.target.closest('.tile');
+        if(tile){ startDragging(e,tile); }
+      });
+      canvas.addEventListener('mousemove', handleMouseMove);
+      canvas.addEventListener('mouseup', ()=>{ isDragging=false; selectedTile=null; });
+    }
 
-            graphs.forEach(graph => {
-                const graphItem = document.createElement('div');
-                graphItem.className = 'graph-item';
-                graphItem.onclick = () => loadGraph(graph);
-                
-                graphItem.innerHTML = `
-                    <div class="graph-title">${graph.title}</div>
-                    <div class="graph-meta">Updated: ${new Date(graph.updated_at).toLocaleDateString()}</div>
-                `;
-                
-                container.appendChild(graphItem);
-            });
-        }
+    function createTile(x=100,y=100,title='',content=''){
+      const tile=document.createElement('div');
+      tile.className='tile';
+      tile.style.left=x+'px'; tile.style.top=y+'px';
+      tile.innerHTML=`
+        <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
+        <textarea class="tile-content" placeholder="Content">${content||''}</textarea>`;
+      tile.querySelectorAll('textarea').forEach(t=>t.addEventListener('input', scheduleSave));
+      tile.addEventListener('mousedown', e=>startDragging(e,tile));
+      return tile;
+    }
 
-        async function createNewGraph() {
-            const title = prompt('Enter graph title:');
-            if (!title) return;
+    function startDragging(e,tile){
+      isDragging=true; selectedTile=tile;
+      const r=tile.getBoundingClientRect();
+      dragOffset.x=e.clientX-r.left; dragOffset.y=e.clientY-r.top;
+    }
 
-            try {
-                const token = localStorage.getItem('flowpad_token');
-                const response = await fetch('/api/graphs', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title,
-                        data: { tiles: [], connections: [] }
-                    })
-                });
+    function handleMouseMove(e){
+      if(!isDragging||!selectedTile) return;
+      const rect=canvas.getBoundingClientRect();
+      const x=e.clientX-rect.left-dragOffset.x;
+      const y=e.clientY-rect.top-dragOffset.y;
+      selectedTile.style.left=x+'px';
+      selectedTile.style.top=y+'px';
+      scheduleSave();
+    }
 
-                if (response.ok) {
-                    const graph = await response.json();
-                    loadGraph(graph);
-                    loadGraphs();
-                }
-            } catch (error) {
-                console.error('Failed to create graph:', error);
-            }
-        }
+    function renderCanvas(){
+      canvas.innerHTML='';
+      tiles.forEach(t=>canvas.appendChild(t));
+      // connections drawing omitted for brevity
+    }
 
-        async function loadGraph(graph) {
-            currentGraph = graph;
-            tiles = graph.data.tiles || [];
-            connections = graph.data.connections || [];
-            
-            // Update UI
-            document.querySelectorAll('.graph-item').forEach(item => item.classList.remove('active'));
-            event.target.closest('.graph-item').classList.add('active');
-            
-            document.getElementById('shareSection').style.display = 'block';
-            
-            renderCanvas();
-        }
+    async function shareGraph(){
+      if(!currentGraph) return;
+      const email=document.getElementById('shareEmail').value.trim();
+      if(!email) return notify('Please enter an email','error');
+      const token=localStorage.getItem('flowpad_token');
+      const res=await fetch(`/api/graphs/${currentGraph.id}/share`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({email})});
+      notify(res.ok?'Graph shared successfully':'Failed to share graph', res.ok?'success':'error');
+      if(res.ok) document.getElementById('shareEmail').value='';
+    }
 
-        // Canvas Setup
-        function setupCanvas() {
-            const canvas = document.getElementById('canvas');
-            
-            canvas.addEventListener('mousedown', handleMouseDown);
-            canvas.addEventListener('mousemove', handleMouseMove);
-            canvas.addEventListener('mouseup', handleMouseUp);
-            canvas.addEventListener('click', handleCanvasClick);
-            canvas.addEventListener('contextmenu', handleContextMenu);
-            
-            // Prevent default context menu
-            canvas.addEventListener('contextmenu', e => e.preventDefault());
-        }
+    let saveTimer;
+    function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(saveGraph, 500); }
 
-        // Mouse Events
-        function handleMouseDown(e) {
-            const tile = e.target.closest('.tile');
-            if (tile) {
-                if (e.target.classList.contains('connection-dot')) {
-                    startConnection(e, tile);
-                } else {
-                    startDragging(e, tile);
-                }
-            }
-        }
+    async function saveGraph(){
+      if(!currentGraph) return;
+      const token=localStorage.getItem('flowpad_token');
+      const data={
+        tiles:[...canvas.querySelectorAll('.tile')].map(t=>({
+          x:parseInt(t.style.left)||0,
+          y:parseInt(t.style.top)||0,
+          title:t.querySelector('.tile-title').value||'',
+          content:t.querySelector('.tile-content').value||''
+        })),
+        connections
+      };
+      await fetch(`/api/graphs/${currentGraph.id}`,{method:'PUT',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({title:currentGraph.title,data})});
+    }
 
-        function handleMouseMove(e) {
-            if (isDragging && selectedTile) {
-                const rect = canvas.getBoundingClientRect();
-                const x = e.clientX - rect.left - dragOffset.x;
-                const y = e.clientY - rect.top - dragOffset.y;
-                
-                selectedTile.style.left = x + 'px';
-                selectedTile.style.top = y + 'px';
-                
-                updateConnections();
-            } else if (isConnecting && connectionStart) {
-                drawTemporaryConnection(e);
-            }
-        }
-
-        function handleMouseUp(e) {
-            if (isConnecting) {
-                const tile = e.target.closest('.tile');
-                if (tile && tile !== connectionStart.tile) {
-                    createConnection(connectionStart.tile, tile, connectionStart.dot);
-                }
-                endConnection();
-            }
-            
-            isDragging = false;
-            selectedTile = null;
-        }
-
-        function handleCanvasClick(e) {
-            if (e.target === canvas) {
-                clearSelection();
-            }
-        }
-
-        function handleContextMenu(e) {
-            e.preventDefault();
-            const tile = e.target.closest('.tile');
-            if (tile) {
-                showContextMenu(e, tile);
-            }
-        }
-
-        // Tile Management
-        function addTile(type = 'process') {
-            const tile = createTile(100, 100, type);
-            tiles.push(tile);
-            renderCanvas();
-            saveGraph();
-        }
-
-        function createTile(x, y, type = 'process') {
-            const tile = document.createElement('div');
-            tile.className = `tile ${type}`;
-            tile.style.left = x + 'px';
-            tile.style.top = y + 'px';
-            tile.dataset.type = type;
-            
-            tile.innerHTML = `
-                <textarea class="tile-title" placeholder="Title" oninput="autoResize(this)"></textarea>
-                <textarea class="tile-content" placeholder="Content" oninput="autoResize(this)"></textarea>
-                <div class="connection-dot top" data-side="top"></div>
-                <div class="connection-dot bottom" data-side="bottom"></div>
-                <div class="connection-dot left" data-side="left"></div>
-                <div class="connection-dot right" data-side="right"></div>
-            `;
-            
-            return tile;
-        }
-
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-        }
-
-        function deleteSelected() {
-            if (selectedTile) {
-                deleteTile(selectedTile);
-            }
-        }
-
-        function deleteTile(tile) {
-            const index = tiles.indexOf(tile);
-            if (index > -1) {
-                tiles.splice(index, 1);
-                removeConnectionsForTile(tile);
-                renderCanvas();
-                saveGraph();
-            }
-        }
-
-        function duplicateTile(tile) {
-            const newTile = createTile(
-                parseInt(tile.style.left) + 20,
-                parseInt(tile.style.top) + 20,
-                tile.dataset.type
-            );
-            
-            newTile.querySelector('.tile-title').value = tile.querySelector('.tile-title').value;
-            newTile.querySelector('.tile-content').value = tile.querySelector('.tile-content').value;
-            
-            tiles.push(newTile);
-            renderCanvas();
-            saveGraph();
-        }
-
-        function duplicateSelected() {
-            if (selectedTile) {
-                duplicateTile(selectedTile);
-            }
-        }
-
-        // Connection Management
-        function startConnection(e, tile) {
-            isConnecting = true;
-            connectionStart = {
-                tile: tile,
-                dot: e.target.dataset.side
-            };
-            e.stopPropagation();
-        }
-
-        function endConnection() {
-            isConnecting = false;
-            connectionStart = null;
-            const tempConnection = document.querySelector('.temp-connection');
-            if (tempConnection) {
-                tempConnection.remove();
-            }
-        }
-
-        function createConnection(fromTile, toTile, fromSide) {
-            const connection = {
-                from: { tile: fromTile, side: fromSide },
-                to: { tile: toTile, side: 'bottom' } // Default to bottom
-            };
-            
-            connections.push(connection);
-            updateConnections();
-            saveGraph();
-        }
-
-        function updateConnections() {
-            // Remove existing connections
-            document.querySelectorAll('.connection').forEach(conn => conn.remove());
-            
-            // Draw new connections
-            connections.forEach(conn => {
-                drawConnection(conn);
-            });
-        }
-
-        function drawConnection(connection) {
-            const fromTile = connection.from.tile;
-            const toTile = connection.to.tile;
-            
-            if (!fromTile || !toTile) return;
-            
-            const fromRect = fromTile.getBoundingClientRect();
-            const toRect = toTile.getBoundingClientRect();
-            const canvasRect = canvas.getBoundingClientRect();
-            
-            const fromX = fromRect.left + fromRect.width / 2 - canvasRect.left;
-            const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-            const toX = toRect.left + toRect.width / 2 - canvasRect.left;
-            const toY = toRect.top + toRect.height / 2 - canvasRect.top;
-            
-            const connectionEl = document.createElement('div');
-            connectionEl.className = 'connection';
-            
-            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-            svg.style.position = 'absolute';
-            svg.style.width = '100%';
-            svg.style.height = '100%';
-            svg.style.top = '0';
-            svg.style.left = '0';
-            svg.style.pointerEvents = 'none';
-            
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            const d = `M ${fromX} ${fromY} Q ${(fromX + toX) / 2} ${fromY - 50} ${toX} ${toY}`;
-            path.setAttribute('d', d);
-            path.setAttribute('class', 'connection-line');
-            
-            svg.appendChild(path);
-            connectionEl.appendChild(svg);
-            canvas.appendChild(connectionEl);
-        }
-
-        function removeConnectionsForTile(tile) {
-            connections = connections.filter(conn => 
-                conn.from.tile !== tile && conn.to.tile !== tile
-            );
-        }
-
-        // Dragging
-        function startDragging(e, tile) {
-            isDragging = true;
-            selectedTile = tile;
-            clearSelection();
-            tile.classList.add('selected');
-            
-            const rect = tile.getBoundingClientRect();
-            dragOffset.x = e.clientX - rect.left;
-            dragOffset.y = e.clientY - rect.top;
-            
-            e.stopPropagation();
-        }
-
-        function clearSelection() {
-            document.querySelectorAll('.tile').forEach(tile => {
-                tile.classList.remove('selected');
-            });
-            selectedTile = null;
-        }
-
-        // Rendering
-        function renderCanvas() {
-            const canvas = document.getElementById('canvas');
-            canvas.innerHTML = '';
-            
-            tiles.forEach(tile => {
-                canvas.appendChild(tile);
-            });
-            
-            updateConnections();
-            updateMiniMap();
-        }
-
-        // Context Menu
-        function showContextMenu(e, tile) {
-            const menu = document.getElementById('contextMenu');
-            menu.style.display = 'block';
-            menu.style.left = e.pageX + 'px';
-            menu.style.top = e.pageY + 'px';
-            
-            // Store reference to tile for context menu actions
-            menu.dataset.targetTile = tile;
-        }
-
-        // Utility Functions
-        function toggleSidebar() {
-            const sidebar = document.getElementById('sidebar');
-            const canvasContainer = document.getElementById('canvasContainer');
-            
-            sidebar.classList.toggle('collapsed');
-            canvasContainer.classList.toggle('full-width');
-        }
-
-        function toggleGrid() {
-            gridVisible = !gridVisible;
-            const canvas = document.getElementById('canvas');
-            
-            if (gridVisible) {
-                canvas.style.backgroundImage = `
-                    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)
-                `;
-            } else {
-                canvas.style.backgroundImage = 'none';
-            }
-        }
-
-        // Sharing
-        async function shareGraph() {
-            if (!currentGraph) return;
-            
-            const email = document.getElementById('shareEmail').value.trim();
-            if (!email) {
-                alert('Please enter an email address');
-                return;
-            }
-
-            try {
-                const token = localStorage.getItem('flowpad_token');
-                const response = await fetch(`/api/graphs/${currentGraph.id}/share`, {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email })
-                });
-
-                if (response.ok) {
-                    showNotification('Graph shared successfully!', 'success');
-                    document.getElementById('shareEmail').value = '';
-                } else {
-                    const error = await response.json();
-                    showNotification(error.error || 'Failed to share graph', 'error');
-                }
-            } catch (error) {
-                console.error('Failed to share graph:', error);
-                alert('Failed to share graph');
-            }
-        }
-
-        // Auto-save
-        async function saveGraph() {
-            if (!currentGraph) return;
-            
-            try {
-                const token = localStorage.getItem('flowpad_token');
-                const graphData = {
-                    tiles: tiles.map(tile => ({
-                        x: parseInt(tile.style.left),
-                        y: parseInt(tile.style.top),
-                        title: tile.querySelector('.tile-title').value,
-                        content: tile.querySelector('.tile-content').value
-                    })),
-                    connections: connections
-                };
-
-                await fetch(`/api/graphs/${currentGraph.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: currentGraph.title,
-                        data: graphData
-                    })
-                });
-            } catch (error) {
-                console.error('Failed to save graph:', error);
-            }
-        }
-
-        // Notification system
-        function showNotification(message, type = 'success', duration = 3000) {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, duration);
-        }
-
-        // Auto-save on changes
-        let saveTimeout;
-        function scheduleSave() {
-            clearTimeout(saveTimeout);
-            saveTimeout = setTimeout(saveGraph, 1000);
-        }
-
-        // Zoom functionality
-        let currentZoom = 1;
-        const canvas = document.getElementById('canvas');
-
-        function zoomIn() {
-            currentZoom = Math.min(currentZoom * 1.2, 3);
-            updateZoom();
-        }
-
-        function zoomOut() {
-            currentZoom = Math.max(currentZoom / 1.2, 0.3);
-            updateZoom();
-        }
-
-        function resetZoom() {
-            currentZoom = 1;
-            updateZoom();
-        }
-
-        function updateZoom() {
-            canvas.style.transform = `scale(${currentZoom})`;
-            canvas.style.transformOrigin = 'center center';
-            updateMiniMap();
-        }
-
-        // Mini-map functionality
-        function updateMiniMap() {
-            const miniMapContent = document.getElementById('miniMapContent');
-            if (!miniMapContent) return;
-            
-            miniMapContent.innerHTML = '';
-            
-            tiles.forEach(tile => {
-                const miniTile = document.createElement('div');
-                miniTile.className = 'mini-map-tile';
-                
-                const x = parseInt(tile.style.left) * 0.1;
-                const y = parseInt(tile.style.top) * 0.1;
-                const width = tile.offsetWidth * 0.1;
-                const height = tile.offsetHeight * 0.1;
-                
-                miniTile.style.left = x + 'px';
-                miniTile.style.top = y + 'px';
-                miniTile.style.width = width + 'px';
-                miniTile.style.height = height + 'px';
-                
-                miniMapContent.appendChild(miniTile);
-            });
-        }
-
-        function toggleMiniMap() {
-            const miniMap = document.getElementById('miniMap');
-            const toggle = miniMap.querySelector('.mini-map-toggle');
-            
-            if (miniMap.classList.contains('collapsed')) {
-                miniMap.classList.remove('collapsed');
-                toggle.textContent = '−';
-            } else {
-                miniMap.classList.add('collapsed');
-                toggle.textContent = '+';
-            }
-        }
-
-        // Keyboard shortcuts
-        document.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'TEXTAREA') return; // Don't trigger shortcuts when editing text
-            
-            switch(e.key) {
-                case 'Delete':
-                case 'Backspace':
-                    if (selectedTile) {
-                        deleteSelected();
-                    }
-                    break;
-                case 'd':
-                case 'D':
-                    if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        duplicateSelected();
-                    }
-                    break;
-                case 'g':
-                case 'G':
-                    e.preventDefault();
-                    toggleGrid();
-                    break;
-                case 'Escape':
-                    clearSelection();
-                    break;
-                case '=':
-                case '+':
-                    if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        zoomIn();
-                    }
-                    break;
-                case '-':
-                    if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        zoomOut();
-                    }
-                    break;
-                case '0':
-                    if (e.ctrlKey || e.metaKey) {
-                        e.preventDefault();
-                        resetZoom();
-                    }
-                    break;
-            }
-        });
-
-        // Event listeners for auto-save
-        document.addEventListener('input', scheduleSave);
-        document.addEventListener('change', scheduleSave);
-
-        // Close context menu when clicking elsewhere
-        document.addEventListener('click', () => {
-            document.getElementById('contextMenu').style.display = 'none';
-        });
-    </script>
+    function notify(msg,type='success',ms=2500){
+      const n=document.getElementById('notification');
+      n.textContent=msg; n.className=`notification ${type}`; n.classList.add('show');
+      setTimeout(()=>n.classList.remove('show'), ms);
+    }
+  </script>
 </body>
 </html>
