@@ -9,16 +9,13 @@ const cookieParser = require('cookie-parser');
 
 const app = express();
 
+// Trust proxy for secure cookies behind Vercel/CDN
+app.set('trust proxy', 1);
+
 // Load environment variables
 require('dotenv').config();
 
-// CORS configuration
-app.use(cors({
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
-}));
+
 
 app.use(express.json());
 
@@ -70,7 +67,10 @@ async function initializeDatabase() {
 }
 
 // Google OAuth client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || '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');
+const googleClient = new OAuth2Client(
+  process.env.GOOGLE_CLIENT_ID ||
+  '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com'
+);
 
 // JWT secret
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -200,10 +200,18 @@ app.post('/api/auth/google', async (req, res) => {
     const { idToken } = req.body;
     const ticket = await googleClient.verifyIdToken({
       idToken,
-      audience: process.env.GOOGLE_CLIENT_ID || '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'
+      audience: process.env.GOOGLE_CLIENT_ID ||
+                '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com'
     });
 
     const payload = ticket.getPayload();
+    
+    // Verify token audience matches our client ID
+    if (payload.aud !== (process.env.GOOGLE_CLIENT_ID ||
+        '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com')) {
+      return res.status(401).json({ error: 'Invalid token audience' });
+    }
+    
     const { sub: googleId, email, name } = payload;
 
     // Check if user exists
@@ -224,8 +232,8 @@ app.post('/api/auth/google', async (req, res) => {
     try {
       res.cookie('auth_token', token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === 'production', // true in production
-          sameSite: 'none', // Required for cross-origin requests
+          secure: process.env.NODE_ENV === 'production', // must be HTTPS on prod
+          sameSite: 'lax',                                // same-origin = Lax is ideal
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           path: '/'
       });
