@@ -81,8 +81,7 @@
 
             try {
                 const response = await fetch('/api/cors-test', {
-                    method: 'GET',
-                    credentials: 'include'
+                    method: 'GET'
                 });
 
                 if (response.ok) {
@@ -111,7 +110,6 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    credentials: 'include',
                     body: JSON.stringify({
                         idToken: 'test-token'
                     })
@@ -139,8 +137,7 @@
 
             try {
                 const response = await fetch('/api/health', {
-                    method: 'GET',
-                    credentials: 'include'
+                    method: 'GET'
                 });
 
                 if (response.ok) {

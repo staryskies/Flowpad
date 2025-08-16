@@ -322,28 +322,43 @@
             loading.style.display = 'block';
             error.style.display = 'none';
 
-            // Initialize Google Sign-In
+            // Initialize Google Sign-In with more specific configuration
             google.accounts.id.initialize({
                 client_id: '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',
-                callback: handleCredentialResponse
+                callback: handleCredentialResponse,
+                auto_select: false,
+                cancel_on_tap_outside: true,
+                prompt_parent_id: 'signin-section'
             });
 
-            google.accounts.id.prompt();
+            google.accounts.id.prompt((notification) => {
+                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                    console.log('Google Sign-In prompt not displayed or skipped');
+                    error.textContent = 'Google Sign-In prompt not available. Please try again.';
+                    error.style.display = 'block';
+                    loading.style.display = 'none';
+                }
+            });
         }
 
         async function handleCredentialResponse(response) {
+            console.log('Google Sign-In response received:', response);
+            
             try {
+                console.log('Making request to /api/auth/google');
                 const result = await fetch('/api/auth/google', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                     },
-                    credentials: 'include',
                     body: JSON.stringify({
                         idToken: response.credential
                     })
                 });
+                
+                console.log('Response status:', result.status);
+                console.log('Response headers:', result.headers);
 
                 if (!result.ok) {
                     throw new Error('Authentication failed');
@@ -361,6 +376,11 @@
                 
             } catch (err) {
                 console.error('Sign-in error:', err);
+                console.error('Error details:', {
+                    name: err.name,
+                    message: err.message,
+                    stack: err.stack
+                });
                 document.getElementById('error').textContent = 'Sign-in failed. Please try again.';
                 document.getElementById('error').style.display = 'block';
                 document.getElementById('loading').style.display = 'none';
