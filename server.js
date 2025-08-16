@@ -39,6 +39,7 @@ app.use(cors({
   optionsSuccessStatus: 200
 }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.static('.'));
 
 // PostgreSQL connection
@@ -112,15 +113,21 @@ const authenticateToken = async (req, res, next) => {
     return res.status(500).json({ error: 'Database connection not available' });
   }
 
+  // Check for token in Authorization header first
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
+  
+  // If no token in header, check for cookie
+  const cookieToken = req.cookies?.auth_token;
+  
+  const tokenToVerify = token || cookieToken;
+  
+  if (!tokenToVerify) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(tokenToVerify, JWT_SECRET);
     const result = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
     
     if (result.rows.length === 0) {
@@ -222,11 +229,17 @@ app.options('/api/auth/google', (req, res) => {
 
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
-  // Set CORS headers specifically for this endpoint
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+              // Set CORS headers specifically for this endpoint
+            const origin = req.headers.origin;
+            if (origin) {
+                res.header('Access-Control-Allow-Origin', origin);
+                res.header('Access-Control-Allow-Credentials', 'true');
+            } else {
+                res.header('Access-Control-Allow-Origin', '*');
+            }
+            res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+            res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+            res.header('Access-Control-Max-Age', '86400');
 
   if (!pool) {
     return res.status(500).json({ error: 'Database connection not available' });
@@ -261,6 +274,15 @@ app.post('/api/auth/google', async (req, res) => {
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+
+    // Set secure cookie with proper SameSite and Secure attributes
+    res.cookie('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // true in production
+        sameSite: 'none', // Required for cross-origin requests
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        path: '/'
+    });
 
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {

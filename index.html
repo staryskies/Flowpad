@@ -146,6 +146,8 @@
             transform: translateY(0);
         }
 
+
+
         .google-icon {
             width: 20px;
             height: 20px;
@@ -315,6 +317,8 @@
             }
         }
 
+
+
         function signInWithGoogle() {
             const loading = document.getElementById('loading');
             const error = document.getElementById('error');
@@ -322,19 +326,63 @@
             loading.style.display = 'block';
             error.style.display = 'none';
 
-            // Initialize Google Sign-In with more specific configuration
+            // Initialize Google Sign-In with proper FedCM configuration
             google.accounts.id.initialize({
                 client_id: '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',
                 callback: handleCredentialResponse,
                 auto_select: false,
                 cancel_on_tap_outside: true,
-                prompt_parent_id: 'signin-section'
+                prompt_parent_id: 'signin-section',
+                // FedCM compatibility - explicitly opt in
+                use_fedcm_for_prompt: true,
+                // Context for FedCM
+                context: 'signin'
             });
 
+            // Use the new FedCM-compatible prompt method with proper error handling
             google.accounts.id.prompt((notification) => {
-                if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                    console.log('Google Sign-In prompt not displayed or skipped');
-                    error.textContent = 'Google Sign-In prompt not available. Please try again.';
+                if (notification.isNotDisplayed()) {
+                    const reason = notification.getNotDisplayedReason();
+                    console.log('Google Sign-In not displayed:', reason);
+                    
+                    if (reason === 'browser_not_supported') {
+                        error.textContent = 'Your browser does not support Google Sign-In. Please try a different browser.';
+                    } else if (reason === 'invalid_client') {
+                        error.textContent = 'Google Sign-In configuration error. Please contact support.';
+                    } else if (reason === 'opt_out_or_no_session') {
+                        error.textContent = 'No active Google session. Please sign in to Google first.';
+                    } else if (reason === 'secure_http_required') {
+                        error.textContent = 'HTTPS is required for Google Sign-In.';
+                    } else if (reason === 'suppressed_by_user') {
+                        error.textContent = 'Google Sign-In was blocked by your browser. Please allow popups.';
+                    } else if (reason === 'unregistered_origin') {
+                        error.textContent = 'This domain is not registered for Google Sign-In.';
+                    } else if (reason === 'unknown_reason') {
+                        error.textContent = 'Google Sign-In failed for an unknown reason. Please try again.';
+                    } else {
+                        error.textContent = `Google Sign-In not available: ${reason}`;
+                    }
+                    error.style.display = 'block';
+                    loading.style.display = 'none';
+                } else if (notification.isSkippedMoment()) {
+                    const reason = notification.getSkippedReason();
+                    console.log('Google Sign-In skipped:', reason);
+                    
+                    if (reason === 'auto_cancel') {
+                        error.textContent = 'Sign-In was automatically cancelled. Please try again.';
+                    } else if (reason === 'user_cancel') {
+                        error.textContent = 'Sign-In was cancelled by user. Please try again.';
+                    } else if (reason === 'tap_outside') {
+                        error.textContent = 'Sign-In was cancelled. Please click the button again.';
+                    } else {
+                        error.textContent = `Sign-In was skipped: ${reason}`;
+                    }
+                    error.style.display = 'block';
+                    loading.style.display = 'none';
+                } else if (notification.isDismissedMoment()) {
+                    const reason = notification.getDismissedReason();
+                    console.log('Google Sign-In dismissed:', reason);
+                    error.textContent = `Sign-In was dismissed: ${reason}. Please try again.`;
                     error.style.display = 'block';
                     loading.style.display = 'none';
                 }
@@ -352,6 +400,7 @@
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                     },
+                    credentials: 'include', // Include cookies for session management
                     body: JSON.stringify({
                         idToken: response.credential
                     })
@@ -361,17 +410,20 @@
                 console.log('Response headers:', result.headers);
 
                 if (!result.ok) {
-                    throw new Error('Authentication failed');
+                    const errorText = await result.text();
+                    console.error('Backend error response:', errorText);
+                    throw new Error(`Authentication failed: ${result.status} ${result.statusText}`);
                 }
 
                 const data = await result.json();
-                currentUser = data.user;
+                console.log('Authentication successful, user data:', data);
                 
-                // Store token in localStorage
+                // Store token in localStorage as backup
                 localStorage.setItem('flowpad_token', data.token);
                 localStorage.setItem('flowpad_user', JSON.stringify(data.user));
 
-                // Redirect to dashboard
+                // The cookie is automatically set by the server
+                console.log('Redirecting to graph page...');
                 window.location.href = '/graph';
                 
             } catch (err) {
@@ -381,7 +433,7 @@
                     message: err.message,
                     stack: err.stack
                 });
-                document.getElementById('error').textContent = 'Sign-in failed. Please try again.';
+                document.getElementById('error').textContent = `Sign-in failed: ${err.message}. Please try again.`;
                 document.getElementById('error').style.display = 'block';
                 document.getElementById('loading').style.display = 'none';
             }
