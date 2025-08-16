@@ -1,0 +1,1116 @@
+<!-- graph.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Flowpad Graph</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#111111',
+            secondary: '#333333',
+            accent: '#555555',
+            background: '#f0f0f0',
+            text: '#000000',
+            border: '#cccccc',
+            shadow: 'rgba(0,0,0,0.1)',
+          }
+        }
+      }
+    }
+  </script>
+  <style id="app-style">
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background-color: #f0f0f0;
+      color: #000000;
+    }
+    .canvas.html2canvas-container {
+      width: 5000px !important;
+      height: 3000px !important;
+    }
+    .canvas-container {
+      position: relative;
+      width: 100%;
+      height: calc(100vh - 60px);
+      overflow: hidden;
+    }
+    .canvas {
+      position: relative;
+      width: 5000px;
+      height: 3000px;
+      transform-origin: 0 0;
+      background-color: #f0f0f0;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .tile {
+      position: absolute;
+      width: 250px;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      user-select: none;
+      overflow: hidden;
+      transition: box-shadow 0.2s ease, transform 0.1s ease, width 0.3s ease, height 0.3s ease;
+      padding: 10px;
+      border: 2px solid transparent;
+      min-height: 100px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .tile:hover {
+      border-color: #333333;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .tile.dragging {
+      border-color: #333333;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      transform: scale(1.02);
+      z-index: 1000;
+    }
+    .tile-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    .tile-content {
+      min-height: 50px;
+      word-wrap: break-word;
+      white-space: pre-line;
+      padding: 5px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .tile-content:focus, [contenteditable]:focus {
+      outline: none;
+      border-color: #333333;
+      background-color: #f0f0f0;
+    }
+    .edit-bar {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background-color: #dddddd;
+      border-bottom: 1px solid #cccccc;
+    }
+    .project-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #000000;
+      margin-right: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 300px;
+    }
+    .toolbar-button {
+      display: flex;
+      align-items: center;
+      padding: 5px 10px;
+      background-color: #ffffff;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      cursor: pointer;
+      color: #000000;
+    }
+    .toolbar-button:hover {
+      background-color: #f0f0f0;
+    }
+    .zoom-controls {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      display: flex;
+      gap: 5px;
+    }
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #333333;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 4px;
+      display: none;
+    }
+    .toast.show {
+      display: flex;
+      align-items: center;
+    }
+    .connector-handle {
+      position: absolute;
+      width: 16px;
+      height: 16px;
+      background-color: #333333;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      transition: all 0.2s ease;
+      z-index: 20;
+    }
+    .connector-handle:hover {
+      background-color: #111111;
+      transform: scale(1.3);
+      box-shadow: 0 0 0 4px rgba(0,0,0,0.1);
+    }
+    .connector-handle.input {
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .connector-handle.output {
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .connections-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .connection-line {
+      stroke: #666666;
+      stroke-width: 2;
+      fill: none;
+      marker-end: url(#arrowhead);
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+      cursor: pointer;
+    }
+    .connection-line.active {
+      stroke: #000000;
+      stroke-width: 3;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+      marker-end: url(#arrowhead-active);
+    }
+    .connection-label {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #dddddd;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 15;
+      cursor: text;
+      max-width: 150px;
+      word-wrap: break-word;
+      pointer-events: auto;
+      color: #000000;
+    }
+    .connection-label:empty:before {
+      content: 'Click to add label';
+      color: #666666;
+    }
+    #dashboard {
+      height: calc(100vh - 60px);
+      overflow-y: auto;
+      background: #f0f0f0;
+    }
+    #graph-list li {
+      background: white;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #graph-list a {
+      color: #000000;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div class="flex items-center">
+      <div id="project-title" class="project-title">Flowpad Graph</div>
+      <button id="add-tile" class="toolbar-button" style="display: none;">
+        <i class="fa-solid fa-plus"></i> Add Tile
+      </button>
+      <button id="share-graph" class="toolbar-button" style="display: none;">
+        <i class="fa-solid fa-share"></i> Share
+      </button>
+      <button id="export-png" class="toolbar-button" style="display: none;">
+        <i class="fa-solid fa-image"></i> Export PNG
+      </button>
+      <button id="back-to-dashboard" class="toolbar-button" style="display: none;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </button>
+    </div>
+    <div>
+      <button id="clear-all" class="toolbar-button text-red-600 hover:bg-red-50" style="display: none;">
+        <i class="fa-solid fa-trash-can"></i> Clear All
+      </button>
+      <button id="logout" class="toolbar-button">
+        <i class="fa-solid fa-sign-out-alt"></i> Logout
+      </button>
+    </div>
+  </div>
+  
+  <div id="dashboard" class="p-8">
+    <h1 class="text-3xl font-bold mb-6 text-primary">Your Graphs</h1>
+    <button id="create-graph" class="toolbar-button mb-6">
+      <i class="fa-solid fa-plus"></i> Create New Graph
+    </button>
+    <ul id="graph-list" class="space-y-4"></ul>
+  </div>
+  
+  <div class="canvas-container" style="display: none;">
+    <div id="canvas" class="canvas html2canvas-container">
+      <svg class="connections-layer" id="connections-svg">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#666666" />
+          </marker>
+          <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#000000" />
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+
+  <div class="zoom-controls" style="display: none;">
+    <button id="zoom-in"><i class="fa-solid fa-plus"></i></button>
+    <button id="zoom-out"><i class="fa-solid fa-minus"></i></button>
+    <button id="zoom-reset"><i class="fa-solid fa-arrows-to-dot"></i></button>
+  </div>
+
+  <div id="toast" class="toast">
+    <i class="fa-solid fa-circle-check"></i>
+    <span id="toast-message"></span>
+  </div>
+
+  <script id="app-script">
+    class ConnectionManager {
+      constructor(svgElement) {
+        this.svg = svgElement;
+        this.connections = [];
+        this.activeLabel = null;
+        this.scale = 1;
+      }
+      
+      createConnection(fromTileId, toTileId, label = '') {
+        const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${fromTileId}"]`);
+        const toHandle = document.querySelector(`.connector-handle.input[data-tile="${toTileId}"]`);
+        
+        if (!fromHandle || !toHandle) return null;
+        
+        const connection = {
+          id: `conn-${fromTileId}-${toTileId}`,
+          from: fromTileId,
+          to: toTileId,
+          label: label,
+          element: this.createSVGLine(fromHandle, toHandle),
+          labelElement: this.createLabelElement(label)
+        };
+        
+        connection.element.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.showLabel(connection);
+        });
+        
+        this.connections.push(connection);
+        this.svg.appendChild(connection.element);
+        document.querySelector('.canvas-container').appendChild(connection.labelElement);
+        this.updateLabelPosition(connection);
+        
+        return connection;
+      }
+      
+      createLabelElement(text = '') {
+        const label = document.createElement('div');
+        label.className = 'connection-label';
+        label.contentEditable = true;
+        label.textContent = text;
+        label.style.display = 'none';
+        
+        label.addEventListener('blur', () => {
+          const connection = this.connections.find(c => c.labelElement === label);
+          if (connection) {
+            connection.label = label.textContent;
+            if (!label.textContent.trim()) {
+              label.style.display = 'none';
+            }
+            connection.element.classList.remove('active');
+            saveState();
+          }
+        });
+        
+        label.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            label.blur();
+          }
+        });
+        
+        return label;
+      }
+      
+      showLabel(connection) {
+        if (this.activeLabel) {
+          this.activeLabel.style.display = 'none';
+        }
+        if (connection.element) {
+          connection.element.classList.add('active');
+        }
+        
+        connection.labelElement.style.display = 'block';
+        this.updateLabelPosition(connection);
+        connection.labelElement.focus();
+        this.activeLabel = connection.labelElement;
+      }
+      
+      createSVGLine(fromHandle, toHandle) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.classList.add('connection-line');
+        path.setAttribute('stroke-width', '2.5');
+        path.setAttribute('marker-end', 'url(#arrowhead)');
+        this.updateLinePosition(path, fromHandle, toHandle);
+        return path;
+      }
+      
+      updateLinePosition(path, fromHandle, toHandle) {
+        const fromRect = fromHandle.getBoundingClientRect();
+        const toRect = toHandle.getBoundingClientRect();
+        const svgRect = this.svg.getBoundingClientRect();
+        
+        const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+        const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+        const toX = toRect.left + toRect.width / 2 - svgRect.left;
+        const toY = toRect.top + toRect.height / 2 - svgRect.top;
+        
+        const dx = toX - fromX;
+        const dy = toY - fromY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const controlOffset = Math.min(distance * 0.3, 100);
+        
+        const controlX1 = fromX + controlOffset;
+        const controlY1 = fromY;
+        const controlX2 = toX - controlOffset;
+        const controlY2 = toY;
+        
+        const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${toX} ${toY}`;
+        path.setAttribute('d', pathData);
+      }
+      
+      updateConnection(connection) {
+        const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${connection.from}"]`);
+        const toHandle = document.querySelector(`.connector-handle.input[data-tile="${connection.to}"]`);
+        
+        if (fromHandle && toHandle) {
+          this.updateLinePosition(connection.element, fromHandle, toHandle);
+          if (connection.labelElement) {
+            this.updateLabelPosition(connection);
+          }
+        }
+      }
+      
+      updateLabelPosition(connection) {
+        if (!connection.element || !connection.labelElement) return;
+        
+        const path = connection.element;
+        const pathLength = path.getTotalLength();
+        const midPoint = path.getPointAtLength(pathLength / 2);
+        
+        const svgRect = this.svg.getBoundingClientRect();
+        const canvasRect = document.querySelector('.canvas-container').getBoundingClientRect();
+        
+        const x = (midPoint.x * this.scale) + svgRect.left - canvasRect.left;
+        const y = (midPoint.y * this.scale) + svgRect.top - canvasRect.top;
+        
+        connection.labelElement.style.left = `${x}px`;
+        connection.labelElement.style.top = `${y}px`;
+        connection.labelElement.style.transform = 'translate(-50%, -50%)';
+      }
+      
+      updateAllConnections() {
+        this.connections.forEach(conn => this.updateConnection(conn));
+      }
+      
+      removeConnection(connection) {
+        if (connection.element) connection.element.remove();
+        if (connection.labelElement) connection.labelElement.remove();
+        const index = this.connections.findIndex(c => c.id === connection.id);
+        if (index !== -1) this.connections.splice(index, 1);
+      }
+      
+      removeConnectionsForTile(tileId) {
+        this.connections
+          .filter(conn => conn.from === tileId || conn.to === tileId)
+          .forEach(conn => this.removeConnection(conn));
+      }
+      
+      createTemporaryLine(fromHandle, startX, startY) {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.classList.add('connection-line', 'active');
+        path.setAttribute('stroke', '#000000');
+        path.setAttribute('stroke-width', '3');
+        path.setAttribute('stroke-dasharray', '5,3');
+        path.setAttribute('marker-end', 'url(#arrowhead-active)');
+        path.setAttribute('d', `M ${startX} ${startY}`);
+        this.svg.appendChild(path);
+        return path;
+      }
+    }
+
+    function initApp() {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        window.location.href = '/index.html';
+        return;
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const graphId = urlParams.get('graph');
+
+      const state = {
+        tiles: [],
+        connections: [],
+        activeConnection: null,
+        activeTile: null,
+        nextId: 1,
+        zoomLevel: 1,
+        graphId: graphId,
+        title: 'Untitled Graph'
+      };
+
+      const connectionManager = new ConnectionManager(document.getElementById('connections-svg'));
+      const canvas = document.getElementById('canvas');
+      const container = document.querySelector('.canvas-container');
+      const dashboard = document.getElementById('dashboard');
+      const addTileBtn = document.getElementById('add-tile');
+      const shareBtn = document.getElementById('share-graph');
+      const exportPngBtn = document.getElementById('export-png');
+      const clearAllBtn = document.getElementById('clear-all');
+      const backBtn = document.getElementById('back-to-dashboard');
+      const logoutBtn = document.getElementById('logout');
+      const zoomInBtn = document.getElementById('zoom-in');
+      const zoomOutBtn = document.getElementById('zoom-out');
+      const zoomResetBtn = document.getElementById('zoom-reset');
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toast-message');
+      const projectTitle = document.getElementById('project-title');
+      const createGraphBtn = document.getElementById('create-graph');
+      const graphList = document.getElementById('graph-list');
+
+      const panzoomInstance = Panzoom(canvas, {
+        maxZoom: 4,
+        minZoom: 0.1,
+        zoomDoubleClickSpeed: 1,
+        smoothScroll: false,
+        exclude: ['.tile']
+      });
+      let currentTransform = { x: 0, y: 0, scale: 1 };
+
+      canvas.addEventListener('panzoom', (e) => {
+        currentTransform = panzoomInstance.getTransform();
+        connectionManager.scale = currentTransform.scale;
+        connectionManager.updateAllConnections();
+      });
+
+      container.addEventListener('wheel', (e) => {
+        if (e.target.closest('.tile')) return;
+        e.preventDefault();
+        const delta = e.deltaY;
+        const { scale } = panzoomInstance.getTransform();
+        const newScale = delta > 0 ? scale / 1.1 : scale * 1.1;
+        panzoomInstance.zoomTo(e.clientX, e.clientY, newScale);
+      }, { passive: false });
+
+      function showToast(message, type = 'success') {
+        toastMessage.textContent = message;
+        toast.className = `toast ${type} show`;
+        toast.style.backgroundColor = type === 'error' ? '#ef4444' : '#333333';
+        setTimeout(() => toast.classList.remove('show'), 3000);
+      }
+
+      function createTile(id, x, y, title = 'New Tile', content = '') {
+        const gridSize = 20;
+        const snappedX = Math.round(x / gridSize) * gridSize;
+        const snappedY = Math.round(y / gridSize) * gridSize;
+        const tileElement = document.createElement('div');
+        tileElement.className = 'tile';
+        tileElement.id = `tile-${id}`;
+        tileElement.dataset.id = id;
+        tileElement.style.left = `${snappedX}px`;
+        tileElement.style.top = `${snappedY}px`;
+        tileElement.innerHTML = `
+          <div class="tile-header" draggable="true">
+            <div class="font-medium text-text" contenteditable="true">${title}</div>
+            <div class="flex">
+              <button class="text-accent hover:text-red-500 tile-delete ml-2">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+          </div>
+          <input type="text" class="edit-bar" placeholder="Type here and press Enter to add text...">
+          <div class="tile-content" contenteditable="true">${content}</div>
+          <div class="connector-handle input" data-tile="${id}"></div>
+          <div class="connector-handle output" data-tile="${id}"></div>
+        `;
+        canvas.appendChild(tileElement);
+        const tile = { id, element: tileElement, x: snappedX, y: snappedY, title, content };
+        state.tiles.push(tile);
+        makeElementDraggable(tileElement);
+        return tile;
+      }
+
+      function makeElementDraggable(element) {
+        let startX, startY, startMouseX, startMouseY, isDragging = false;
+
+        element.addEventListener('mousedown', startDrag);
+        element.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+          if (e.target.closest('button') || e.target.getAttribute('contenteditable') === 'true' || e.target.classList.contains('edit-bar')) return;
+          
+          e.preventDefault();
+          startX = parseFloat(element.style.left) || 0;
+          startY = parseFloat(element.style.top) || 0;
+          startMouseX = e.type === 'mousedown' ? e.clientX : e.touches[0].clientX;
+          startMouseY = e.type === 'mousedown' ? e.clientY : e.touches[0].clientY;
+          isDragging = true;
+          
+          element.classList.add('dragging');
+          setActiveTile(element);
+          document.addEventListener('mousemove', drag);
+          document.addEventListener('touchmove', drag, { passive: false });
+          document.addEventListener('mouseup', endDrag);
+          document.addEventListener('touchend', endDrag);
+        }
+
+        const content = element.querySelector('.tile-content');
+        const resizeObserver = new ResizeObserver(() => adjustTileSize(element));
+        resizeObserver.observe(content);
+        content.addEventListener('input', () => adjustTileSize(element));
+
+        function drag(e) {
+          if (!isDragging) return;
+          e.preventDefault();
+          const clientX = e.type === 'mousemove' ? e.clientX : e.touches[0].clientX;
+          const clientY = e.type === 'mousemove' ? e.clientY : e.touches[0].clientY;
+          const deltaX = (clientX - startMouseX) / currentTransform.scale;
+          const deltaY = (clientY - startMouseY) / currentTransform.scale;
+          const newX = startX + deltaX;
+          const newY = startY + deltaY;
+          element.style.left = `${newX}px`;
+          element.style.top = `${newY}px`;
+          const tileId = parseInt(element.dataset.id);
+          const tile = state.tiles.find(t => t.id === tileId);
+          if (tile) {
+            tile.x = newX;
+            tile.y = newY;
+          }
+          updateConnections(tileId);
+        }
+
+        function endDrag() {
+          isDragging = false;
+          document.removeEventListener('mousemove', drag);
+          document.removeEventListener('touchmove', drag);
+          document.removeEventListener('mouseup', endDrag);
+          document.removeEventListener('touchend', endDrag);
+          
+          element.classList.remove('dragging');
+          
+          const tileId = parseInt(element.dataset.id);
+          const tile = state.tiles.find(t => t.id === tileId);
+          const gridSize = 20;
+          tile.x = Math.round(tile.x / gridSize) * gridSize;
+          tile.y = Math.round(tile.y / gridSize) * gridSize;
+          element.style.left = `${tile.x}px`;
+          element.style.top = `${tile.y}px`;
+          updateConnections(tileId);
+          saveState();
+        }
+      }
+
+      function setActiveTile(element) {
+        document.querySelectorAll('.tile.active').forEach(t => t.classList.remove('active'));
+        if (element) {
+          element.classList.add('active');
+          state.activeTile = parseInt(element.dataset.id);
+        } else {
+          state.activeTile = null;
+        }
+      }
+
+      function createConnection(fromTileId, toTileId, label = '') {
+        if (state.connections.some(conn => conn.from === fromTileId && conn.to === toTileId)) return null;
+        const connection = connectionManager.createConnection(fromTileId, toTileId, label);
+        if (connection) {
+          state.connections.push(connection);
+        }
+        return connection;
+      }
+
+      function updateConnections(tileId) {
+        state.connections
+          .filter(conn => conn.from === tileId || conn.to === tileId)
+          .forEach(conn => connectionManager.updateConnection(conn));
+      }
+
+      function removeTile(tileId) {
+        connectionManager.removeConnectionsForTile(tileId);
+        state.connections = state.connections.filter(conn => conn.from !== tileId && conn.to !== tileId);
+        const tileIndex = state.tiles.findIndex(t => t.id === tileId);
+        if (tileIndex !== -1) {
+          state.tiles[tileIndex].element.remove();
+          state.tiles.splice(tileIndex, 1);
+        }
+        saveState();
+      }
+
+      function adjustTileSize(element) {
+        const content = element.querySelector('.tile-content');
+        const contentLength = content.textContent.length;
+        let newWidth = 250;
+        if (contentLength > 100) {
+          newWidth = Math.min(400, 250 + (contentLength - 100) / 3);
+        }
+        element.style.width = `${newWidth}px`;
+        const tileId = parseInt(element.dataset.id);
+        updateConnections(tileId);
+      }
+
+      async function saveState() {
+        if (!state.graphId) return;
+        const dataToSave = {
+          tiles: state.tiles.map(tile => ({
+            id: tile.id,
+            x: tile.x,
+            y: tile.y,
+            title: tile.element.querySelector('.tile-header div[contenteditable]').textContent,
+            content: tile.element.querySelector('.tile-content').textContent
+          })),
+          connections: state.connections.map(conn => ({ 
+            from: conn.from, 
+            to: conn.to, 
+            label: conn.label || ''
+          })),
+          nextId: state.nextId
+        };
+        const title = projectTitle.textContent;
+        try {
+          const res = await fetch(`/api/graphs/${state.graphId}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ data: dataToSave, title })
+          });
+          if (!res.ok) throw new Error();
+        } catch {
+          showToast('Save failed', 'error');
+        }
+      }
+
+      async function loadState() {
+        if (!state.graphId) return false;
+        try {
+          const res = await fetch(`/api/graphs/${state.graphId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error();
+          const { title, data: parsedData } = await res.json();
+          projectTitle.textContent = title || 'Untitled Graph';
+          state.title = title;
+          canvas.innerHTML = `
+            <svg class="connections-layer" id="connections-svg">
+              <defs>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#666666" />
+                </marker>
+                <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                  <polygon points="0 0, 10 3.5, 0 7" fill="#000000" />
+                </marker>
+              </defs>
+            </svg>
+          `;
+          state.tiles = [];
+          state.connections.forEach(conn => connectionManager.removeConnection(conn));
+          state.connections = [];
+          parsedData.tiles.forEach(tileData => {
+            createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content);
+          });
+          parsedData.connections.forEach(conn => {
+            const connection = createConnection(conn.from, conn.to, conn.label || '');
+            if (connection && conn.label && conn.label.trim()) {
+              connection.labelElement.style.display = 'block';
+              connectionManager.updateLabelPosition(connection);
+            }
+          });
+          state.nextId = parsedData.nextId;
+          return true;
+        } catch (err) {
+          console.error('Failed to load state:', err);
+          return false;
+        }
+      }
+
+      async function exportAsPng() {
+        try {
+          showToast('Preparing export...');
+          const zoomControls = document.querySelector('.zoom-controls');
+          zoomControls.style.display = 'none';
+
+          const originalTransform = canvas.style.transform;
+          canvas.style.transform = 'translate(0px, 0px) scale(1)';
+          connectionManager.updateAllConnections();
+
+          const originalContainerStyle = {
+            overflow: container.style.overflow,
+            height: container.style.height,
+            width: container.style.width
+          };
+          container.style.overflow = 'visible';
+
+          let minX = 0, minY = 0, maxX = 0, maxY = 0;
+          state.tiles.forEach(tile => {
+            const x = tile.x;
+            const y = tile.y;
+            const w = tile.element.offsetWidth;
+            const h = tile.element.offsetHeight;
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + w);
+            maxY = Math.max(maxY, y + h);
+          });
+          const margin = 50;
+          const exportWidth = maxX - minX + margin * 2;
+          const exportHeight = maxY - minY + margin * 2;
+
+          const originalPositions = state.tiles.map(tile => ({ x: tile.x, y: tile.y }));
+          state.tiles.forEach(tile => {
+            tile.x = tile.x - minX + margin;
+            tile.y = tile.y - minY + margin;
+            tile.element.style.left = `${tile.x}px`;
+            tile.element.style.top = `${tile.y}px`;
+          });
+          connectionManager.updateAllConnections();
+
+          const originalCanvasWidth = canvas.style.width;
+          const originalCanvasHeight = canvas.style.height;
+          canvas.style.width = `${exportWidth}px`;
+          canvas.style.height = `${exportHeight}px`;
+          container.style.width = `${exportWidth}px`;
+          container.style.height = `${exportHeight}px`;
+
+          const screenshot = await html2canvas(canvas, {
+            useCORS: true,
+            allowTaint: false,
+            scale: 2
+          });
+
+          canvas.style.width = originalCanvasWidth;
+          canvas.style.height = originalCanvasHeight;
+          state.tiles.forEach((tile, index) => {
+            tile.x = originalPositions[index].x;
+            tile.y = originalPositions[index].y;
+            tile.element.style.left = `${tile.x}px`;
+            tile.element.style.top = `${tile.y}px`;
+          });
+          connectionManager.updateAllConnections();
+
+          container.style.overflow = originalContainerStyle.overflow;
+          container.style.height = originalContainerStyle.height;
+          container.style.width = originalContainerStyle.width;
+
+          canvas.style.transform = originalTransform;
+          connectionManager.updateAllConnections();
+
+          zoomControls.style.display = 'flex';
+
+          const link = document.createElement('a');
+          link.download = 'flowpad-graph.png';
+          link.href = screenshot.toDataURL('image/png');
+          link.click();
+
+          showToast('Export successful!');
+        } catch (err) {
+          showToast('Export failed', 'error');
+        }
+      }
+
+      async function loadDashboard() {
+        try {
+          const res = await fetch('/api/graphs', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (!res.ok) throw new Error();
+          const graphs = await res.json();
+          graphList.innerHTML = '';
+          graphs.forEach(graph => {
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <a href="?graph=${graph.id}" class="hover:underline">${graph.title}</a>
+              <span class="text-accent">${graph.is_owner ? 'Owner' : 'Shared'}</span>
+            `;
+            graphList.appendChild(li);
+          });
+        } catch {
+          showToast('Failed to load graphs', 'error');
+        }
+      }
+
+      async function createNewGraph() {
+        try {
+          const res = await fetch('/api/graphs', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ title: 'New Graph' })
+          });
+          if (!res.ok) throw new Error();
+          const { id } = await res.json();
+          window.location.href = `?graph=${id}`;
+        } catch {
+          showToast('Create failed', 'error');
+        }
+      }
+
+      async function shareGraph() {
+        const email = prompt('Enter email to share with:');
+        if (!email) return;
+        try {
+          const res = await fetch(`/api/graphs/${state.graphId}/share`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ email })
+          });
+          if (!res.ok) throw new Error();
+          showToast('Graph shared!');
+        } catch {
+          showToast('Share failed', 'error');
+        }
+      }
+
+      addTileBtn.addEventListener('click', () => {
+        const centerX = (container.clientWidth / 2 - currentTransform.x) / currentTransform.scale;
+        const centerY = (container.clientHeight / 2 - currentTransform.y) / currentTransform.scale;
+        createTile(state.nextId++, centerX, centerY);
+        saveState();
+        showToast('New tile added!');
+      });
+
+      shareBtn.addEventListener('click', shareGraph);
+      exportPngBtn.addEventListener('click', exportAsPng);
+      clearAllBtn.addEventListener('click', () => {
+        state.connections.forEach(conn => connectionManager.removeConnection(conn));
+        canvas.innerHTML = `
+          <svg class="connections-layer" id="connections-svg">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#666666" />
+              </marker>
+              <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#000000" />
+              </marker>
+            </defs>
+          </svg>
+        `;
+        state.tiles = [];
+        state.connections = [];
+        state.nextId = 1;
+        panzoomInstance.moveTo(0, 0);
+        panzoomInstance.zoomAbs(0, 0, 1);
+        saveState();
+        showToast('All content cleared!');
+      });
+      zoomInBtn.addEventListener('click', () => {
+        const { scale } = panzoomInstance.getTransform();
+        panzoomInstance.zoomTo(container.clientWidth / 2, container.clientHeight / 2, scale * 1.2);
+      });
+      zoomOutBtn.addEventListener('click', () => {
+        const { scale } = panzoomInstance.getTransform();
+        panzoomInstance.zoomTo(container.clientWidth / 2, container.clientHeight / 2, scale / 1.2);
+      });
+      zoomResetBtn.addEventListener('click', () => {
+        panzoomInstance.moveTo(0, 0);
+        panzoomInstance.zoomAbs(0, 0, 1);
+      });
+      backBtn.addEventListener('click', () => window.location.href = '/graph.html');
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('token');
+        window.location.href = '/index.html';
+      });
+      createGraphBtn.addEventListener('click', createNewGraph);
+
+      canvas.addEventListener('click', (e) => {
+        if (e.target.closest('.tile-delete')) {
+          removeTile(parseInt(e.target.closest('.tile').dataset.id));
+          return;
+        }
+        const tile = e.target.closest('.tile');
+        tile ? setActiveTile(tile) : setActiveTile(null);
+      });
+
+      canvas.addEventListener('mousedown', (e) => {
+        const handle = e.target.closest('.connector-handle');
+        if (!handle) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const tileId = parseInt(handle.dataset.tile);
+        if (handle.classList.contains('output')) {
+          state.activeConnection = { from: tileId, startElement: handle };
+          const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
+          const handleRect = handle.getBoundingClientRect();
+          const startX = handleRect.left + handleRect.width / 2 - svgRect.left;
+          const startY = handleRect.top + handleRect.height / 2 - svgRect.top;
+          state.activeConnection.tempLine = connectionManager.createTemporaryLine(handle, startX, startY);
+          handle.style.backgroundColor = '#111111';
+          handle.style.transform = 'scale(1.3)';
+        }
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!state.activeConnection || !state.activeConnection.tempLine) return;
+        const fromHandle = state.activeConnection.startElement;
+        const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
+        const fromRect = fromHandle.getBoundingClientRect();
+        const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+        const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+        const targetX = e.clientX - svgRect.left;
+        const targetY = e.clientY - svgRect.top;
+        const dx = targetX - fromX;
+        const dy = targetY - fromY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const controlOffset = Math.min(distance * 0.3, 100);
+        const controlX1 = fromX + controlOffset;
+        const controlY1 = fromY;
+        const controlX2 = targetX - controlOffset;
+        const controlY2 = targetY;
+        const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
+        state.activeConnection.tempLine.setAttribute('d', pathData);
+        document.querySelectorAll('.connector-handle.input').forEach(handle => {
+          const handleRect = handle.getBoundingClientRect();
+          const centerX = handleRect.left + handleRect.width / 2;
+          const centerY = handleRect.top + handleRect.height / 2;
+          const dist = Math.sqrt((e.clientX - centerX)**2 + (e.clientY - centerY)**2);
+          if (dist < 50) {
+            handle.style.backgroundColor = '#111111';
+            handle.style.transform = 'scale(1.3)';
+          } else {
+            handle.style.backgroundColor = '';
+            handle.style.transform = '';
+          }
+        });
+      });
+
+      document.addEventListener('mouseup', (e) => {
+        if (!state.activeConnection) return;
+        if (state.activeConnection.startElement) {
+          state.activeConnection.startElement.style.backgroundColor = '';
+          state.activeConnection.startElement.style.transform = '';
+        }
+        const handle = e.target.closest('.connector-handle');
+        if (handle && handle.classList.contains('input')) {
+          const toTileId = parseInt(handle.dataset.tile);
+          if (state.activeConnection.from !== toTileId) {
+            handle.style.backgroundColor = '#111111';
+            handle.style.transform = 'scale(1.3)';
+            setTimeout(() => {
+              handle.style.backgroundColor = '';
+              handle.style.transform = '';
+            }, 300);
+            const connection = createConnection(state.activeConnection.from, toTileId, '');
+            if (connection) {
+              setTimeout(() => connectionManager.showLabel(connection), 300);
+            }
+            saveState();
+            showToast('Connection created');
+          }
+        }
+        if (state.activeConnection.tempLine) state.activeConnection.tempLine.remove();
+        state.activeConnection = null;
+      });
+
+      canvas.addEventListener('blur', (e) => {
+        if (e.target.getAttribute('contenteditable') === 'true') saveState();
+      }, true);
+
+      canvas.addEventListener('keydown', (e) => {
+        if (e.target.classList.contains('edit-bar') && e.key === 'Enter') {
+          e.preventDefault();
+          const text = e.target.value.trim();
+          if (text) {
+            const tile = e.target.closest('.tile');
+            const contentArea = tile.querySelector('.tile-content');
+            contentArea.textContent += (contentArea.textContent ? '\n' : '') + text;
+            e.target.value = '';
+            saveState();
+          }
+        }
+      });
+
+      if (state.graphId) {
+        dashboard.style.display = 'none';
+        container.style.display = 'block';
+        addTileBtn.style.display = 'flex';
+        shareBtn.style.display = 'flex';
+        exportPngBtn.style.display = 'flex';
+        clearAllBtn.style.display = 'flex';
+        backBtn.style.display = 'flex';
+        document.querySelector('.zoom-controls').style.display = 'flex';
+        loadState().then(loaded => {
+          if (!loaded) {
+            createTile(state.nextId++, 100, 100, 'Welcome', 'Start your graph here!');
+            saveState();
+          }
+          connectionManager.updateAllConnections();
+          panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
+        });
+      } else {
+        container.style.display = 'none';
+        dashboard.style.display = 'block';
+        loadDashboard();
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      setTimeout(initApp, 100);
+    }
+  </script>
+</body>
+</html>
