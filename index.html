@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>MindFlow | Interactive Planning Canvas</title>
+  <title>Flowpad | Interactive Planning Canvas</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@panzoom/panzoom@9.4.3/dist/panzoom.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/leader-line@1.0.7/leader-line.min.js"></script>
+  <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
+  <script src="https://unpkg.com/leader-line@1.2.4/leader-line.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style id="app-style">
@@ -158,7 +158,7 @@
 <body class="bg-slate-50">
   <div class="toolbar">
     <div class="flex items-center">
-      <div class="font-semibold text-slate-800 mr-6 text-lg">MindFlow</div>
+      <div class="font-semibold text-slate-800 mr-6 text-lg">Flowpad</div>
       <button id="add-tile" class="toolbar-button primary">
         <i class="fa-solid fa-plus"></i> Add Tile
       </button>
@@ -209,7 +209,43 @@
   </div>
 
   <script id="app-script">
-    document.addEventListener('DOMContentLoaded', function() {
+    // Check if required libraries are loaded
+    function checkDependencies() {
+      if (typeof Panzoom === 'undefined') {
+        console.error('Panzoom library not loaded. Loading fallback...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js';
+        script.onload = () => {
+          console.log('Panzoom loaded from fallback CDN');
+          initApp();
+        };
+        script.onerror = () => {
+          alert('Failed to load Panzoom library. Please check your internet connection.');
+        };
+        document.head.appendChild(script);
+        return false;
+      }
+      if (typeof LeaderLine === 'undefined') {
+        console.error('LeaderLine library not loaded. Loading fallback...');
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js';
+        script.onload = () => {
+          console.log('LeaderLine loaded from fallback CDN');
+          initApp();
+        };
+        script.onerror = () => {
+          alert('Failed to load LeaderLine library. Please check your internet connection.');
+        };
+        document.head.appendChild(script);
+        return false;
+      }
+      return true;
+    }
+
+    function initApp() {
+      if (!checkDependencies()) return;
+      
+      document.addEventListener('DOMContentLoaded', function() {
       const state = {
         tiles: [],
         connections: [],
@@ -425,12 +461,12 @@
           connections: state.connections.map(conn => ({ from: conn.from, to: conn.to })),
           nextId: state.nextId
         };
-        localStorage.setItem('mindflow-state', JSON.stringify(dataToSave));
+        localStorage.setItem('Flowpad-state', JSON.stringify(dataToSave));
       }
 
       function loadState() {
         try {
-          const savedData = localStorage.getItem('mindflow-state');
+          const savedData = localStorage.getItem('Flowpad-state');
           if (!savedData) return false;
           const parsedData = JSON.parse(savedData);
           canvas.innerHTML = '';
@@ -543,7 +579,7 @@
           zoomControls.style.display = 'flex';
 
           const link = document.createElement('a');
-          link.download = 'mindflow-canvas.png';
+          link.download = 'Flowpad-canvas.png';
           link.href = screenshot.toDataURL('image/png');
           link.click();
 
@@ -638,7 +674,7 @@
           state.nextId = 1;
           panzoomInstance.moveTo(0, 0);
           panzoomInstance.zoomAbs(0, 0, 1);
-          localStorage.removeItem('mindflow-state');
+          localStorage.removeItem('Flowpad-state');
           showToast('All content cleared!');
         }
       });
@@ -720,12 +756,20 @@
       }, true);
 
       if (!loadState()) {
-        createTile(state.nextId++, 100, 100, 'Welcome to MindFlow!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
+        createTile(state.nextId++, 100, 100, 'Welcome to Flowpad!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
         saveState();
       }
-      updateAllConnections();
-      panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
-    });
-  </script>
+             updateAllConnections();
+       panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
+     });
+     }
+     
+     // Initialize the app when the page loads
+     if (document.readyState === 'loading') {
+       document.addEventListener('DOMContentLoaded', initApp);
+     } else {
+       initApp();
+     }
+   </script>
 </body>
 </html>
