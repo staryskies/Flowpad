@@ -11,31 +11,15 @@ const app = express();
 // Load environment variables
 require('dotenv').config();
 
-// CORS configuration
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    // Allow localhost for development
-    if (origin.startsWith('http://localhost:')) return callback(null, true);
-    
-    // Allow Vercel domains
-    if (origin.includes('vercel.app')) return callback(null, true);
-    
-    // Allow your custom domain if you have one
-    // if (origin === 'https://yourdomain.com') return callback(null, true);
-    
-    callback(null, true); // Allow all origins for now
-  },
+// CORS configuration - simplified for maximum compatibility
+app.use(cors({
+  origin: true, // Allow all origins
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-};
-
-// Middleware
-app.use(cors(corsOptions));
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+}));
 app.use(express.json());
 app.use(express.static('.'));
 

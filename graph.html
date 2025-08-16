@@ -24,12 +24,12 @@
         }
 
         body.light-mode {
-            background: #f5f5f5;
+            background: #f5f5f5 !important;
             background-image: 
                 linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: #333333;
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px) !important;
+            background-size: 20px 20px !important;
+            color: #333333 !important;
         }
 
         /* Header */
@@ -47,6 +47,12 @@
             justify-content: space-between;
             padding: 0 20px;
             z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .header {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border-bottom: 1px solid #ddd !important;
         }
 
         .logo {
@@ -56,6 +62,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .logo {
+            background: linear-gradient(45deg, #333333, #666666) !important;
+            -webkit-background-clip: text !important;
+            -webkit-text-fill-color: transparent !important;
+            background-clip: text !important;
         }
 
         .user-info {
@@ -66,6 +80,11 @@
 
         .user-name {
             color: #cccccc;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .user-name {
+            color: #666666 !important;
         }
 
         .signout-btn {
@@ -80,6 +99,15 @@
 
         .signout-btn:hover {
             background: #555;
+        }
+
+        body.light-mode .signout-btn {
+            background: #666 !important;
+            color: #ffffff !important;
+        }
+
+        body.light-mode .signout-btn:hover {
+            background: #888 !important;
         }
 
         .theme-toggle-btn {
@@ -128,6 +156,11 @@
             transition: transform 0.3s ease;
         }
 
+        body.light-mode .sidebar {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border-right: 1px solid #ddd !important;
+        }
+
         .sidebar.collapsed {
             transform: translateX(-100%);
         }
@@ -158,6 +191,11 @@
             font-weight: 600;
             margin-bottom: 15px;
             color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .section-title {
+            color: #333333 !important;
         }
 
         .new-graph-btn {
@@ -171,6 +209,10 @@
             font-size: 1rem;
             margin-bottom: 20px;
             transition: background 0.3s ease;
+        }
+
+        body.light-mode .new-graph-btn {
+            background: #45a049 !important;
         }
 
         .new-graph-btn:hover {
@@ -191,6 +233,11 @@
             transition: all 0.3s ease;
         }
 
+        body.light-mode .graph-item {
+            background: rgba(0, 0, 0, 0.05) !important;
+            border: 1px solid #ddd !important;
+        }
+
         .graph-item:hover {
             background: rgba(255, 255, 255, 0.1);
             border-color: #555;
@@ -204,11 +251,21 @@
         .graph-title {
             font-weight: 600;
             margin-bottom: 5px;
+            transition: all 0.3s ease;
         }
 
         .graph-meta {
             font-size: 0.8rem;
             color: #888;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .graph-title {
+            color: #333333 !important;
+        }
+
+        body.light-mode .graph-meta {
+            color: #666666 !important;
         }
 
         .share-section {
@@ -223,6 +280,13 @@
             border-radius: 6px;
             width: 100%;
             margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .share-input {
+            background: #f5f5f5 !important;
+            border: 1px solid #ddd !important;
+            color: #333333 !important;
         }
 
         .share-btn {
@@ -234,6 +298,10 @@
             cursor: pointer;
             width: 100%;
             transition: background 0.3s ease;
+        }
+
+        body.light-mode .share-btn {
+            background: #1976D2 !important;
         }
 
         .share-btn:hover {
@@ -285,6 +353,13 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body.light-mode .tile {
+            background: #ffffff !important;
+            color: #000000 !important;
+            border: 2px solid #666 !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
         }
 
         .tile:hover {
@@ -443,6 +518,12 @@
             padding: 15px;
             z-index: 1000;
             min-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .toolbar {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #ddd !important;
         }
 
         .tool-section {
@@ -459,6 +540,11 @@
             margin-bottom: 8px;
             text-align: center;
             font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .tool-label {
+            color: #666666 !important;
         }
 
         .tool-btn {
@@ -476,6 +562,11 @@
             justify-content: center;
             transition: all 0.3s ease;
             font-size: 1rem;
+        }
+
+        body.light-mode .tool-btn {
+            background: #666 !important;
+            color: #ffffff !important;
         }
 
         .tool-btn:hover {
@@ -549,6 +640,12 @@
             border-radius: 8px;
             z-index: 999;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .mini-map {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid #ddd !important;
         }
 
         .mini-map-header {
@@ -560,6 +657,13 @@
             border-bottom: 1px solid #333;
             font-size: 0.8rem;
             color: #cccccc;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .mini-map-header {
+            background: rgba(0, 0, 0, 0.1) !important;
+            border-bottom: 1px solid #ddd !important;
+            color: #666666 !important;
         }
 
         .mini-map-toggle {
@@ -574,10 +678,19 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s ease;
         }
 
         .mini-map-toggle:hover {
             color: #ffffff;
+        }
+
+        body.light-mode .mini-map-toggle {
+            color: #666666 !important;
+        }
+
+        body.light-mode .mini-map-toggle:hover {
+            color: #333333 !important;
         }
 
         .mini-map-content {
@@ -586,6 +699,11 @@
             background: #1a1a1a;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .mini-map-content {
+            background: #f5f5f5 !important;
         }
 
         .mini-map-tile {
