@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Flowpad | Interactive Planning Canvas</title>
+  <title>Mind Map | Interactive Planning Canvas</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
@@ -41,15 +41,18 @@
     }
          .tile {
        position: absolute;
-       width: 220px;
+       width: 250px;
        border-radius: 8px;
        background: white;
        box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
        user-select: none;
        overflow: hidden;
-       transition: box-shadow 0.2s ease, transform 0.1s ease;
+       transition: box-shadow 0.2s ease, transform 0.1s ease, width 0.3s ease, height 0.3s ease;
        padding: 10px;
        border: 2px solid transparent;
+       min-height: 100px;
+       max-height: 500px;
+       overflow-y: auto;
      }
      .tile:hover {
        border-color: #3b82f6;
@@ -71,6 +74,14 @@
       min-height: 50px;
       word-wrap: break-word;
       white-space: pre-line;
+      padding: 5px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+    }
+    .tile-content:focus, [contenteditable]:focus {
+      outline: none;
+      border-color: #3b82f6;
+      background-color: #f8fafc;
     }
     .edit-bar {
       width: 100%;
@@ -86,6 +97,100 @@
       padding: 10px 20px;
       background-color: #e2e8f0;
       border-bottom: 1px solid #ccc;
+    }
+    
+    /* AI Assistant Panel */
+    .ai-assistant-panel {
+      position: fixed;
+      right: 20px;
+      top: 80px;
+      width: 300px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      overflow: hidden;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      transform: translateX(320px);
+      opacity: 0;
+    }
+    .ai-assistant-panel.visible {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .ai-assistant-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background-color: #3b82f6;
+      color: white;
+      font-weight: 500;
+    }
+    .ai-assistant-content {
+      padding: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .ai-assistant-footer {
+      padding: 12px 16px;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+    }
+    .ai-assistant-input {
+      flex-grow: 1;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .ai-assistant-send {
+      margin-left: 8px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .ai-toggle-button {
+      position: fixed;
+      right: 20px;
+      top: 20px;
+      background-color: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1001;
+    }
+    .project-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1f2937;
+      margin-right: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 300px;
+    }
+    
+    /* AI Assistant Message Styling */
+    .message {
+      margin-bottom: 12px;
+      display: flex;
+    }
+    .user-message {
+      justify-content: flex-end;
+    }
+    .ai-message {
+      justify-content: flex-start;
     }
     .toolbar-button {
       display: flex;
@@ -186,33 +291,60 @@
        fill: none;
        marker-end: url(#arrowhead);
        filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+       cursor: pointer;
      }
      .connection-line.active {
        stroke: #3b82f6;
        stroke-width: 3;
        filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.3));
      }
+     .connection-label {
+       position: absolute;
+       background-color: white;
+       border: 1px solid #e2e8f0;
+       border-radius: 4px;
+       padding: 4px 8px;
+       font-size: 12px;
+       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+       z-index: 15;
+       cursor: text;
+       max-width: 150px;
+       word-wrap: break-word;
+       pointer-events: auto;
+     }
+     .connection-label:empty:before {
+       content: 'Click to add label';
+       color: #94a3b8;
+     }
      .connector-handle {
        position: absolute;
-       width: 12px;
-       height: 12px;
-       background-color: #94a3b8;
+       width: 16px;
+       height: 16px;
+       background-color: #3b82f6;
        border-radius: 50%;
        cursor: pointer;
        border: 2px solid white;
-       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
        transition: all 0.2s ease;
+       z-index: 20; /* Ensure handles are above other elements */
      }
      .connector-handle:hover {
-       background-color: #3b82f6;
-       transform: scale(1.2);
+       background-color: #2563eb;
+       transform: scale(1.3);
+       box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+     }
+     .connector-handle.input {
+       top: -8px;
+     }
+     .connector-handle.output {
+       bottom: -8px;
      }
   </style>
 </head>
 <body class="bg-slate-50">
   <div class="toolbar">
     <div class="flex items-center">
-      <div class="font-semibold text-slate-800 mr-6 text-lg">Flowpad</div>
+      <div id="project-title" class="project-title">Mind Map</div>
       <button id="add-tile" class="toolbar-button primary">
         <i class="fa-solid fa-plus"></i> Add Tile
       </button>
@@ -229,14 +361,37 @@
       </button>
     </div>
   </div>
-
-     <div class="canvas-container">
+  
+  <!-- AI Assistant Button and Panel -->
+  <button id="ai-toggle" class="ai-toggle-button">
+    <i class="fa-solid fa-robot"></i>
+  </button>
+  
+  <div id="ai-assistant" class="ai-assistant-panel">
+    <div class="ai-assistant-header">
+      <div>AI Assistant</div>
+      <button id="ai-close" class="text-white">
+        <i class="fa-solid fa-times"></i>
+      </button>
+    </div>
+    <div id="ai-content" class="ai-assistant-content">
+      <p>Hello! I'm your AI assistant. I can help you with your mind mapping project based on the information you provided in the setup.</p>
+    </div>
+    <div class="ai-assistant-footer">
+      <input type="text" id="ai-input" class="ai-assistant-input" placeholder="Ask me anything...">
+      <button id="ai-send" class="ai-assistant-send">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
+  
+  <div class="canvas-container">
      <div id="canvas" class="canvas html2canvas-container">
        <svg class="connections-layer" id="connections-svg">
          <defs>
            <marker id="arrowhead" markerWidth="10" markerHeight="7" 
-                   refX="9" refY="3.5" orient="auto">
-             <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                   refX="10" refY="3.5" orient="auto">
+             <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
            </marker>
          </defs>
        </svg>
@@ -277,9 +432,10 @@
        constructor(svgElement) {
          this.svg = svgElement;
          this.connections = [];
+         this.activeLabel = null;
        }
        
-       createConnection(fromTileId, toTileId) {
+       createConnection(fromTileId, toTileId, label = '') {
          const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${fromTileId}"]`);
          const toHandle = document.querySelector(`.connector-handle.input[data-tile="${toTileId}"]`);
          
@@ -289,20 +445,74 @@
            id: `conn-${fromTileId}-${toTileId}`,
            from: fromTileId,
            to: toTileId,
-           element: this.createSVGLine(fromHandle, toHandle)
+           label: label,
+           element: this.createSVGLine(fromHandle, toHandle),
+           labelElement: this.createLabelElement(label)
          };
+         
+         // Add click event to the line
+         connection.element.addEventListener('click', (e) => {
+           e.stopPropagation();
+           this.showLabel(connection);
+         });
          
          this.connections.push(connection);
          this.svg.appendChild(connection.element);
+         document.querySelector('.canvas-container').appendChild(connection.labelElement);
+         this.updateLabelPosition(connection);
+         
          return connection;
        }
        
+       createLabelElement(text = '') {
+         const label = document.createElement('div');
+         label.className = 'connection-label';
+         label.contentEditable = true;
+         label.textContent = text;
+         label.style.display = 'none';
+         
+         label.addEventListener('blur', () => {
+           const connection = this.connections.find(c => c.labelElement === label);
+           if (connection) {
+             connection.label = label.textContent;
+             if (!label.textContent.trim()) {
+               label.style.display = 'none';
+             }
+             saveState();
+           }
+         });
+         
+         label.addEventListener('keydown', (e) => {
+           if (e.key === 'Enter' && !e.shiftKey) {
+             e.preventDefault();
+             label.blur();
+           }
+         });
+         
+         return label;
+       }
+       
+       showLabel(connection) {
+         // Hide any previously active label
+         if (this.activeLabel) {
+           this.activeLabel.style.display = 'none';
+         }
+         
+         connection.labelElement.style.display = 'block';
+         this.updateLabelPosition(connection);
+         connection.labelElement.focus();
+         this.activeLabel = connection.labelElement;
+       }
+       
                createSVGLine(fromHandle, toHandle) {
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.classList.add('connection-line');
-          this.updateLinePosition(path, fromHandle, toHandle);
-          return path;
-        }
+         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+         path.classList.add('connection-line');
+         path.setAttribute('stroke', '#3b82f6');
+         path.setAttribute('stroke-width', '2.5');
+         path.setAttribute('marker-end', 'url(#arrowhead)');
+         this.updateLinePosition(path, fromHandle, toHandle);
+         return path;
+       }
         
         updateLinePosition(path, fromHandle, toHandle) {
           const fromRect = fromHandle.getBoundingClientRect();
@@ -330,13 +540,39 @@
         }
        
        updateConnection(connection) {
-         const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${connection.from}"]`);
-         const toHandle = document.querySelector(`.connector-handle.input[data-tile="${connection.to}"]`);
-         
-         if (fromHandle && toHandle) {
-           this.updateLinePosition(connection.element, fromHandle, toHandle);
-         }
-       }
+        const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${connection.from}"]`);
+        const toHandle = document.querySelector(`.connector-handle.input[data-tile="${connection.to}"]`);
+        
+        if (fromHandle && toHandle) {
+          this.updateLinePosition(connection.element, fromHandle, toHandle);
+          if (connection.labelElement) {
+            this.updateLabelPosition(connection);
+          }
+        }
+      }
+      
+      updateLabelPosition(connection) {
+        if (!connection.element || !connection.labelElement) return;
+        
+        const path = connection.element;
+        const pathLength = path.getTotalLength();
+        
+        // Position the label at the middle of the path
+        const midPoint = path.getPointAtLength(pathLength / 2);
+        
+        // Get the SVG's position relative to the viewport
+        const svgRect = this.svg.getBoundingClientRect();
+        const canvasRect = document.querySelector('.canvas-container').getBoundingClientRect();
+        
+        // Calculate the absolute position
+        const x = midPoint.x + svgRect.left - canvasRect.left;
+        const y = midPoint.y + svgRect.top - canvasRect.top;
+        
+        // Position the label
+        connection.labelElement.style.left = `${x}px`;
+        connection.labelElement.style.top = `${y}px`;
+        connection.labelElement.style.transform = 'translate(-50%, -50%)';
+      }
        
        updateAllConnections() {
          this.connections.forEach(conn => this.updateConnection(conn));
@@ -358,34 +594,20 @@
            .forEach(conn => this.removeConnection(conn));
        }
        
-               createTemporaryLine(fromHandle, toX, toY) {
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.classList.add('connection-line', 'active');
-          
-          const fromRect = fromHandle.getBoundingClientRect();
-          const svgRect = this.svg.getBoundingClientRect();
-          
-          const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
-          const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-          const targetX = toX - svgRect.left;
-          const targetY = toY - svgRect.top;
-          
-          // Calculate control points for curved path
-          const dx = targetX - fromX;
-          const dy = targetY - fromY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const controlOffset = Math.min(distance * 0.3, 100);
-          
-          const controlX1 = fromX + controlOffset;
-          const controlY1 = fromY;
-          const controlX2 = targetX - controlOffset;
-          const controlY2 = targetY;
-          
-          const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
-          path.setAttribute('d', pathData);
-          
-          this.svg.appendChild(path);
-          return path;
+               createTemporaryLine(fromHandle, startX, startY) {
+         const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+         path.classList.add('connection-line', 'active');
+         path.setAttribute('stroke', '#3b82f6');
+         path.setAttribute('stroke-width', '3');
+         path.setAttribute('stroke-dasharray', '5,3');
+         path.setAttribute('marker-end', 'url(#arrowhead)');
+         
+         // Initial path with just the starting point
+         const pathData = `M ${startX} ${startY}`;
+         path.setAttribute('d', pathData);
+         
+         this.svg.appendChild(path);
+         return path;
         }
      }
 
@@ -420,7 +642,8 @@
          maxZoom: 4,
          minZoom: 0.1,
          zoomDoubleClickSpeed: 1,
-         smoothScroll: false
+         smoothScroll: false,
+         exclude: ['.tile']
        });
        let currentTransform = { x: 0, y: 0, scale: 1 };
        
@@ -429,6 +652,16 @@
          currentTransform = panzoomInstance.getTransform();
          connectionManager.updateAllConnections();
        });
+       
+       // Enable mouse wheel zooming
+       container.addEventListener('wheel', (e) => {
+         if (e.target.closest('.tile')) return; // Don't zoom when scrolling on tiles
+         e.preventDefault();
+         const delta = e.deltaY;
+         const { scale } = panzoomInstance.getTransform();
+         const newScale = delta > 0 ? scale / 1.1 : scale * 1.1;
+         panzoomInstance.zoomTo(e.clientX, e.clientY, newScale);
+       }, { passive: false });
 
       function showToast(message, type = 'success') {
         toastMessage.textContent = message;
@@ -485,8 +718,8 @@
          element.addEventListener('touchstart', startDrag, { passive: false });
  
          function startDrag(e) {
-           // Don't start drag if clicking on buttons or contenteditable elements
-           if (e.target.closest('button') || e.target.getAttribute('contenteditable') === 'true') {
+           // Don't start drag if clicking on buttons, contenteditable elements, or edit bar
+           if (e.target.closest('button') || e.target.getAttribute('contenteditable') === 'true' || e.target.classList.contains('edit-bar')) {
              return;
            }
            
@@ -504,6 +737,15 @@
            document.addEventListener('mouseup', endDrag);
            document.addEventListener('touchend', endDrag);
          }
+         
+         // Auto-resize based on content
+         const content = element.querySelector('.tile-content');
+         const resizeObserver = new ResizeObserver(() => {
+           adjustTileSize(element);
+         });
+         
+         resizeObserver.observe(content);
+         content.addEventListener('input', () => adjustTileSize(element));
 
         function drag(e) {
           if (!isDragging) return;
@@ -556,10 +798,12 @@
         }
       }
 
-             function createConnection(fromTileId, toTileId) {
+             function createConnection(fromTileId, toTileId, label = '') {
          if (state.connections.some(conn => conn.from === fromTileId && conn.to === toTileId)) return null;
-         const connection = connectionManager.createConnection(fromTileId, toTileId);
+         const connection = connectionManager.createConnection(fromTileId, toTileId, label);
          if (connection) {
+           // Set the marker-end attribute to use the arrowhead marker
+           connection.element.setAttribute('marker-end', 'url(#arrowhead)');
            state.connections.push(connection);
          }
          return connection;
@@ -583,6 +827,25 @@
          saveState();
        }
 
+      function adjustTileSize(element) {
+        const content = element.querySelector('.tile-content');
+        const contentLength = content.textContent.length;
+        
+        // Base width calculation
+        let newWidth = 250; // Default width
+        
+        if (contentLength > 100) {
+          newWidth = Math.min(400, 250 + (contentLength - 100) / 3);
+        }
+        
+        // Set the new width
+        element.style.width = `${newWidth}px`;
+        
+        // Update connections after resize
+        const tileId = parseInt(element.dataset.id);
+        updateConnections(tileId);
+      }
+
       function saveState() {
         const dataToSave = {
           tiles: state.tiles.map(tile => ({
@@ -592,7 +855,11 @@
             title: tile.element.querySelector('.tile-header div[contenteditable]').textContent,
             content: tile.element.querySelector('.tile-content').textContent
           })),
-          connections: state.connections.map(conn => ({ from: conn.from, to: conn.to })),
+          connections: state.connections.map(conn => ({ 
+            from: conn.from, 
+            to: conn.to, 
+            label: conn.label || ''
+          })),
           nextId: state.nextId
         };
         localStorage.setItem('Flowpad-state', JSON.stringify(dataToSave));
@@ -616,12 +883,22 @@
            state.tiles = [];
            state.connections.forEach(conn => connectionManager.removeConnection(conn));
            state.connections = [];
-           parsedData.tiles.forEach(tileData =>
-             createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content)
-           );
-           parsedData.connections.forEach(conn =>
-             createConnection(conn.from, conn.to)
-           );
+           parsedData.tiles.forEach(tileData => {
+             const tile = createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content);
+             // Apply custom width if available
+             if (tileData.width && tileData.width !== 250) {
+               tile.element.style.width = `${tileData.width}px`;
+             }
+           });
+           parsedData.connections.forEach(conn => {
+             // Create connection with label directly
+             const connection = createConnection(conn.from, conn.to, conn.label || '');
+             if (connection && conn.label && conn.label.trim()) {
+               // Make sure label is visible if it has content
+               connection.labelElement.style.display = 'block';
+               connectionManager.updateLabelPosition(connection);
+             }
+           });
            state.nextId = parsedData.nextId;
            return true;
          } catch (err) {
@@ -870,55 +1147,110 @@
         tile ? setActiveTile(tile) : setActiveTile(null);
       });
              canvas.addEventListener('mousedown', (e) => {
-         const handle = e.target.closest('.connector-handle');
-         if (!handle) return;
-         e.preventDefault();
-         const tileId = parseInt(handle.dataset.tile);
-         if (handle.classList.contains('output')) {
-           state.activeConnection = { from: tileId, startElement: handle };
-           state.activeConnection.tempLine = connectionManager.createTemporaryLine(handle, e.clientX, e.clientY);
-         }
-       });
-               document.addEventListener('mousemove', (e) => {
-          if (!state.activeConnection) return;
-          const fromHandle = state.activeConnection.startElement;
+        const handle = e.target.closest('.connector-handle');
+        if (!handle) return;
+        e.preventDefault();
+        e.stopPropagation(); // Prevent panzoom from handling this event
+        const tileId = parseInt(handle.dataset.tile);
+        if (handle.classList.contains('output')) {
+          state.activeConnection = { from: tileId, startElement: handle };
+          
+          // Get SVG coordinates for initial position
           const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
-          const fromRect = fromHandle.getBoundingClientRect();
+          const handleRect = handle.getBoundingClientRect();
+          const startX = handleRect.left + handleRect.width / 2 - svgRect.left;
+          const startY = handleRect.top + handleRect.height / 2 - svgRect.top;
           
-          const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
-          const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
-          const targetX = e.clientX - svgRect.left;
-          const targetY = e.clientY - svgRect.top;
+          state.activeConnection.tempLine = connectionManager.createTemporaryLine(handle, startX, startY);
           
-          // Calculate control points for curved path
-          const dx = targetX - fromX;
-          const dy = targetY - fromY;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-          const controlOffset = Math.min(distance * 0.3, 100);
-          
-          const controlX1 = fromX + controlOffset;
-          const controlY1 = fromY;
-          const controlX2 = targetX - controlOffset;
-          const controlY2 = targetY;
-          
-          const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
-          state.activeConnection.tempLine.setAttribute('d', pathData);
-        });
-       document.addEventListener('mouseup', (e) => {
-         if (!state.activeConnection) return;
-         const handle = e.target.closest('.connector-handle');
-         if (handle && handle.classList.contains('input')) {
-           const toTileId = parseInt(handle.dataset.tile);
-           if (state.activeConnection.from !== toTileId) {
-             createConnection(state.activeConnection.from, toTileId);
-             saveState();
+          // Add visual feedback
+          handle.style.backgroundColor = '#2563eb';
+          handle.style.transform = 'scale(1.3)';
+        }
+      });
+               document.addEventListener('mousemove', (e) => {
+         if (!state.activeConnection || !state.activeConnection.tempLine) return;
+         
+         const fromHandle = state.activeConnection.startElement;
+         const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
+         const fromRect = fromHandle.getBoundingClientRect();
+         
+         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+         const targetX = e.clientX - svgRect.left;
+         const targetY = e.clientY - svgRect.top;
+         
+         // Calculate control points for curved path
+         const dx = targetX - fromX;
+         const dy = targetY - fromY;
+         const distance = Math.sqrt(dx * dx + dy * dy);
+         const controlOffset = Math.min(distance * 0.3, 100);
+         
+         const controlX1 = fromX + controlOffset;
+         const controlY1 = fromY;
+         const controlX2 = targetX - controlOffset;
+         const controlY2 = targetY;
+         
+         const pathData = `M ${fromX} ${fromY} C ${controlX1} ${controlY1}, ${controlX2} ${controlY2}, ${targetX} ${targetY}`;
+         state.activeConnection.tempLine.setAttribute('d', pathData);
+         
+         // Highlight potential target handles
+         document.querySelectorAll('.connector-handle.input').forEach(handle => {
+           const handleRect = handle.getBoundingClientRect();
+           const centerX = handleRect.left + handleRect.width / 2;
+           const centerY = handleRect.top + handleRect.height / 2;
+           const distance = Math.sqrt(
+             Math.pow(e.clientX - centerX, 2) + 
+             Math.pow(e.clientY - centerY, 2)
+           );
+           
+           if (distance < 50) {
+             handle.style.backgroundColor = '#2563eb';
+             handle.style.transform = 'scale(1.3)';
+           } else {
+             handle.style.backgroundColor = '';
+             handle.style.transform = '';
            }
-         }
-         if (state.activeConnection.tempLine) {
-           state.activeConnection.tempLine.remove();
-         }
-         state.activeConnection = null;
+         });
        });
+       document.addEventListener('mouseup', (e) => {
+        if (!state.activeConnection) return;
+        
+        // Reset visual feedback on the starting handle
+        if (state.activeConnection.startElement) {
+          state.activeConnection.startElement.style.backgroundColor = '';
+          state.activeConnection.startElement.style.transform = '';
+        }
+        
+        const handle = e.target.closest('.connector-handle');
+        if (handle && handle.classList.contains('input')) {
+          const toTileId = parseInt(handle.dataset.tile);
+          if (state.activeConnection.from !== toTileId) {
+            // Add visual feedback to target handle
+            handle.style.backgroundColor = '#2563eb';
+            handle.style.transform = 'scale(1.3)';
+            setTimeout(() => {
+              handle.style.backgroundColor = '';
+              handle.style.transform = '';
+            }, 300);
+            
+            // Create the connection and show label editor
+            const connection = createConnection(state.activeConnection.from, toTileId, '');
+            if (connection) {
+              setTimeout(() => {
+                connectionManager.showLabel(connection);
+              }, 300);
+            }
+            saveState();
+            showToast('Connection created');
+          }
+        }
+        
+        if (state.activeConnection.tempLine) {
+          state.activeConnection.tempLine.remove();
+        }
+        state.activeConnection = null;
+      });
       canvas.addEventListener('blur', (e) => {
         if (e.target.getAttribute('contenteditable') === 'true') saveState();
       }, true);
@@ -938,23 +1270,160 @@
         }
       });
 
-             if (!loadState()) {
-         createTile(state.nextId++, 100, 100, 'Welcome to Flowpad!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
-         saveState();
+             // AI Assistant functionality
+     function initAIAssistant() {
+       const aiToggle = document.getElementById('ai-toggle');
+       const aiPanel = document.getElementById('ai-assistant');
+       const aiClose = document.getElementById('ai-close');
+       const aiInput = document.getElementById('ai-input');
+       const aiSend = document.getElementById('ai-send');
+       const aiContent = document.getElementById('ai-content');
+       
+       // Load setup data from localStorage
+       const setupData = JSON.parse(localStorage.getItem('mindMapSetup') || '{}');
+       const projectTitle = document.getElementById('project-title');
+       
+       // Update project title if available
+       if (setupData.title) {
+         projectTitle.textContent = setupData.title;
+         document.title = `${setupData.title} | Mind Map`;
        }
-       connectionManager.updateAllConnections();
-       panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
+       
+       // Toggle AI panel visibility
+       aiToggle.addEventListener('click', () => {
+         aiPanel.classList.toggle('visible');
+       });
+       
+       // Close AI panel
+       aiClose.addEventListener('click', () => {
+         aiPanel.classList.remove('visible');
+       });
+       
+       // Send message to AI
+       function sendMessage() {
+         const message = aiInput.value.trim();
+         if (!message) return;
+         
+         // Add user message to chat
+         appendMessage('user', message);
+         aiInput.value = '';
+         
+         // Generate AI response based on setup data and message
+         const response = generateAIResponse(message, setupData);
+         setTimeout(() => {
+           appendMessage('ai', response);
+         }, 500);
+       }
+       
+       // Send message on button click
+       aiSend.addEventListener('click', sendMessage);
+       
+       // Send message on Enter key
+       aiInput.addEventListener('keydown', (e) => {
+         if (e.key === 'Enter') {
+           e.preventDefault();
+           sendMessage();
+         }
+       });
+       
+       // Append message to chat
+       function appendMessage(sender, text) {
+         const messageEl = document.createElement('div');
+         messageEl.className = `message ${sender}-message mb-3`;
+         
+         const contentEl = document.createElement('div');
+         contentEl.className = sender === 'user' ? 'bg-blue-100 p-2 rounded-lg inline-block' : 'bg-gray-100 p-2 rounded-lg inline-block';
+         contentEl.textContent = text;
+         
+         messageEl.appendChild(contentEl);
+         aiContent.appendChild(messageEl);
+         aiContent.scrollTop = aiContent.scrollHeight;
+       }
+       
+       // Generate AI response based on setup data and user message
+       function generateAIResponse(message, setupData) {
+         // If no setup data is available, provide a generic response
+         if (!setupData.title && !setupData.description && (!setupData.questions || setupData.questions.length === 0)) {
+           return "I don't have any specific information about your project. You can go back to the setup page to provide more details.";
+         }
+         
+         // Check if message contains keywords related to the project
+         const lowerMessage = message.toLowerCase();
+         
+         // If asking about the project
+         if (lowerMessage.includes('project') || lowerMessage.includes('about') || lowerMessage.includes('what') || lowerMessage.includes('purpose')) {
+           return `This project is about "${setupData.title}". ${setupData.description || ''}`;
+         }
+         
+         // If asking for suggestions
+         if (lowerMessage.includes('suggest') || lowerMessage.includes('idea') || lowerMessage.includes('help')) {
+           // Create a suggestion based on the project description
+           return `Based on your project "${setupData.title}", you might want to create a mind map that includes the main concept in the center, with branches for key aspects. Try adding a central tile with the title, then connect related concepts around it.`;
+         }
+         
+         // If asking about a specific question from setup
+         if (setupData.questions && setupData.questions.length > 0) {
+           for (const question of setupData.questions) {
+             if (lowerMessage.includes(question.toLowerCase())) {
+               return `Regarding "${question}", I suggest creating a dedicated branch in your mind map to explore this aspect of your project.`;
+             }
+           }
+         }
+         
+         // Default response
+         return `I'm here to help with your "${setupData.title}" mind map. You can ask me about the project, request suggestions, or get help with specific aspects of your mind mapping.`;
+       }
+       
+       // Show welcome message with project info if available
+       if (setupData.title || setupData.description) {
+         const welcomeMessage = `Welcome to your "${setupData.title || 'Mind Map'}" project! ${setupData.description ? '\n\n' + setupData.description : ''}`;
+         appendMessage('ai', welcomeMessage);
+       }
      }
      
-                  // Initialize the app when the page loads
-       // Note: Tailwind CSS CDN warning is expected in development
-       // For production, consider installing Tailwind CSS locally
-       if (document.readyState === 'loading') {
-         document.addEventListener('DOMContentLoaded', initApp);
+     if (!loadState()) {
+       // Check if we have setup data
+       const setupData = JSON.parse(localStorage.getItem('mindMapSetup') || '{}');
+       if (setupData.title) {
+         createTile(state.nextId++, 100, 100, setupData.title, setupData.description || 'Start your mind map here!');
+         
+         // If we have questions, create tiles for them
+         if (setupData.questions && setupData.questions.length > 0) {
+           const centerX = 400;
+           const centerY = 100;
+           const radius = 300;
+           const angleStep = (2 * Math.PI) / setupData.questions.length;
+           
+           setupData.questions.forEach((question, index) => {
+             const angle = index * angleStep;
+             const x = centerX + radius * Math.cos(angle);
+             const y = centerY + radius * Math.sin(angle);
+             const tile = createTile(state.nextId++, x, y, question, '');
+             createConnection(1, tile.id);
+           });
+         }
        } else {
-         // Add a small delay to ensure all scripts are loaded
-         setTimeout(initApp, 100);
+         createTile(state.nextId++, 100, 100, 'Welcome to Mind Map!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
        }
+       saveState();
+     }
+     
+     connectionManager.updateAllConnections();
+     panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
+     
+     // Initialize AI Assistant
+     initAIAssistant();
+   }
+   
+   // Initialize the app when the page loads
+   // Note: Tailwind CSS CDN warning is expected in development
+   // For production, consider installing Tailwind CSS locally
+   if (document.readyState === 'loading') {
+     document.addEventListener('DOMContentLoaded', initApp);
+   } else {
+     // Add a small delay to ensure all scripts are loaded
+     setTimeout(initApp, 100);
+   }
    </script>
 </body>
 </html>
