@@ -14,8 +14,22 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #1a1a1a;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
             color: #ffffff;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode {
+            background: #f5f5f5;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #333333;
         }
 
         /* Header */
@@ -66,6 +80,37 @@
 
         .signout-btn:hover {
             background: #555;
+        }
+
+        .theme-toggle-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .theme-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        body.light-mode .theme-toggle-btn {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: #333333;
+        }
+
+        body.light-mode .theme-toggle-btn:hover {
+            background: rgba(0, 0, 0, 0.2);
         }
 
         /* Sidebar */
@@ -563,13 +608,16 @@
 </head>
 <body>
     <!-- Header -->
-    <div class="header">
-        <div class="logo">Flowpad</div>
-        <div class="user-info">
-            <span class="user-name" id="userName">User</span>
-            <button class="signout-btn" onclick="signOut()">Sign Out</button>
+            <div class="header">
+            <div class="logo">Flowpad</div>
+            <div class="user-info">
+                <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeToggle">
+                    🌙
+                </button>
+                <span class="user-name" id="userName">User</span>
+                <button class="signout-btn" onclick="signOut()">Sign Out</button>
+            </div>
         </div>
-    </div>
 
     <!-- Sidebar Toggle -->
     <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
@@ -660,13 +708,42 @@
         let isConnecting = false;
         let connectionStart = null;
         let gridVisible = true;
+        let isDarkMode = true; // Start with dark mode
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            loadTheme(); // Load saved theme preference
             await checkAuth();
             loadGraphs();
             setupCanvas();
         });
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (isDarkMode) {
+                body.classList.remove('light-mode');
+                themeToggle.innerHTML = '🌙';
+                localStorage.setItem('flowpad_theme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                themeToggle.innerHTML = '☀️';
+                localStorage.setItem('flowpad_theme', 'light');
+            }
+        }
+
+        // Load saved theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('flowpad_theme');
+            if (savedTheme === 'light') {
+                isDarkMode = false;
+                document.body.classList.add('light-mode');
+                document.getElementById('themeToggle').innerHTML = '☀️';
+            }
+        }
 
         // Authentication
         async function checkAuth() {

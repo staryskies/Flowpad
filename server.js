@@ -11,8 +11,31 @@ const app = express();
 // Load environment variables
 require('dotenv').config();
 
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.startsWith('http://localhost:')) return callback(null, true);
+    
+    // Allow Vercel domains
+    if (origin.includes('vercel.app')) return callback(null, true);
+    
+    // Allow your custom domain if you have one
+    // if (origin === 'https://yourdomain.com') return callback(null, true);
+    
+    callback(null, true); // Allow all origins for now
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.static('.'));
 
@@ -120,6 +143,17 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// CORS test endpoint
+app.get('/api/cors-test', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.json({ 
+    message: 'CORS is working!',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Test endpoint for Vercel
 app.get('/api/test', (req, res) => {
   res.json({ 
@@ -136,6 +170,13 @@ app.get('/', (req, res) => {
 app.get('/graph', (req, res) => {
   res.sendFile(path.join(__dirname, 'graph.html'));
 });
+
+app.get('/cors-test', (req, res) => {
+  res.sendFile(path.join(__dirname, 'cors-test.html'));
+});
+
+// Preflight handler for Google auth
+app.options('/api/auth/google', cors());
 
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
@@ -166,6 +207,12 @@ app.post('/api/auth/google', async (req, res) => {
 
     const user = result.rows[0];
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+    // Set CORS headers for Google auth
+    res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
 
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
   } catch (error) {
@@ -319,6 +366,13 @@ app.use(async (req, res, next) => {
 // Error handling middleware
 app.use((error, req, res, next) => {
   console.error('Unhandled error:', error);
+  
+  // Set CORS headers for error responses
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
+  
   res.status(500).json({ error: 'Internal server error' });
 });
 

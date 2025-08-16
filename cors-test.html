@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CORS Test - Flowpad</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+    </style>
+</head>
+<body>
+    <h1>CORS Test - Flowpad</h1>
+    
+    <div class="test-section">
+        <h2>1. Basic CORS Test</h2>
+        <button class="test-button" onclick="testCORS()">Test CORS</button>
+        <div id="cors-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Google Auth Endpoint Test</h2>
+        <button class="test-button" onclick="testGoogleAuth()">Test Google Auth Endpoint</button>
+        <div id="google-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Health Check Test</h2>
+        <button class="test-button" onclick="testHealth()">Test Health Endpoint</button>
+        <div id="health-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Current Origin</h2>
+        <div class="result">Current origin: <span id="current-origin"></span></div>
+    </div>
+
+    <script>
+        // Show current origin
+        document.getElementById('current-origin').textContent = window.location.origin;
+
+        async function testCORS() {
+            const resultDiv = document.getElementById('cors-result');
+            resultDiv.textContent = 'Testing CORS...';
+            resultDiv.className = 'result';
+
+            try {
+                const response = await fetch('/api/cors-test', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `✅ CORS Test Successful!\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ CORS Test Failed!\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ CORS Test Error!\n\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testGoogleAuth() {
+            const resultDiv = document.getElementById('google-result');
+            resultDiv.textContent = 'Testing Google Auth endpoint...';
+            resultDiv.className = 'result';
+
+            try {
+                const response = await fetch('/api/auth/google', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        idToken: 'test-token'
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `✅ Google Auth Endpoint Accessible!\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.textContent = `⚠️ Google Auth Endpoint Responded with Error\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}\nResponse: ${errorText}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Google Auth Endpoint Error!\n\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+
+        async function testHealth() {
+            const resultDiv = document.getElementById('health-result');
+            resultDiv.textContent = 'Testing Health endpoint...';
+            resultDiv.className = 'result';
+
+            try {
+                const response = await fetch('/api/health', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.textContent = `✅ Health Check Successful!\n\nResponse: ${JSON.stringify(data, null, 2)}`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Health Check Failed!\n\nStatus: ${response.status}\nStatus Text: ${response.statusText}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Health Check Error!\n\nError: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        }
+    </script>
+</body>
+</html> 

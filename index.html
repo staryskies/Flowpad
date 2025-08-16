@@ -15,11 +15,25 @@
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 20px 20px;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             color: #ffffff;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode {
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #333333;
         }
 
         .container {
@@ -32,6 +46,13 @@
             text-align: center;
             max-width: 400px;
             width: 90%;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .container {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
         }
 
         .logo {
@@ -42,6 +63,14 @@
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .logo {
+            background: linear-gradient(45deg, #333333, #666666);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .tagline {
@@ -49,6 +78,41 @@
             color: #cccccc;
             margin-bottom: 2rem;
             line-height: 1.6;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .tagline {
+            color: #666666;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-radius: 50px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        body.light-mode .theme-toggle {
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            color: #333333;
+        }
+
+        body.light-mode .theme-toggle:hover {
+            background: rgba(0, 0, 0, 0.2);
         }
 
         .signin-section {
@@ -129,6 +193,11 @@
         .feature-text {
             color: #cccccc;
             font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        body.light-mode .feature-text {
+            color: #666666;
         }
 
         .loading {
@@ -160,6 +229,10 @@
 </head>
 <body>
     <div class="container">
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle">
+            🌙 Dark Mode
+        </button>
+        
         <div class="logo">Flowpad</div>
         <div class="tagline">Create, connect, and collaborate with beautiful flow diagrams</div>
         
@@ -204,6 +277,34 @@
 
     <script>
         let currentUser = null;
+        let isDarkMode = true; // Start with dark mode
+
+        // Theme toggle functionality
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            const body = document.body;
+            const themeToggle = document.getElementById('themeToggle');
+            
+            if (isDarkMode) {
+                body.classList.remove('light-mode');
+                themeToggle.innerHTML = '🌙 Dark Mode';
+                localStorage.setItem('flowpad_theme', 'dark');
+            } else {
+                body.classList.add('light-mode');
+                themeToggle.innerHTML = '☀️ Light Mode';
+                localStorage.setItem('flowpad_theme', 'light');
+            }
+        }
+
+        // Load saved theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('flowpad_theme');
+            if (savedTheme === 'light') {
+                isDarkMode = false;
+                document.body.classList.add('light-mode');
+                document.getElementById('themeToggle').innerHTML = '☀️ Light Mode';
+            }
+        }
 
         function signInWithGoogle() {
             const loading = document.getElementById('loading');
@@ -227,7 +328,9 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                     },
+                    credentials: 'include',
                     body: JSON.stringify({
                         idToken: response.credential
                     })
@@ -257,6 +360,9 @@
 
         // Check if user is already signed in
         window.addEventListener('load', () => {
+            // Load saved theme preference
+            loadTheme();
+            
             const token = localStorage.getItem('flowpad_token');
             const user = localStorage.getItem('flowpad_user');
             
