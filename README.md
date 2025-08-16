@@ -108,4 +108,4 @@ The application uses modern web technologies:
 
 ## License
 
-© 2024 Flowpad. All rights reserved. 
+© 2025 Flowpad. All rights reserved. 
