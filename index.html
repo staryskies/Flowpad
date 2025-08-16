@@ -360,15 +360,17 @@
       const copyJsonBtn = document.getElementById('copy-json');
       const closeModalBtn = document.getElementById('close-modal');
 
-      const panzoomInstance = Panzoom(canvas, {
-        maxZoom: 4,
-        minZoom: 0.1,
-        zoomDoubleClickSpeed: 1,
-        smoothScroll: false
-      });
-      let currentTransform = { x: 0, y: 0, scale: 1 };
-             panzoomInstance.on('transform', (e) => {
-         currentTransform = e.getTransform();
+             const panzoomInstance = Panzoom(canvas, {
+         maxZoom: 4,
+         minZoom: 0.1,
+         zoomDoubleClickSpeed: 1,
+         smoothScroll: false
+       });
+       let currentTransform = { x: 0, y: 0, scale: 1 };
+       
+       // Update transform on pan/zoom using the newer API
+       canvas.addEventListener('panzoom', (e) => {
+         currentTransform = panzoomInstance.getTransform();
          connectionManager.updateAllConnections();
        });
 
@@ -531,28 +533,37 @@
         localStorage.setItem('Flowpad-state', JSON.stringify(dataToSave));
       }
 
-      function loadState() {
-        try {
-          const savedData = localStorage.getItem('Flowpad-state');
-          if (!savedData) return false;
-          const parsedData = JSON.parse(savedData);
-          canvas.innerHTML = '';
-          state.tiles = [];
-          state.connections.forEach(conn => conn.line.remove());
-          state.connections = [];
-          parsedData.tiles.forEach(tileData =>
-            createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content)
-          );
-          parsedData.connections.forEach(conn =>
-            createConnection(conn.from, conn.to)
-          );
-          state.nextId = parsedData.nextId;
-          return true;
-        } catch (err) {
-          console.error('Failed to load saved state:', err);
-          return false;
-        }
-      }
+             function loadState() {
+         try {
+           const savedData = localStorage.getItem('Flowpad-state');
+           if (!savedData) return false;
+           const parsedData = JSON.parse(savedData);
+           canvas.innerHTML = `
+             <svg class="connections-layer" id="connections-svg">
+               <defs>
+                 <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                         refX="9" refY="3.5" orient="auto">
+                   <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                 </marker>
+               </defs>
+             </svg>
+           `;
+           state.tiles = [];
+           state.connections.forEach(conn => connectionManager.removeConnection(conn));
+           state.connections = [];
+           parsedData.tiles.forEach(tileData =>
+             createTile(tileData.id, tileData.x, tileData.y, tileData.title, tileData.content)
+           );
+           parsedData.connections.forEach(conn =>
+             createConnection(conn.from, conn.to)
+           );
+           state.nextId = parsedData.nextId;
+           return true;
+         } catch (err) {
+           console.error('Failed to load saved state:', err);
+           return false;
+         }
+       }
 
       function exportAsJson() {
         const dataToExport = {
@@ -578,9 +589,9 @@
           const zoomControls = document.querySelector('.zoom-controls');
           zoomControls.style.display = 'none';
 
-          const originalTransform = canvas.style.transform;
-          canvas.style.transform = 'translate(0px, 0px) scale(1)';
-          updateAllConnections();
+                     const originalTransform = canvas.style.transform;
+           canvas.style.transform = 'translate(0px, 0px) scale(1)';
+           connectionManager.updateAllConnections();
 
           const originalContainerStyle = {
             overflow: container.style.overflow,
