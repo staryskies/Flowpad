@@ -7,7 +7,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/@panzoom/panzoom@4.5.1/dist/panzoom.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.2.4/leader-line.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <style id="app-style">
@@ -141,18 +140,37 @@
       left: 50%;
       transform: translateX(-50%);
     }
-    .loader {
-      border: 2px solid #f3f3f3;
-      border-top: 2px solid #3498db;
-      border-radius: 50%;
-      width: 12px;
-      height: 12px;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+         .loader {
+       border: 2px solid #f3f3f3;
+       border-top: 2px solid #3498db;
+       border-radius: 50%;
+       width: 12px;
+       height: 12px;
+       animation: spin 1s linear infinite;
+     }
+     @keyframes spin {
+       0% { transform: rotate(0deg); }
+       100% { transform: rotate(360deg); }
+     }
+     .connections-layer {
+       position: absolute;
+       top: 0;
+       left: 0;
+       width: 100%;
+       height: 100%;
+       pointer-events: none;
+       z-index: 10;
+     }
+     .connection-line {
+       stroke: #94a3b8;
+       stroke-width: 2;
+       fill: none;
+       marker-end: url(#arrowhead);
+     }
+     .connection-line.active {
+       stroke: #3b82f6;
+       stroke-width: 3;
+     }
   </style>
 </head>
 <body class="bg-slate-50">
@@ -176,9 +194,18 @@
     </div>
   </div>
 
-  <div class="canvas-container">
-    <div id="canvas" class="canvas html2canvas-container"></div>
-  </div>
+     <div class="canvas-container">
+     <div id="canvas" class="canvas html2canvas-container">
+       <svg class="connections-layer" id="connections-svg">
+         <defs>
+           <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                   refX="9" refY="3.5" orient="auto">
+             <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+           </marker>
+         </defs>
+       </svg>
+     </div>
+   </div>
 
   <div class="zoom-controls">
     <button id="zoom-in"><i class="fa-solid fa-plus"></i></button>
@@ -209,97 +236,116 @@
   </div>
 
   <script id="app-script">
-         // Check if required libraries are loaded
-     function checkDependencies() {
-       let missingLibraries = [];
-       
-       if (typeof Panzoom === 'undefined') {
-         missingLibraries.push('Panzoom');
-       }
-       if (typeof LeaderLine === 'undefined') {
-         missingLibraries.push('LeaderLine');
+              // Custom connection system to replace LeaderLine
+     class ConnectionManager {
+       constructor(svgElement) {
+         this.svg = svgElement;
+         this.connections = [];
        }
        
-       if (missingLibraries.length > 0) {
-         console.error(`Missing libraries: ${missingLibraries.join(', ')}. Loading fallbacks...`);
+       createConnection(fromTileId, toTileId) {
+         const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${fromTileId}"]`);
+         const toHandle = document.querySelector(`.connector-handle.input[data-tile="${toTileId}"]`);
          
-                   missingLibraries.forEach(lib => {
-            if (lib === 'Panzoom') {
-              loadScript('https://cdn.jsdelivr.net/npm/@panzoom/panzoom@4.5.1/dist/panzoom.min.js', 'Panzoom');
-            } else if (lib === 'LeaderLine') {
-              // Try multiple CDN sources for LeaderLine
-              loadScriptWithFallback([
-                'https://cdnjs.cloudflare.com/ajax/libs/leader-line/1.2.4/leader-line.min.js',
-                'https://unpkg.com/leader-line@1.2.4/leader-line.min.js',
-                'https://cdn.jsdelivr.net/npm/leader-line@1.2.4/leader-line.min.js'
-              ], 'LeaderLine');
-            }
-          });
-          
-          function loadScript(src, libName) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = () => {
-              console.log(`${libName} loaded from fallback CDN`);
-              checkAndInit();
-            };
-            script.onerror = () => {
-              console.error(`Failed to load ${libName} library from ${src}`);
-            };
-            document.head.appendChild(script);
-          }
-          
-          function loadScriptWithFallback(sources, libName) {
-            let currentIndex = 0;
-            
-            function tryNext() {
-              if (currentIndex >= sources.length) {
-                console.error(`Failed to load ${libName} from all sources`);
-                return;
-              }
-              
-              const script = document.createElement('script');
-              script.src = sources[currentIndex];
-              script.onload = () => {
-                console.log(`${libName} loaded from ${sources[currentIndex]}`);
-                checkAndInit();
-              };
-              script.onerror = () => {
-                console.error(`Failed to load ${libName} from ${sources[currentIndex]}`);
-                currentIndex++;
-                tryNext();
-              };
-              document.head.appendChild(script);
-            }
-            
-            tryNext();
-          }
-          
-          function checkAndInit() {
-            setTimeout(() => {
-              if (typeof Panzoom !== 'undefined' && typeof LeaderLine !== 'undefined') {
-                initApp();
-              }
-            }, 100);
-          }
+         if (!fromHandle || !toHandle) return null;
          
-         return false;
+         const connection = {
+           id: `conn-${fromTileId}-${toTileId}`,
+           from: fromTileId,
+           to: toTileId,
+           element: this.createSVGLine(fromHandle, toHandle)
+         };
+         
+         this.connections.push(connection);
+         this.svg.appendChild(connection.element);
+         return connection;
        }
-       return true;
+       
+       createSVGLine(fromHandle, toHandle) {
+         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+         line.classList.add('connection-line');
+         this.updateLinePosition(line, fromHandle, toHandle);
+         return line;
+       }
+       
+       updateLinePosition(line, fromHandle, toHandle) {
+         const fromRect = fromHandle.getBoundingClientRect();
+         const toRect = toHandle.getBoundingClientRect();
+         const svgRect = this.svg.getBoundingClientRect();
+         
+         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+         const toX = toRect.left + toRect.width / 2 - svgRect.left;
+         const toY = toRect.top + toRect.height / 2 - svgRect.top;
+         
+         line.setAttribute('x1', fromX);
+         line.setAttribute('y1', fromY);
+         line.setAttribute('x2', toX);
+         line.setAttribute('y2', toY);
+       }
+       
+       updateConnection(connection) {
+         const fromHandle = document.querySelector(`.connector-handle.output[data-tile="${connection.from}"]`);
+         const toHandle = document.querySelector(`.connector-handle.input[data-tile="${connection.to}"]`);
+         
+         if (fromHandle && toHandle) {
+           this.updateLinePosition(connection.element, fromHandle, toHandle);
+         }
+       }
+       
+       updateAllConnections() {
+         this.connections.forEach(conn => this.updateConnection(conn));
+       }
+       
+       removeConnection(connection) {
+         if (connection.element) {
+           connection.element.remove();
+         }
+         const index = this.connections.findIndex(c => c.id === connection.id);
+         if (index !== -1) {
+           this.connections.splice(index, 1);
+         }
+       }
+       
+       removeConnectionsForTile(tileId) {
+         this.connections
+           .filter(conn => conn.from === tileId || conn.to === tileId)
+           .forEach(conn => this.removeConnection(conn));
+       }
+       
+       createTemporaryLine(fromHandle, toX, toY) {
+         const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+         line.classList.add('connection-line', 'active');
+         
+         const fromRect = fromHandle.getBoundingClientRect();
+         const svgRect = this.svg.getBoundingClientRect();
+         
+         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+         
+         line.setAttribute('x1', fromX);
+         line.setAttribute('y1', fromY);
+         line.setAttribute('x2', toX - svgRect.left);
+         line.setAttribute('y2', toY - svgRect.top);
+         
+         this.svg.appendChild(line);
+         return line;
+       }
      }
 
-    function initApp() {
-      if (!checkDependencies()) return;
+     function initApp() {
       
       document.addEventListener('DOMContentLoaded', function() {
-      const state = {
-        tiles: [],
-        connections: [],
-        activeConnection: null,
-        activeTile: null,
-        nextId: 1,
-        zoomLevel: 1
-      };
+             const state = {
+         tiles: [],
+         connections: [],
+         activeConnection: null,
+         activeTile: null,
+         nextId: 1,
+         zoomLevel: 1
+       };
+       
+       const connectionManager = new ConnectionManager(document.getElementById('connections-svg'));
       const canvas = document.getElementById('canvas');
       const container = document.querySelector('.canvas-container');
       const addTileBtn = document.getElementById('add-tile');
@@ -323,10 +369,10 @@
         smoothScroll: false
       });
       let currentTransform = { x: 0, y: 0, scale: 1 };
-      panzoomInstance.on('transform', (e) => {
-        currentTransform = e.getTransform();
-        updateAllConnections();
-      });
+             panzoomInstance.on('transform', (e) => {
+         currentTransform = e.getTransform();
+         connectionManager.updateAllConnections();
+       });
 
       function showToast(message, type = 'success') {
         toastMessage.textContent = message;
@@ -445,55 +491,32 @@
         }
       }
 
-      function createConnection(fromTileId, toTileId) {
-        if (state.connections.some(conn => conn.from === fromTileId && conn.to === toTileId)) return null;
-        const connection = {
-          id: `conn-${fromTileId}-${toTileId}`,
-          from: fromTileId,
-          to: toTileId,
-          line: new LeaderLine(
-            document.querySelector(`.connector-handle.output[data-tile="${fromTileId}"]`),
-            document.querySelector(`.connector-handle.input[data-tile="${toTileId}"]`),
-            {
-              color: '#94a3b8',
-              size: 2,
-              path: 'straight',
-              startSocket: 'bottom',
-              endSocket: 'top',
-              startPlug: 'behind',
-              endPlug: 'arrow1',
-              endPlugSize: 1,
-              animOptions: { duration: 300, timing: 'linear' }
-            }
-          )
-        };
-        connection.line.element.classList.add('connection-line');
-        state.connections.push(connection);
-        return connection;
-      }
+             function createConnection(fromTileId, toTileId) {
+         if (state.connections.some(conn => conn.from === fromTileId && conn.to === toTileId)) return null;
+         const connection = connectionManager.createConnection(fromTileId, toTileId);
+         if (connection) {
+           state.connections.push(connection);
+         }
+         return connection;
+       }
 
-      function updateConnections(tileId) {
-        state.connections
-          .filter(conn => conn.from === tileId || conn.to === tileId)
-          .forEach(conn => conn.line.position());
-      }
+       function updateConnections(tileId) {
+         state.connections
+           .filter(conn => conn.from === tileId || conn.to === tileId)
+           .forEach(conn => connectionManager.updateConnection(conn));
+       }
 
-      function updateAllConnections() {
-        state.connections.forEach(conn => conn.line.position());
-      }
+       function removeTile(tileId) {
+         connectionManager.removeConnectionsForTile(tileId);
+         state.connections = state.connections.filter(conn => conn.from !== tileId && conn.to !== tileId);
 
-      function removeTile(tileId) {
-        state.connections.filter(conn => conn.from === tileId || conn.to === tileId)
-          .forEach(conn => conn.line.remove());
-        state.connections = state.connections.filter(conn => conn.from !== tileId && conn.to !== tileId);
-
-        const tileIndex = state.tiles.findIndex(t => t.id === tileId);
-        if (tileIndex !== -1) {
-          state.tiles[tileIndex].element.remove();
-          state.tiles.splice(tileIndex, 1);
-        }
-        saveState();
-      }
+         const tileIndex = state.tiles.findIndex(t => t.id === tileId);
+         if (tileIndex !== -1) {
+           state.tiles[tileIndex].element.remove();
+           state.tiles.splice(tileIndex, 1);
+         }
+         saveState();
+       }
 
       function saveState() {
         const dataToSave = {
@@ -711,19 +734,28 @@
       });
       exportJsonBtn.addEventListener('click', exportAsJson);
       exportPngBtn.addEventListener('click', exportAsPng);
-      clearAllBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to clear all tiles and connections?')) {
-          state.connections.forEach(conn => conn.line.remove());
-          canvas.innerHTML = '';
-          state.tiles = [];
-          state.connections = [];
-          state.nextId = 1;
-          panzoomInstance.moveTo(0, 0);
-          panzoomInstance.zoomAbs(0, 0, 1);
-          localStorage.removeItem('Flowpad-state');
-          showToast('All content cleared!');
-        }
-      });
+             clearAllBtn.addEventListener('click', () => {
+         if (confirm('Are you sure you want to clear all tiles and connections?')) {
+           state.connections.forEach(conn => connectionManager.removeConnection(conn));
+           canvas.innerHTML = `
+             <svg class="connections-layer" id="connections-svg">
+               <defs>
+                 <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                         refX="9" refY="3.5" orient="auto">
+                   <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+                 </marker>
+               </defs>
+             </svg>
+           `;
+           state.tiles = [];
+           state.connections = [];
+           state.nextId = 1;
+           panzoomInstance.moveTo(0, 0);
+           panzoomInstance.zoomAbs(0, 0, 1);
+           localStorage.removeItem('Flowpad-state');
+           showToast('All content cleared!');
+         }
+       });
       zoomInBtn.addEventListener('click', () => {
         const { scale } = panzoomInstance.getTransform();
         panzoomInstance.zoomTo(container.clientWidth / 2, container.clientHeight / 2, scale * 1.2);
@@ -765,60 +797,67 @@
         const tile = e.target.closest('.tile');
         tile ? setActiveTile(tile) : setActiveTile(null);
       });
-      canvas.addEventListener('mousedown', (e) => {
-        const handle = e.target.closest('.connector-handle');
-        if (!handle) return;
-        e.preventDefault();
-        const tileId = parseInt(handle.dataset.tile);
-        if (handle.classList.contains('output')) {
-          state.activeConnection = { from: tileId, startElement: handle };
-          state.activeConnection.line = new LeaderLine(
-            handle,
-            LeaderLine.pointAnchor(document, { x: e.clientX, y: e.clientY }),
-            { color: '#94a3b8', size: 2, path: 'straight', startSocket: 'bottom', endPlug: 'arrow1', endPlugSize: 1 }
-          );
-        }
-      });
-      document.addEventListener('mousemove', (e) => {
-        if (!state.activeConnection) return;
-        state.activeConnection.line.end = LeaderLine.pointAnchor(document, { x: e.clientX, y: e.clientY });
-        state.activeConnection.line.position();
-      });
-      document.addEventListener('mouseup', (e) => {
-        if (!state.activeConnection) return;
-        const handle = e.target.closest('.connector-handle');
-        if (handle && handle.classList.contains('input')) {
-          const toTileId = parseInt(handle.dataset.tile);
-          if (state.activeConnection.from !== toTileId) {
-            createConnection(state.activeConnection.from, toTileId);
-            saveState();
-          }
-        }
-        state.activeConnection.line.remove();
-        state.activeConnection = null;
-      });
+             canvas.addEventListener('mousedown', (e) => {
+         const handle = e.target.closest('.connector-handle');
+         if (!handle) return;
+         e.preventDefault();
+         const tileId = parseInt(handle.dataset.tile);
+         if (handle.classList.contains('output')) {
+           state.activeConnection = { from: tileId, startElement: handle };
+           state.activeConnection.tempLine = connectionManager.createTemporaryLine(handle, e.clientX, e.clientY);
+         }
+       });
+       document.addEventListener('mousemove', (e) => {
+         if (!state.activeConnection) return;
+         const fromHandle = state.activeConnection.startElement;
+         const svgRect = document.getElementById('connections-svg').getBoundingClientRect();
+         const fromRect = fromHandle.getBoundingClientRect();
+         
+         const fromX = fromRect.left + fromRect.width / 2 - svgRect.left;
+         const fromY = fromRect.top + fromRect.height / 2 - svgRect.top;
+         
+         state.activeConnection.tempLine.setAttribute('x1', fromX);
+         state.activeConnection.tempLine.setAttribute('y1', fromY);
+         state.activeConnection.tempLine.setAttribute('x2', e.clientX - svgRect.left);
+         state.activeConnection.tempLine.setAttribute('y2', e.clientY - svgRect.top);
+       });
+       document.addEventListener('mouseup', (e) => {
+         if (!state.activeConnection) return;
+         const handle = e.target.closest('.connector-handle');
+         if (handle && handle.classList.contains('input')) {
+           const toTileId = parseInt(handle.dataset.tile);
+           if (state.activeConnection.from !== toTileId) {
+             createConnection(state.activeConnection.from, toTileId);
+             saveState();
+           }
+         }
+         if (state.activeConnection.tempLine) {
+           state.activeConnection.tempLine.remove();
+         }
+         state.activeConnection = null;
+       });
       canvas.addEventListener('blur', (e) => {
         if (e.target.getAttribute('contenteditable') === 'true') saveState();
       }, true);
 
-      if (!loadState()) {
-        createTile(state.nextId++, 100, 100, 'Welcome to Flowpad!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
-        saveState();
-      }
-             updateAllConnections();
+             if (!loadState()) {
+         createTile(state.nextId++, 100, 100, 'Welcome to Flowpad!', 'This is your planning canvas. Add tiles, connect them, and organize your thoughts!');
+         saveState();
+       }
+       connectionManager.updateAllConnections();
        panzoomInstance.moveTo(container.clientWidth / 2 - 200, container.clientHeight / 2 - 200);
      });
      }
      
-           // Initialize the app when the page loads
-      // Note: Tailwind CSS CDN warning is expected in development
-      // For production, consider installing Tailwind CSS locally
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initApp);
-      } else {
-        // Add a small delay to ensure all scripts are loaded
-        setTimeout(initApp, 100);
-      }
+                  // Initialize the app when the page loads
+       // Note: Tailwind CSS CDN warning is expected in development
+       // For production, consider installing Tailwind CSS locally
+       if (document.readyState === 'loading') {
+         document.addEventListener('DOMContentLoaded', initApp);
+       } else {
+         // Add a small delay to ensure all scripts are loaded
+         setTimeout(initApp, 100);
+       }
    </script>
 </body>
 </html>
