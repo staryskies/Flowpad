@@ -3,183 +3,268 @@ const express = require('express');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 const path = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '.'))); // Serve static files like html
+app.use(express.static('.'));
 
-const CLIENT_ID = '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';
-const client = new OAuth2Client(CLIENT_ID);
-const SECRET = 'your_secret_key_change_this'; // Change in production
-
+// PostgreSQL connection
 const pool = new Pool({
   connectionString: 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
+  ssl: { rejectUnauthorized: false }
 });
 
-async function initDb() {
+// Google OAuth client
+const googleClient = new OAuth2Client('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');
+
+// JWT secret
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+// Initialize database tables
+async function initDatabase() {
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY,
-        email TEXT UNIQUE NOT NULL,
-        name TEXT
-      );
+        google_id VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS graphs (
         id SERIAL PRIMARY KEY,
-        owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        title TEXT,
-        data JSONB
-      );
+        user_id INTEGER REFERENCES users(id),
+        title VARCHAR(255) NOT NULL,
+        data JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
+
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS shares (
-        graph_id INTEGER REFERENCES graphs(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        PRIMARY KEY (graph_id, user_id)
-      );
+      CREATE TABLE IF NOT EXISTS graph_shares (
+        id SERIAL PRIMARY KEY,
+        graph_id INTEGER REFERENCES graphs(id),
+        shared_with_email VARCHAR(255) NOT NULL,
+        shared_by_user_id INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
     `);
-    console.log('Database tables initialized');
-  } catch (err) {
-    console.error('Failed to initialize database:', err);
+
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Database initialization error:', error);
   }
 }
 
-initDb();
+// Authentication middleware
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-async function authMiddleware(req, res, next) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'No token provided' });
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, SECRET);
-    req.user = decoded;
-    next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
   }
-}
 
-app.post('/api/login', async (req, res) => {
-  const { token } = req.body;
   try {
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const email = payload.email;
-    const name = payload.name;
-
-    let result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const result = await pool.query('SELECT * FROM users WHERE id = $1', [decoded.userId]);
+    
     if (result.rows.length === 0) {
-      result = await pool.query('INSERT INTO users (email, name) VALUES ($1, $2) RETURNING *', [email, name]);
+      return res.status(401).json({ error: 'Invalid token' });
     }
+    
+    req.user = result.rows[0];
+    next();
+  } catch (error) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+};
+
+// Routes
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get('/graph', (req, res) => {
+  res.sendFile(path.join(__dirname, 'graph.html'));
+});
+
+// Google authentication
+app.post('/api/auth/google', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: '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'
+    });
+
+    const payload = ticket.getPayload();
+    const { sub: googleId, email, name } = payload;
+
+    // Check if user exists
+    let result = await pool.query('SELECT * FROM users WHERE google_id = $1', [googleId]);
+    
+    if (result.rows.length === 0) {
+      // Create new user
+      result = await pool.query(
+        'INSERT INTO users (google_id, email, name) VALUES ($1, $2, $3) RETURNING *',
+        [googleId, email, name]
+      );
+    }
+
     const user = result.rows[0];
-    const jwtToken = jwt.sign({ id: user.id, email: user.email }, SECRET, { expiresIn: '1d' });
-    res.json({ token: jwtToken });
-  } catch (e) {
-    console.error(e);
-    res.status(400).json({ error: 'Invalid token' });
+    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
+
+    res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({ error: 'Authentication failed' });
   }
 });
 
-app.get('/api/graphs', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
+// Get user's graphs
+app.get('/api/graphs', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT g.id, g.title, (g.owner_id = $1) AS is_owner
-      FROM graphs g
-      WHERE g.owner_id = $1
-      UNION
-      SELECT g.id, g.title, false AS is_owner
-      FROM graphs g
-      JOIN shares s ON s.graph_id = g.id
-      WHERE s.user_id = $1
-    `, [userId]);
-    res.json(result.rows);
-  } catch (e) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/api/graphs', authMiddleware, async (req, res) => {
-  const { title } = req.body;
-  const userId = req.user.id;
-  try {
-    const result = await pool.query(
-      'INSERT INTO graphs (owner_id, title, data) VALUES ($1, $2, $3) RETURNING id',
-      [userId, title || 'New Graph', '{}']
+    // Get user's own graphs
+    const ownGraphs = await pool.query(
+      'SELECT * FROM graphs WHERE user_id = $1 ORDER BY updated_at DESC',
+      [req.user.id]
     );
-    res.json({ id: result.rows[0].id });
-  } catch (e) {
-    res.status(500).json({ error: 'Server error' });
+
+    // Get shared graphs
+    const sharedGraphs = await pool.query(`
+      SELECT g.*, u.name as owner_name 
+      FROM graphs g 
+      JOIN users u ON g.user_id = u.id 
+      JOIN graph_shares gs ON g.id = gs.graph_id 
+      WHERE gs.shared_with_email = $1
+      ORDER BY g.updated_at DESC
+    `, [req.user.email]);
+
+    res.json({
+      own: ownGraphs.rows,
+      shared: sharedGraphs.rows
+    });
+  } catch (error) {
+    console.error('Get graphs error:', error);
+    res.status(500).json({ error: 'Failed to fetch graphs' });
   }
 });
 
-app.get('/api/graphs/:id', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
-  const graphId = req.params.id;
+// Create new graph
+app.post('/api/graphs', authenticateToken, async (req, res) => {
   try {
-    const accessResult = await pool.query(`
-      SELECT 1 FROM graphs WHERE id = $1 AND owner_id = $2
-      UNION
-      SELECT 1 FROM shares WHERE graph_id = $1 AND user_id = $2
-    `, [graphId, userId]);
-    if (accessResult.rows.length === 0) return res.status(403).json({ error: 'No access' });
-
-    const result = await pool.query('SELECT title, data FROM graphs WHERE id = $1', [graphId]);
+    const { title, data } = req.body;
+    const result = await pool.query(
+      'INSERT INTO graphs (user_id, title, data) VALUES ($1, $2, $3) RETURNING *',
+      [req.user.id, title, data]
+    );
     res.json(result.rows[0]);
-  } catch (e) {
-    res.status(500).json({ error: 'Server error' });
+  } catch (error) {
+    console.error('Create graph error:', error);
+    res.status(500).json({ error: 'Failed to create graph' });
   }
 });
 
-app.put('/api/graphs/:id', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
-  const graphId = req.params.id;
-  const { data, title } = req.body;
+// Update graph
+app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
-    const accessResult = await pool.query(`
-      SELECT 1 FROM graphs WHERE id = $1 AND owner_id = $2
-      UNION
-      SELECT 1 FROM shares WHERE graph_id = $1 AND user_id = $2
-    `, [graphId, userId]);
-    if (accessResult.rows.length === 0) return res.status(403).json({ error: 'No access' });
+    const { id } = req.params;
+    const { title, data } = req.body;
+    
+    const result = await pool.query(
+      'UPDATE graphs SET title = $1, data = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 AND user_id = $4 RETURNING *',
+      [title, data, id, req.user.id]
+    );
 
-    await pool.query('UPDATE graphs SET data = $1, title = $2 WHERE id = $3', [data, title, graphId]);
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Server error' });
-  }
-});
-
-app.post('/api/graphs/:id/share', authMiddleware, async (req, res) => {
-  const userId = req.user.id;
-  const graphId = req.params.id;
-  const { email } = req.body;
-  try {
-    const ownerResult = await pool.query('SELECT owner_id FROM graphs WHERE id = $1', [graphId]);
-    if (ownerResult.rows.length === 0 || ownerResult.rows[0].owner_id !== userId) {
-      return res.status(403).json({ error: 'Not owner' });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found or access denied' });
     }
 
-    const targetResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (targetResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
-    const targetId = targetResult.rows[0].id;
-    await pool.query('INSERT INTO shares (graph_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [graphId, targetId]);
-    res.json({ success: true });
-  } catch (e) {
-    res.status(500).json({ error: 'Server error' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update graph error:', error);
+    res.status(500).json({ error: 'Failed to update graph' });
   }
 });
 
-// Serve HTML files
-app.get('/index.html', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/graph.html', (req, res) => res.sendFile(path.join(__dirname, 'graph.html')));
+// Share graph
+app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email } = req.body;
 
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Server running on port ${port}`));
+    // Check if graph exists and user owns it
+    const graphCheck = await pool.query(
+      'SELECT * FROM graphs WHERE id = $1 AND user_id = $2',
+      [id, req.user.id]
+    );
+
+    if (graphCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found or access denied' });
+    }
+
+    // Check if already shared
+    const existingShare = await pool.query(
+      'SELECT * FROM graph_shares WHERE graph_id = $1 AND shared_with_email = $2',
+      [id, email]
+    );
+
+    if (existingShare.rows.length > 0) {
+      return res.status(400).json({ error: 'Graph already shared with this user' });
+    }
+
+    // Create share
+    await pool.query(
+      'INSERT INTO graph_shares (graph_id, shared_with_email, shared_by_user_id) VALUES ($1, $2, $3)',
+      [id, email, req.user.id]
+    );
+
+    res.json({ message: 'Graph shared successfully' });
+  } catch (error) {
+    console.error('Share graph error:', error);
+    res.status(500).json({ error: 'Failed to share graph' });
+  }
+});
+
+// Get graph by ID
+app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user owns the graph or has access through sharing
+    const result = await pool.query(`
+      SELECT g.* FROM graphs g 
+      LEFT JOIN graph_shares gs ON g.id = gs.graph_id 
+      WHERE g.id = $1 AND (g.user_id = $2 OR gs.shared_with_email = $3)
+    `, [id, req.user.id, req.user.email]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found or access denied' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get graph error:', error);
+    res.status(500).json({ error: 'Failed to fetch graph' });
+  }
+});
+
+// Initialize database and start server
+initDatabase().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+});
+
+module.exports = app;
