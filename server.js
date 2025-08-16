@@ -19,6 +19,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With']
 }));
+
 app.use(express.json());
 
 // Initialize cookie parser with error handling
@@ -33,16 +34,39 @@ app.use(express.static('.'));
 
 // PostgreSQL connection
 let pool;
-try {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vdiees73dauq4g-a/flowpad',
-    ssl: { rejectUnauthorized: false },
-    connectionTimeoutMillis: 10000,
-    idleTimeoutMillis: 30000,
-    max: 1 // Limit connections for serverless
-  });
-} catch (error) {
-  console.error('Failed to create database pool:', error);
+let dbInitialized = false;
+
+async function initializeDatabase() {
+  try {
+    console.log('Attempting to connect to database...');
+    
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL || 'postgresql://flowpad_user:MAOwGkTa8Et6OqgPGgiv8VLrBFX1vBqE@dpg-d2gb69vchiees73dauq4g-a/flowpad',
+      ssl: { rejectUnauthorized: false },
+      connectionTimeoutMillis: 10000,
+      idleTimeoutMillis: 30000,
+      max: 1 // Limit connections for serverless
+    });
+
+    // Test the connection
+    const client = await pool.connect();
+    await client.query('SELECT NOW()');
+    client.release();
+    
+    console.log('Database connection successful');
+    dbInitialized = true;
+    
+    // Initialize tables
+    await initDatabase();
+    
+  } catch (error) {
+    console.error('Database connection failed:', error.message);
+    console.log('App will continue without database functionality');
+    
+    // Set a flag to indicate database is not available
+    dbInitialized = false;
+    pool = null;
+  }
 }
 
 // Google OAuth client
@@ -98,7 +122,7 @@ async function initDatabase() {
 
 // Authentication middleware
 const authenticateToken = async (req, res, next) => {
-  if (!pool) {
+  if (!pool || !dbInitialized) {
     return res.status(500).json({ error: 'Database connection not available' });
   }
 
@@ -138,20 +162,16 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
-
-
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     timestamp: new Date().toISOString(),
-    database: pool ? 'connected' : 'disconnected',
+    database: dbInitialized ? 'connected' : 'disconnected',
     environment: process.env.NODE_ENV || 'development',
     version: '1.0.0'
   });
 });
-
-
 
 // Routes
 app.get('/', (req, res) => {
@@ -162,17 +182,9 @@ app.get('/graph', (req, res) => {
   res.sendFile(path.join(__dirname, 'graph.html'));
 });
 
-
-
-
-
-
-
 // Google authentication
 app.post('/api/auth/google', async (req, res) => {
-  
-
-  if (!pool) {
+  if (!pool || !dbInitialized) {
     return res.status(500).json({ error: 'Database connection not available' });
   }
 
@@ -199,8 +211,6 @@ app.post('/api/auth/google', async (req, res) => {
 
     const user = result.rows[0];
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
-
-
 
     // Set secure cookie with proper SameSite and Secure attributes
     try {
@@ -279,7 +289,7 @@ app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Graph not found or access denied' });
+      return res.status(404).json({ error: 'Graph not found' });
     }
 
     res.json(result.rows[0]);
@@ -289,20 +299,43 @@ app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Get specific graph
+app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if user owns the graph or has access to it
+    const result = await pool.query(`
+      SELECT g.* FROM graphs g 
+      LEFT JOIN graph_shares gs ON g.id = gs.graph_id 
+      WHERE g.id = $1 AND (g.user_id = $2 OR gs.shared_with_email = $3)
+    `, [id, req.user.id, req.user.email]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get graph error:', error);
+    res.status(500).json({ error: 'Failed to fetch graph' });
+  }
+});
+
 // Share graph
 app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { email } = req.body;
 
-    // Check if graph exists and user owns it
-    const graphCheck = await pool.query(
+    // Check if user owns the graph
+    const graphResult = await pool.query(
       'SELECT * FROM graphs WHERE id = $1 AND user_id = $2',
       [id, req.user.id]
     );
 
-    if (graphCheck.rows.length === 0) {
-      return res.status(404).json({ error: 'Graph not found or access denied' });
+    if (graphResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Graph not found' });
     }
 
     // Check if already shared
@@ -312,7 +345,7 @@ app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
     );
 
     if (existingShare.rows.length > 0) {
-      return res.status(400).json({ error: 'Graph already shared with this user' });
+      return res.status(400).json({ error: 'Graph already shared with this email' });
     }
 
     // Create share
@@ -328,62 +361,29 @@ app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
   }
 });
 
-// Get graph by ID
-app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    // Check if user owns the graph or has access through sharing
-    const result = await pool.query(`
-      SELECT g.* FROM graphs g 
-      LEFT JOIN graph_shares gs ON g.id = gs.graph_id 
-      WHERE g.id = $1 AND (g.user_id = $2 OR gs.shared_with_email = $3)
-    `, [id, req.user.id, req.user.email]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Graph not found or access denied' });
-    }
-
-    res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Get graph error:', error);
-    res.status(500).json({ error: 'Failed to fetch graph' });
-  }
-});
-
-// Initialize database on first request
-let dbInitialized = false;
-app.use(async (req, res, next) => {
-  if (!dbInitialized && pool) {
-    try {
-      await initDatabase();
-      dbInitialized = true;
-    } catch (error) {
-      console.error('Failed to initialize database:', error);
-    }
-  }
-  next();
-});
-
 // Error handling middleware
-app.use((error, req, res, next) => {
-  console.error('Unhandled error:', error);
-  
-  // Set CORS headers for error responses
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Origin, Accept, X-Requested-With');
-  
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// For local development only
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found' });
+});
+
+// Initialize database when server starts
+initializeDatabase().then(() => {
+  console.log('Server initialization complete');
+});
+
+// For Vercel serverless deployment
+module.exports = app;
+
+// For local development
 if (process.env.NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
-}
-
-module.exports = app;
+} 
