@@ -950,11 +950,25 @@ function createGridLines(){
   if (!gridOverlay){ gridOverlay = document.createElement('div'); gridOverlay.id='grid-overlay'; gridOverlay.className='grid-overlay'; canvas.appendChild(gridOverlay); }
   gridOverlay.innerHTML = '';
   const rect = canvas.getBoundingClientRect();
-  for(let x=0; x<=rect.width; x+=gridSize){
-    const l = document.createElement('div'); l.className='grid-line vertical'; l.style.left=x+'px'; gridOverlay.appendChild(l);
+  
+  // Calculate grid spacing in screen coordinates, accounting for zoom and offset
+  const screenGridSize = gridSize * zoom;
+  
+  // Start from the canvas offset and create grid lines
+  const startX = canvasOffset.x % screenGridSize;
+  const startY = canvasOffset.y % screenGridSize;
+  
+  for(let x = startX; x <= rect.width; x += screenGridSize){
+    const l = document.createElement('div'); 
+    l.className='grid-line vertical'; 
+    l.style.left = x + 'px'; 
+    gridOverlay.appendChild(l);
   }
-  for(let y=0; y<=rect.height; y+=gridSize){
-    const l = document.createElement('div'); l.className='grid-line horizontal'; l.style.top=y+'px'; gridOverlay.appendChild(l);
+  for(let y = startY; y <= rect.height; y += screenGridSize){
+    const l = document.createElement('div'); 
+    l.className='grid-line horizontal'; 
+    l.style.top = y + 'px'; 
+    gridOverlay.appendChild(l);
   }
 }
 function toggleGrid(){
@@ -1026,6 +1040,12 @@ function setZoom(val){
   zoom = Math.min(3, Math.max(0.25, val));
   canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
   renderConnections();
+  
+  // Recreate grid to maintain alignment
+  if (showGrid) {
+    createGridLines();
+  }
+  
   document.querySelectorAll('.toolbar .tool-row button')[1]?.setAttribute('title', `Reset Zoom (${Math.round(zoom*100)}%)`);
 }
 
@@ -1190,6 +1210,11 @@ function updatePanning(e){
   canvasOffset.x += dx; canvasOffset.y += dy;
   canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
   renderConnections();
+  
+  // Recreate grid to maintain alignment during panning
+  if (showGrid) {
+    createGridLines();
+  }
 }
 
 /* Dragging */
@@ -1204,27 +1229,41 @@ function updateDragging(e){
   let x = w.x - dragOffsetWorld.x, y = w.y - dragOffsetWorld.y;
   const snap = getSnapPosition(x,y); x=snap.x; y=snap.y;
   
-  // Update tile position immediately for responsive feel
-  selectedTile.dataset.baseX = x; 
-  selectedTile.dataset.baseY = y;
-  selectedTile.style.left = x+'px'; 
-  selectedTile.style.top = y+'px';
-  
-  // Add updating class for visual feedback
-  selectedTile.classList.add('tile-updating');
-  
-  // Re-render connections immediately for responsive feel
-  renderConnections();
-  
-  // Update tile menu position to follow the tile
-  updateTileMenuPosition();
-  
-  // Mark as dirty and schedule save
-  addPendingUpdate('tile_move', { tileId:selectedTile.dataset.tileId, x,y });
-  markAsDirty();
+  // Use requestAnimationFrame for smooth updates
+  if (!updateDragging.rafId) {
+    updateDragging.rafId = requestAnimationFrame(() => {
+      // Update tile position immediately for responsive feel
+      selectedTile.dataset.baseX = x; 
+      selectedTile.dataset.baseY = y;
+      selectedTile.style.left = x+'px'; 
+      selectedTile.style.top = y+'px';
+      
+      // Add updating class for visual feedback
+      selectedTile.classList.add('tile-updating');
+      
+      // Re-render connections immediately for responsive feel
+      renderConnections();
+      
+      // Update tile menu position to follow the tile
+      updateTileMenuPosition();
+      
+      // Mark as dirty and schedule save
+      addPendingUpdate('tile_move', { tileId:selectedTile.dataset.tileId, x,y });
+      markAsDirty();
+      
+      updateDragging.rafId = null;
+    });
+  }
 }
 function finishDragging(){
   if (selectedTile) selectedTile.classList.remove('tile-updating');
+  
+  // Clean up requestAnimationFrame
+  if (updateDragging.rafId) {
+    cancelAnimationFrame(updateDragging.rafId);
+    updateDragging.rafId = null;
+  }
+  
   selectedTile=null; isDragging=false; clearSnapIndicators();
 }
 
