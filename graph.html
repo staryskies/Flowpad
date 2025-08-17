@@ -459,11 +459,82 @@
     #connections-svg{ z-index:5 }
     .tile{ z-index:10 }
     .floating-toolbar{ z-index:11000 }       /* above tiles */
-    .popover{ position:fixed; z-index:11000; background:var(--bg-tertiary);
+    .popover{ position:fixed; z-index:99999; background:var(--bg-tertiary);
       border:1px solid var(--border-primary); border-radius:10px; box-shadow:0 12px 30px var(--shadow-primary);
       padding:10px; pointer-events:auto; backdrop-filter:blur(20px); min-width:200px }
-    .modal-overlay{ z-index:12000 }          /* over everything */
-    .notification{ z-index:13000 }           /* toast wins */
+    .modal-overlay{ z-index:120000 }          /* over everything */
+    .notification{ z-index:130000 }           /* toast wins */
+    
+    /* Ensure canvas and other elements don't interfere with popups */
+    .canvas-container{ z-index:1 }
+    .canvas{ z-index:1 }
+    .tab-container{ z-index:2 }
+    
+    /* Additional popup styling to ensure they're visible */
+    .popover {
+      position: fixed !important;
+      z-index: 99999 !important;
+      background: var(--bg-tertiary) !important;
+      border: 1px solid var(--border-primary) !important;
+      border-radius: 10px !important;
+      box-shadow: 0 12px 30px var(--shadow-primary) !important;
+      padding: 10px !important;
+      pointer-events: auto !important;
+      backdrop-filter: blur(20px) !important;
+      min-width: 200px !important;
+      max-width: 90vw !important;
+      max-height: 90vh !important;
+      overflow: auto !important;
+    }
+    
+    /* Ensure color picker popup is visible */
+    .color-picker-popout {
+      z-index: 99999 !important;
+      position: fixed !important;
+    }
+    
+    /* Ensure floating toolbar is visible */
+    .floating-toolbar {
+      z-index: 99999 !important;
+      position: fixed !important;
+    }
+    
+    /* Ensure all modals and overlays are on top */
+    .modal, .modal-overlay, .notification {
+      z-index: 99999 !important;
+      position: fixed !important;
+    }
+    
+    /* Ensure color picker grid is visible */
+    .color-picker-grid, .color-picker-recent-grid {
+      z-index: 99999 !important;
+    }
+    
+    /* Ensure popup options are visible */
+    .popup-option, .popup-content {
+      z-index: 99999 !important;
+    }
+    
+    /* Additional popup visibility fixes */
+    .popover * {
+      z-index: inherit !important;
+    }
+    
+    /* Ensure color picker options are visible */
+    .color-picker-option {
+      z-index: 99999 !important;
+      position: relative !important;
+    }
+    
+    /* Force popups to be above everything */
+    .popover, .color-picker-popout, .floating-toolbar {
+      position: fixed !important;
+      z-index: 99999 !important;
+      pointer-events: auto !important;
+      background: var(--bg-tertiary) !important;
+      border: 1px solid var(--border-primary) !important;
+      box-shadow: 0 12px 30px var(--shadow-primary) !important;
+    }
   </style>
 </head>
 <body>
@@ -734,6 +805,16 @@
       setupGridVisualization();
       initializePermissionSelector();
       addShareEmailListener();
+    }
+
+    // Add share email input listener for real-time validation
+    function addShareEmailListener() {
+      const shareEmail = document.getElementById('shareEmail');
+      if (shareEmail) {
+        shareEmail.addEventListener('input', () => {
+          updateShareButtonState();
+        });
+      }
     }
 
     function setupGridVisualization() {
@@ -3183,7 +3264,7 @@
       root.querySelector('.color-picker-close').onclick = ()=> api.close();
 
       // open near the trigger, clamp inside viewport
-      const api = openPopover(trigger, root, { prefer:'bottom', offset:10, className:'color-picker-popout' });
+      const api = openPopover(trigger, root, { prefer:'top', offset:10, className:'color-picker-popout' });
     }
 
     function updateCollaboratorsList(users) {
