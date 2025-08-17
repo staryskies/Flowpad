@@ -115,26 +115,26 @@
 .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
 
 /* Resize outline for selected tiles - always rectangular and separate from shape */
-.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:8px;pointer-events:none;z-index:100;background:rgba(0,122,255,0.05);clip-path:none !important}
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid #007AFF;border-radius:8px;pointer-events:none;z-index:1000;background:rgba(0,122,255,0.1);clip-path:none !important;box-shadow:0 0 0 1px rgba(255,255,255,0.8)}
 
 /* Resize handles for each edge and corner - 4 dots on each side, positioned farther from tile */
-.tile.selected .resize-handle{position:absolute;width:8px;height:8px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,0.3)}
-.tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize}
-.tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize}
-.tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize}
-.tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize}
-.tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize}
-.tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize}
-.tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize}
-.tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize}
-.tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize}
-.tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize}
-.tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize}
-.tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize}
-.tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize}
-.tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize}
-.tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize}
-.tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize}
+  .tile.selected .resize-handle{position:absolute;width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:1001;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+  .tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
 
   /* quick picker hover areas */
   .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
@@ -261,7 +261,7 @@
   .grid-snap-line.vertical{width:1px}
   .grid-snap-line.horizontal{height:1px}
 
-  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0.15;transition:opacity 0.3s ease}
+  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0.15;transition:opacity 0.3s ease}
 .grid-overlay.show{opacity:0.4}
 .grid-line{position:absolute;background:var(--accent-primary);opacity:0.6;box-shadow:0 0 1px rgba(0,0,0,0.1)}
   .grid-line.vertical{width:1px;height:100%}
@@ -399,7 +399,7 @@
   .warning-text { color: #dc3545; font-weight: 500; margin-top: 8px; }
 
   #connections-svg{ z-index:5 }
-  .tile{ z-index:10 }
+.tile{ z-index:20 }
 
   .modal-overlay{ z-index:120000 }
   .notification{ z-index:130000 }
@@ -967,20 +967,17 @@ function createGridLines(){
       // Calculate grid spacing in screen coordinates, accounting for zoom and offset
       const screenGridSize = gridSize * zoom;
       
-      // Start from the canvas offset and create grid lines
-      const startX = canvasOffset.x % screenGridSize;
-      const startY = canvasOffset.y % screenGridSize;
-      
-      for(let x = startX; x <= rect.width; x += screenGridSize){
+      // Create grid lines that move with the canvas offset
+      for(let x = 0; x <= rect.width + Math.abs(canvasOffset.x); x += screenGridSize){
         const l = document.createElement('div'); 
         l.className='grid-line vertical'; 
-        l.style.left = x + 'px'; 
+        l.style.left = (x - canvasOffset.x) + 'px'; 
         gridOverlay.appendChild(l);
       }
-      for(let y = startY; y <= rect.height; y += screenGridSize){
+      for(let y = 0; y <= rect.height + Math.abs(canvasOffset.y); y += screenGridSize){
         const l = document.createElement('div'); 
         l.className='grid-line horizontal'; 
-        l.style.top = y + 'px'; 
+        l.style.top = (y - canvasOffset.y) + 'px'; 
         gridOverlay.appendChild(l);
       }
       
