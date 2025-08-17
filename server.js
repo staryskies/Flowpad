@@ -798,47 +798,149 @@ app.delete('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-
-    // Check if user owns the graph
-    const graphCheck = await pool.query(
-      'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
-      [id, userId]
+    
+    // Check if user owns the graph or has admin access
+    const graph = await pool.query(
+      'SELECT user_id FROM graphs WHERE id = $1',
+      [id]
     );
     
-    if (graphCheck.rows.length === 0) {
-      return res.status(403).json({ message: 'You can only delete graphs you own' });
+    if (!graph.rows[0]) {
+      return res.status(404).json({ error: 'Graph not found' });
     }
-
-    // Delete the graph (this will cascade to graph_shares)
+    
+    if (graph.rows[0].user_id !== userId) {
+      return res.status(403).json({ error: 'Not authorized to delete this graph' });
+    }
+    
+    // Delete the graph
     await pool.query('DELETE FROM graphs WHERE id = $1', [id]);
     
     res.json({ message: 'Graph deleted successfully' });
   } catch (error) {
     console.error('Error deleting graph:', error);
-    res.status(500).json({ message: 'Failed to delete graph' });
+    res.status(500).json({ error: 'Failed to delete graph' });
   }
 });
 
-// ---------- AI Suggestions ----------
+// Get collaborators for a graph
+app.get('/api/graphs/:id/collaborators', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    
+    // Check if user has access to this graph
+    const graph = await pool.query(
+      'SELECT user_id FROM graphs WHERE id = $1',
+      [id]
+    );
+    
+    if (!graph.rows[0]) {
+      return res.status(404).json({ error: 'Graph not found' });
+    }
+    
+    if (graph.rows[0].user_id !== userId) {
+      // Check if user is shared with this graph
+      const shared = await pool.query(
+        'SELECT * FROM graph_shares WHERE graph_id = $1 AND user_id = $2',
+        [id, userId]
+      );
+      
+      if (!shared.rows[0]) {
+        return res.status(403).json({ error: 'Not authorized to access this graph' });
+      }
+    }
+    
+    // Get all users shared with this graph
+    const collaborators = await pool.query(`
+      SELECT u.id, u.name, u.email, gs.permission, gs.created_at
+      FROM graph_shares gs
+      JOIN users u ON gs.user_id = u.id
+      WHERE gs.graph_id = $1
+      ORDER BY gs.created_at DESC
+    `, [id]);
+    
+    res.json(collaborators.rows);
+  } catch (error) {
+    console.error('Error getting collaborators:', error);
+    res.status(500).json({ error: 'Failed to get collaborators' });
+  }
+});
+
+// Get AI suggestions
 app.post('/api/ai-suggestions', authenticateToken, async (req, res) => {
   try {
-    const { targetTile, existingTiles, connections } = req.body;
-
-    const response = await fetch('https://magicloops.dev/api/loop/b43cee3e-e9c9-49cb-a87a-4411bfab1542/run', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ targetTile, existingTiles, connections }),
-    });
-
-    if (!response.ok) throw new Error(`Magic Loop API error: ${response.status}`);
-
-    const data = await response.json();
-    res.json(data);
-  } catch (err) {
-    console.error('AI suggestions error:', err);
+    const { prompt, targetTile, existingTiles, connections } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ error: 'Prompt is required' });
+    }
+    
+    // Simple AI suggestion logic - you can replace this with actual AI integration
+    const suggestions = generateAISuggestions(prompt, targetTile, existingTiles, connections);
+    
+    res.json({ suggestions });
+  } catch (error) {
+    console.error('Error getting AI suggestions:', error);
     res.status(500).json({ error: 'Failed to get AI suggestions' });
   }
 });
+
+// Helper function to generate AI suggestions
+function generateAISuggestions(prompt, targetTile, existingTiles, connections) {
+  const suggestions = [];
+  
+  // Analyze the prompt and generate relevant suggestions
+  if (prompt.toLowerCase().includes('title') || prompt.toLowerCase().includes('heading')) {
+    suggestions.push('Add a clear, descriptive title that summarizes the main concept');
+  }
+  
+  if (prompt.toLowerCase().includes('process') || prompt.toLowerCase().includes('flow')) {
+    suggestions.push('Create a step-by-step process flow with numbered steps');
+  }
+  
+  if (prompt.toLowerCase().includes('decision') || prompt.toLowerCase().includes('choice')) {
+    suggestions.push('Add decision points with yes/no or multiple choice options');
+  }
+  
+  if (prompt.toLowerCase().includes('input') || prompt.toLowerCase().includes('data')) {
+    suggestions.push('Include input validation and data processing steps');
+  }
+  
+  if (prompt.toLowerCase().includes('output') || prompt.toLowerCase().includes('result')) {
+    suggestions.push('Add output formatting and result display elements');
+  }
+  
+  if (prompt.toLowerCase().includes('error') || prompt.toLowerCase().includes('exception')) {
+    suggestions.push('Include error handling and exception management');
+  }
+  
+  if (prompt.toLowerCase().includes('user') || prompt.toLowerCase().includes('interface')) {
+    suggestions.push('Add user interface components and interaction points');
+  }
+  
+  if (prompt.toLowerCase().includes('database') || prompt.toLowerCase().includes('storage')) {
+    suggestions.push('Include data persistence and storage operations');
+  }
+  
+  if (prompt.toLowerCase().includes('api') || prompt.toLowerCase().includes('service')) {
+    suggestions.push('Add external service integration and API calls');
+  }
+  
+  if (prompt.toLowerCase().includes('test') || prompt.toLowerCase().includes('validate')) {
+    suggestions.push('Include testing and validation steps');
+  }
+  
+  // If no specific suggestions were generated, provide generic ones
+  if (suggestions.length === 0) {
+    suggestions.push('Break down the concept into smaller, manageable components');
+    suggestions.push('Add clear labels and descriptions for each element');
+    suggestions.push('Consider the user experience and flow direction');
+    suggestions.push('Include error handling and edge cases');
+  }
+  
+  return suggestions;
+}
 
 // ---------- Errors ----------
 app.use((err, _req, res, _next) => {
