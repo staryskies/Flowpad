@@ -1087,9 +1087,9 @@ function markAsDirty(){ isDirty=true; lastSaveTime=Date.now(); pushHistory(); }
 async function autoSaveGraph(){
   if (!currentGraph || !isDirty) return;
   
-  // Prevent saving for invalid graph IDs (like demo-1)
-  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id === 'demo-1')) {
-    console.log('Skipping auto-save for demo graph');
+  // Prevent saving for invalid graph IDs (like demo-1 or local_*)
+  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id.toString().startsWith('local_') || currentGraph.id === 'demo-1')) {
+    console.log('Skipping auto-save for local/demo graph:', currentGraph.id);
     return;
   }
   const indicator = document.getElementById('autoSaveIndicator');
@@ -1099,8 +1099,8 @@ async function autoSaveGraph(){
     const token = localStorage.getItem('flowpad_token');
     const data = serializeGraph();
     
-    if (token) {
-      // Try to save to server if authenticated
+    if (token && currentGraph.id && !currentGraph.id.toString().startsWith('local_') && !currentGraph.id.toString().startsWith('demo-')) {
+      // Try to save to server if authenticated and graph ID is valid
       try {
         const res = await fetch(`/api/graphs/${currentGraph.id}`,{
           method:'PUT',
@@ -1157,9 +1157,9 @@ function addPendingUpdate(type, data){ pendingUpdates.push({type,data,timestamp:
 function sendRealtimeUpdates(){
   if (!currentGraph || !pendingUpdates.length) return;
   
-  // Prevent sending updates for invalid graph IDs (like demo-1)
-  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id === 'demo-1')) {
-    console.log('Skipping realtime updates for demo graph');
+  // Prevent sending updates for invalid graph IDs (like demo-1 or local_*)
+  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id.toString().startsWith('local_') || currentGraph.id === 'demo-1')) {
+    console.log('Skipping realtime updates for local/demo graph:', currentGraph.id);
     pendingUpdates.length = 0; // Clear pending updates
     return;
   }
@@ -1949,6 +1949,13 @@ async function respondToInvitation(id, action){
 }
 function shareGraph(){
   if (!currentGraph) return;
+  
+  // Prevent sharing local graphs
+  if (currentGraph.id && (currentGraph.id.toString().startsWith('local_') || currentGraph.id.toString().startsWith('demo-'))) {
+    notify('Cannot share local graphs. Please save to server first.', 'error');
+    return;
+  }
+  
   const email = document.getElementById('shareEmail').value.trim();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return notify('Invalid email','error');
   fetch(`/api/graphs/${currentGraph.id}/share`,{
@@ -1972,6 +1979,12 @@ function initializePermissionSelector(){
   });
 }
 function loadCollaborators(){
+  // Prevent loading collaborators for local graphs
+  if (currentGraph?.id && (currentGraph.id.toString().startsWith('local_') || currentGraph.id.toString().startsWith('demo-'))) {
+    showCollaborators([]);
+    return;
+  }
+  
   // Try API; else demo presence
   fetch(`/api/graphs/${currentGraph?.id||'none'}/collaborators`, { headers:{Authorization:`Bearer ${localStorage.getItem('flowpad_token')}`} })
     .then(r=>r.ok?r.json():Promise.reject())
