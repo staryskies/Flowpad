@@ -17,8 +17,8 @@ app.use(express.static('.'));         // serve index.html, graph.html, etc.
 
 // ---------- Env ----------
 const {
-  DATABASE_URL = '',
-  GOOGLE_CLIENT_ID = '',
+  DATABASE_URL = 'postgresql://flowpad_n12z_user:0rnsR2CXHUkuYHQIb4z4Xme0Tx0BZKlb@dpg-d2gcuk0dl3ps73f6l8t0-a.oregon-postgres.render.com/flowpad_n12z',
+  GOOGLE_CLIENT_ID = '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com',
   JWT_SECRET = 'change-me',
   NODE_ENV = 'development'
 } = process.env;
