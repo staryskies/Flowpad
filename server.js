@@ -146,6 +146,7 @@ async function initDatabase() {
 // Initialize database and then start server
 async function startServer() {
   try {
+    console.log('🔍 Starting database initialization...');
     await initDatabase();
     console.log('🔍 Database initialization completed, starting HTTP server...');
     
@@ -154,11 +155,21 @@ async function startServer() {
       const PORT = process.env.PORT || 3000;
       console.log(`🔧 Port: ${PORT}, NODE_ENV: ${NODE_ENV}`);
       console.log('🔧 About to call app.listen...');
-      app.listen(PORT, () => {
+      
+      // Add timeout to prevent hanging
+      const server = app.listen(PORT, () => {
         console.log(`✅ Listening on http://localhost:${PORT}`);
         console.log('✅ HTTP server startup callback executed');
       });
+      
+      // Add error handling
+      server.on('error', (err) => {
+        console.error('❌ Server error:', err);
+      });
+      
       console.log('✅ HTTP server startup code executed');
+    } else {
+      console.log('🚀 Production mode - skipping HTTP server startup');
     }
   } catch (err) {
     console.error('Failed to start server:', err);

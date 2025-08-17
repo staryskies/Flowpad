@@ -4031,36 +4031,7 @@
       selectedElement = connection;
     }
     
-    // Update createTile to include preset support
-    function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle', presetType = null) {
-      const tile = document.createElement('div');
-      tile.className = `tile ${shape}`;
-      tile.dataset.tileId = id || 'tile_' + Date.now();
-      tile.dataset.baseX = x;
-      tile.dataset.baseY = y;
-      tile.dataset.shape = shape;
-      tile.dataset.presetType = presetType || 'custom';
-      tile.style.left = (x + canvasOffset.x) + 'px';
-      tile.style.top = (y + canvasOffset.y) + 'px';
-      
-      // Set default color if none exists
-      if (!tile.dataset.color) {
-        tile.dataset.color = '#ffffff';
-        tile.style.backgroundColor = '#ffffff';
-      }
-      
-      tile.innerHTML = `
-        <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
-        <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
-      `;
-      
-      // Add click handler for toolbar
-      addTileClickHandler(tile);
-      
-      tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
-      
-      return tile;
-    }
+
     
     // Get connection icon
     function getConnectionIcon(type) {
@@ -4612,8 +4583,6 @@
       // Mark as dirty for auto-save
       markAsDirty();
     }
-    
-    const canvas = document.getElementById('canvas');
   </script>
 </body>
 </html>
