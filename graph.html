@@ -2867,8 +2867,13 @@
       const res = await fetch('/api/graphs', { headers: { Authorization: `Bearer ${token}` } });
       if (!res.ok) return;
       const data = await res.json();
-      renderGraphList(data.own, 'ownGraphs');
-      renderGraphList(data.shared, 'sharedGraphs');
+      
+      // Filter graphs by type since the API returns a flat array with type property
+      const ownGraphs = data.filter(g => g.type === 'own');
+      const sharedGraphs = data.filter(g => g.type === 'shared');
+      
+      renderGraphList(ownGraphs, 'ownGraphs');
+      renderGraphList(sharedGraphs, 'sharedGraphs');
     }
 
     function updateTileColorsForTheme(theme) {
