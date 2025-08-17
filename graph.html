@@ -52,9 +52,7 @@
     --inbox-rejected: #FF3B30;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:var(--bg-primary);
-    background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);
-    background-size:20px 20px;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
+  body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#ffffff;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
   .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);
     border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;
     transition:all 0.3s ease;box-shadow:0 4px 20px var(--shadow-primary)}
@@ -75,6 +73,8 @@
   .folder-header{background:var(--bg-secondary);padding:12px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-secondary);transition:all 0.3s ease}
   .folder-header:hover{background:var(--border-primary)}
   .folder-header.active{background:var(--accent-primary);color:#fff}
+  .folder-header.drag-over{background:var(--accent-primary);color:#fff;transform:scale(1.02)}
+  .graph-item.dragging{opacity:0.5;transform:scale(0.95)}
   .folder-icon{margin-right:8px;font-size:1.1rem}
   .folder-arrow{transition:transform 0.3s ease}
   .folder-arrow.expanded{transform:rotate(90deg)}
@@ -104,7 +104,7 @@
   .inbox-btn.reject:hover{box-shadow:0 4px 8px var(--shadow-secondary)}
 
   .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
-  .canvas{position:relative;width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;cursor:grab}
+  .canvas{position:relative;width:100%;height:100%;background:#ffffff;cursor:grab}
   .canvas-content{position:absolute;left:0;top:0;transform-origin:0 0;}
 
   .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.1s ease;overflow:hidden}
@@ -114,15 +114,23 @@
 .tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
 .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
 
-/* Resize outline for selected tiles */
-.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:16px;pointer-events:none;z-index:1}
+/* Resize outline for selected tiles - always rectangular */
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:8px;pointer-events:none;z-index:1;background:rgba(0,122,255,0.05)}
 
-/* Resize handles for each edge and corner */
+/* Resize handles for each edge and corner - 4 dots on each side */
 .tile.selected .resize-handle{position:absolute;width:8px;height:8px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,0.3)}
-.tile.selected .resize-handle.n{top:-6px;left:50%;transform:translateX(-50%);cursor:n-resize}
-.tile.selected .resize-handle.s{bottom:-6px;left:50%;transform:translateX(-50%);cursor:s-resize}
-.tile.selected .resize-handle.e{right:-6px;top:50%;transform:translateY(-50%);cursor:e-resize}
-.tile.selected .resize-handle.w{left:-6px;top:50%;transform:translateY(-50%);cursor:w-resize}
+.tile.selected .resize-handle.n1{top:-6px;left:25%;cursor:n-resize}
+.tile.selected .resize-handle.n2{top:-6px;left:50%;transform:translateX(-50%);cursor:n-resize}
+.tile.selected .resize-handle.n3{top:-6px;left:75%;cursor:n-resize}
+.tile.selected .resize-handle.s1{bottom:-6px;left:25%;cursor:s-resize}
+.tile.selected .resize-handle.s2{bottom:-6px;left:50%;transform:translateX(-50%);cursor:s-resize}
+.tile.selected .resize-handle.s3{bottom:-6px;left:75%;cursor:s-resize}
+.tile.selected .resize-handle.e1{right:-6px;top:25%;cursor:e-resize}
+.tile.selected .resize-handle.e2{right:-6px;top:50%;transform:translateY(-50%);cursor:e-resize}
+.tile.selected .resize-handle.e3{right:-6px;top:75%;cursor:e-resize}
+.tile.selected .resize-handle.w1{left:-6px;top:25%;cursor:w-resize}
+.tile.selected .resize-handle.w2{left:-6px;top:50%;transform:translateY(-50%);cursor:w-resize}
+.tile.selected .resize-handle.w3{left:-6px;top:75%;cursor:w-resize}
 .tile.selected .resize-handle.nw{top:-6px;left:-6px;cursor:nw-resize}
 .tile.selected .resize-handle.ne{top:-6px;right:-6px;cursor:ne-resize}
 .tile.selected .resize-handle.sw{bottom:-6px;left:-6px;cursor:sw-resize}
@@ -134,10 +142,7 @@
   .shape-option{width:24px;height:24px;border:2px solid var(--border-primary);border-radius:4px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)}
   .shape-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
 
-  .color-palette{position:absolute;top:10px;right:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;width:120px;z-index:1000}
-  .tile:hover .color-palette{opacity:1}
-  .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease}
-  .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
+  /* Color palette removed from tiles - now in tile menu */
 
   .connection-dot{position:absolute;width:20px;height:20px;background:var(--accent-primary);border:3px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
   .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
@@ -159,6 +164,7 @@
   .tool-btn.active{background:var(--accent-primary);color:#fff}
   .tool-btn.cache-status-btn{background:var(--accent-primary);color:#fff}
   .tool-btn.force-save-btn{background:var(--inbox-pending);color:#fff}
+  .tool-btn.share-btn{background:var(--inbox-accepted);color:#fff}
   .tool-btn.snap-grid-btn.active,.tool-btn.snap-tiles-btn.active{background:var(--accent-primary);color:#fff}
   .tool-btn.snap-tiles-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
 
@@ -279,6 +285,12 @@
   .toolbar-button.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
   .toolbar-button.small{width:28px;height:28px;font-size:12px}
 
+  /* Color options in toolbar */
+  .color-options{display:flex;flex-wrap:wrap;gap:4px}
+  .toolbar .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.2s ease}
+  .toolbar .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
+  .toolbar .color-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-primary)}
+
   .toolbar-color-picker{width:32px;height:32px;border:1px solid var(--border-primary);border-radius:6px;cursor:pointer;position:relative;overflow:hidden}
   .toolbar-color-picker::before{content:'';position:absolute;top:2px;left:2px;right:2px;bottom:2px;background:var(--tile-color, #ffffff);border-radius:4px}
 
@@ -346,6 +358,17 @@
   .share-btn{background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;transition:all 0.3s ease}
   .share-btn:hover{background:var(--accent-secondary)}
   .share-btn:disabled{background:var(--border-primary);color:var(--text-secondary);cursor:not-allowed}
+
+  /* Share Form Styles */
+  .share-form{margin-bottom:20px}
+  .form-group{margin-bottom:15px}
+  .form-group label{display:block;margin-bottom:5px;color:var(--text-primary);font-weight:500}
+  .permission-options{display:flex;flex-direction:column;gap:8px}
+  .permission-option{display:flex;align-items:center;gap:8px;padding:8px 12px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-primary)}
+  .permission-option:hover{border-color:var(--accent-primary);background:var(--bg-tertiary)}
+  .permission-option input[type="radio"]{margin:0}
+  .permission-option input[type="radio"]:checked + .permission-label{color:var(--accent-primary);font-weight:500}
+  .permission-label{font-size:14px;font-weight:400}
 
   .shared-users-list{margin-top:16px}
   .shared-user-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border-primary);border-radius:6px;margin-bottom:8px}
@@ -451,7 +474,10 @@
       <button class="new-graph-btn" onclick="createNewGraph()">+ New Graph</button>
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('myGraphs')">
+        <div class="folder-header" onclick="toggleFolder('myGraphs')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'myGraphs')" 
+             ondragleave="handleDragLeave(event)">
           <span><span class="folder-icon">Folder</span>My Graphs</span>
           <span class="folder-arrow">▶</span>
         </div>
@@ -461,7 +487,10 @@
       </div>
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('sharedGraphs')">
+        <div class="folder-header" onclick="toggleFolder('sharedGraphs')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'sharedGraphs')" 
+             ondragleave="handleDragLeave(event)">
           <span><span class="folder-icon">Group</span>Shared With Me</span>
           <span class="folder-arrow">▶</span>
         </div>
@@ -471,7 +500,10 @@
       </div>
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('inbox')">
+        <div class="folder-header" onclick="toggleFolder('inbox')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'inbox')" 
+             ondragleave="handleDragLeave(event)">
           <span><span class="folder-icon">Inbox</span>Inbox</span>
           <span class="folder-arrow">▶</span>
         </div>
@@ -542,6 +574,7 @@
     <button class="tool-btn snap-tiles-btn" onclick="toggleSnapToTiles()" title="Snap to Tiles (ON)">Link</button>
     <button class="tool-btn force-save-btn" onclick="forceSave()" title="Force Save">Save</button>
     <button class="tool-btn cache-status-btn" onclick="showCacheStatus()" title="Cache Status">Cache</button>
+    <button class="tool-btn share-btn" onclick="openShareGraphModal()" title="Share Graph">Share</button>
   </div>
 
   <!-- AI panel -->
@@ -632,6 +665,40 @@
       <div class="modal-buttons">
         <button class="modal-btn secondary" onclick="closeCacheStatusModal()">Close</button>
         <button class="modal-btn primary" onclick="forceSave()">Force Save Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Graph Modal -->
+  <div class="modal-overlay" id="shareGraphModal">
+    <div class="modal">
+      <div class="modal-title">Share Graph</div>
+      <div class="share-form">
+        <div class="form-group">
+          <label for="shareEmail">Email Address:</label>
+          <input type="email" id="shareEmail" class="modal-input" placeholder="Enter email address..." required>
+        </div>
+        <div class="form-group">
+          <label>Permission Level:</label>
+          <div class="permission-options">
+            <label class="permission-option">
+              <input type="radio" name="permission" value="view" checked>
+              <span class="permission-label">View Only</span>
+            </label>
+            <label class="permission-option">
+              <input type="radio" name="permission" value="edit">
+              <span class="permission-label">Can Edit</span>
+            </label>
+            <label class="permission-option">
+              <input type="radio" name="permission" value="admin">
+              <span class="permission-label">Admin</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" onclick="closeShareGraphModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="shareGraph()">Share</button>
       </div>
     </div>
   </div>
@@ -750,7 +817,7 @@ async function init(){
   await loadInbox().catch(()=>{});
   
   // Load from localStorage if no graphs loaded from server
-  if (!currentGraph) {
+  if (!currentGraph && tiles.length === 0) {
     loadFromLocalStorage();
   }
   
@@ -943,7 +1010,14 @@ function showSnapLineAt(pos,orient){
   else { l.style.top=pos+'px'; l.style.left='0px'; l.style.height='1px'; l.style.width='100%'; l.className='grid-snap-line horizontal show'; }
   setTimeout(()=>l.classList.remove('show'), 220);
 }
-function clearSnapIndicators(){ snapIndicators.forEach(i=>i.classList.remove('show')); snapLines.forEach(l=>l.classList.remove('show')); }
+function clearSnapIndicators(){ 
+  snapIndicators.forEach(i=>i.classList.remove('show')); 
+  snapLines.forEach(l=>l.classList.remove('show')); 
+  
+  // Also clear any remaining snap indicators
+  document.querySelectorAll('.snap-indicator').forEach(i => i.classList.remove('show'));
+  document.querySelectorAll('.grid-snap-line').forEach(l => l.classList.remove('show'));
+}
 
 function zoomIn(){ setZoom(zoom*1.1); }
 function zoomOut(){ setZoom(zoom/1.1); }
@@ -1013,7 +1087,21 @@ async function autoSaveGraph(){
     text.textContent='Save failed'; setTimeout(()=>indicator.classList.remove('show','error'), 3000);
   }
 }
-function scheduleSave(){ markAsDirty(); clearTimeout(window.saveTimeout); window.saveTimeout=setTimeout(()=>{ if(isDirty) autoSaveGraph(); }, 700); }
+function scheduleSave(){ 
+  markAsDirty(); 
+  // Don't auto-save while actively editing
+  if (!selectedTile && !selectedConnection) {
+    clearTimeout(window.saveTimeout); 
+    window.saveTimeout=setTimeout(()=>{ if(isDirty) autoSaveGraph(); }, 700); 
+  }
+}
+
+function saveOnUnselect(){
+  if (isDirty) {
+    clearTimeout(window.saveTimeout);
+    window.saveTimeout = setTimeout(() => { if(isDirty) autoSaveGraph(); }, 100);
+  }
+}
 function addPendingUpdate(type, data){ pendingUpdates.push({type,data,timestamp:Date.now()}); }
 function sendRealtimeUpdates(){
   if (!currentGraph || !pendingUpdates.length) return;
@@ -1039,7 +1127,8 @@ function setupCanvas(){
 }
 function onMouseDown(e){
   const tile = e.target.closest('.tile');
-  if (tile && e.altKey){ startConnectionFromTile(tile, e); return; }
+  // Support both Alt key and Option key (Mac) for connections
+  if (tile && (e.altKey || e.metaKey)){ startConnectionFromTile(tile, e); return; }
   if (e.target.classList.contains('connection-dot')){ startConnectionFromPort(e.target, e); return; }
   if (tile && e.target.tagName !== 'TEXTAREA'){ startDragging(e, tile); }
   else if (!tile){ startPanning(e); }
@@ -1126,6 +1215,9 @@ function updateDragging(e){
   
   // Re-render connections immediately for responsive feel
   renderConnections();
+  
+  // Update tile menu position to follow the tile
+  updateTileMenuPosition();
   
   // Mark as dirty and schedule save
   addPendingUpdate('tile_move', { tileId:selectedTile.dataset.tileId, x,y });
@@ -1245,10 +1337,7 @@ function createTile(x=100,y=100,title='',content='',id=null,shape='rectangle',pr
       <div class="shape-option" title="Triangle" data-shape="triangle">Triangle</div>
       <div class="shape-option" title="Parallelogram" data-shape="parallelogram">Para</div>
     </div>
-    <div class="color-palette">
-      ${['#ffffff','#fef3c7','#fde68a','#fca5a5','#c7d2fe','#bae6fd','#bbf7d0','#e9d5ff','#fecaca','#d1fae5']
-        .map(c=>`<div class="color-option" data-color="${c}" style="background:${c}"></div>`).join('')}
-    </div>
+    <!-- Color palette removed - now in toolbar -->
     <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
     <textarea class="tile-content" placeholder="Content">${content||''}</textarea>
     <div class="connection-dot input"  data-port="input"></div>
@@ -1257,7 +1346,6 @@ function createTile(x=100,y=100,title='',content='',id=null,shape='rectangle',pr
     <div class="connection-dot bottom" data-port="bottom"></div>
   `;
   t.querySelectorAll('.shape-option').forEach(el=>el.addEventListener('click',()=>setTileShape(t, el.dataset.shape)));
-  t.querySelectorAll('.color-option').forEach(el=>el.addEventListener('click',()=>setTileColor(t, el.dataset.color)));
   t.querySelectorAll('textarea').forEach(inp=>inp.addEventListener('input', scheduleSave));
   t.addEventListener('click', ()=>selectTile(t));
   t.addEventListener('dblclick', (e)=>openTileToolbar(t, {x:e.clientX,y:e.clientY}));
@@ -1271,10 +1359,12 @@ function addTile(){
 function setTileShape(tile,shape){
   tile.className = 'tile '+shape;
   tile.dataset.shape = shape;
+  markAsDirty();
   scheduleSave();
 }
 function setTileColor(tile,color){
   tile.style.backgroundColor = color;
+  markAsDirty();
   scheduleSave();
 }
 function selectTile(tile){
@@ -1296,6 +1386,9 @@ function clearSelection(){
   });
   selectedTile=null; selectedConnection=null;
   hideFloatingToolbars();
+  
+  // Save when unselecting
+  saveOnUnselect();
 }
 function duplicateTile(tile){
   const x = (+tile.dataset.baseX||0)+20, y=(+tile.dataset.baseY||0)+20;
@@ -1315,14 +1408,21 @@ function duplicateTile(tile){
   tiles.push(t2); renderCanvas(); scheduleSave(); notify('Duplicated');
 }
 function deleteSelected(){
-  if (selectedConnection){ deleteConnection(selectedConnection.id); return; }
+  if (selectedConnection){ 
+    deleteConnection(selectedConnection.id); 
+    clearSelection();
+    return; 
+  }
   if (!selectedTile) return;
   const id = selectedTile.dataset.tileId;
   selectedTile.remove();
   tiles = tiles.filter(t=>t.dataset.tileId!==id);
   connections = connections.filter(c=>c.fromTile!==id && c.toTile!==id);
   addPendingUpdate('tile_delete', {tileId:id});
-  markAsDirty(); clearSelection(); renderCanvas(); notify('Tile deleted');
+  markAsDirty(); 
+  clearSelection(); 
+  renderCanvas(); 
+  notify('Tile deleted');
 }
 
 /* Floating toolbar for tile & connection */
@@ -1330,6 +1430,9 @@ const floatTB = document.createElement('div'); floatTB.className='floating-toolb
 function hideFloatingToolbars(){ floatTB.classList.remove('show'); }
 function openTileToolbar(tile, at=null, force=false, focusSection=null){
   if (!tile && !force) return;
+  
+  // Close other menus first
+  closeAllTileMenus();
   
   const toolbar = document.getElementById('tileToolbar');
   if (!toolbar) return;
@@ -1345,7 +1448,6 @@ function openTileToolbar(tile, at=null, force=false, focusSection=null){
       <div class="toolbar-row">
         <button class="toolbar-button" onclick="duplicateTile()" title="Duplicate">Copy</button>
         <button class="toolbar-button" onclick="deleteSelected()" title="Delete">Delete</button>
-        <div class="toolbar-color" id="tileColorPick" title="Color"></div>
       </div>
     </div>
     <div class="toolbar-section">
@@ -1355,6 +1457,13 @@ function openTileToolbar(tile, at=null, force=false, focusSection=null){
           .map(s=>`<button class="toolbar-button ${tile?.dataset.shape===s?'active':''}" onclick="changeTileShape('${s}')" data-shape="${s}">${shapeIcon(s)}</button>`).join('')}
       </div>
     </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Color</div>
+      <div class="toolbar-row color-options">
+        ${['#ffffff','#fef3c7','#fde68a','#fca5a5','#c7d2fe','#bae6fd','#bbf7d0','#e9d5ff','#fecaca','#d1fae5']
+          .map(c=>`<div class="color-option ${tile.style.backgroundColor===c?'selected':''}" onclick="setTileColor(selectedTile,'${c}')" style="background:${c}" title="Set color"></div>`).join('')}
+      </div>
+    </div>
   `;
   
   // Position the toolbar
@@ -1362,11 +1471,8 @@ function openTileToolbar(tile, at=null, force=false, focusSection=null){
   toolbar.style.top = pos.y + 'px';
   toolbar.classList.add('show');
   
-  // Add color picker functionality
-  const colorBtn = toolbar.querySelector('#tileColorPick');
-  if (colorBtn) {
-    colorBtn.onclick = () => openColorPopup(colorBtn, (c) => setTileColor(tile, c));
-  }
+  // Store reference to tile for color changes
+  toolbar.dataset.tileId = tile.dataset.tileId;
 }
 function openConnectionToolbar(conn, at){
   selectedConnection = conn;
@@ -1566,11 +1672,40 @@ function renderConnections(){
   });
 }
 function createSmartPath(fromX,fromY,toX,toY){
-  // simple cubic with soft curve
-  const midX=(fromX+toX)/2, dist=Math.hypot(toX-fromX,toY-fromY), c=Math.max(dist*0.3,40);
-  const c1={x:fromX+(midX-fromX)*0.5,y:fromY+(fromY<toY?c:-c)};
-  const c2={x:toX-(toX-midX)*0.5,y:toY+(toY<fromY?c:-c)};
-  return `M ${fromX} ${fromY} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${toX} ${toY}`;
+  // Create S-shaped path with 90-degree angles and rounded bends
+  const halfTileWidth = 100; // Half of typical tile width
+  const halfTileHeight = 60; // Half of typical tile height
+  
+  const dx = Math.abs(toX - fromX);
+  const dy = Math.abs(toY - fromY);
+  
+  let path = `M ${fromX} ${fromY}`;
+  
+  if (dx > dy) {
+    // More horizontal than vertical - S-shape with horizontal first
+    const midX1 = fromX + (toX > fromX ? halfTileWidth : -halfTileWidth);
+    const midX2 = toX + (toX > fromX ? -halfTileWidth : halfTileWidth);
+    const midY = fromY + (toY - fromY) / 2;
+    
+    path += ` L ${midX1} ${fromY}`;
+    path += ` L ${midX1} ${midY}`;
+    path += ` L ${midX2} ${midY}`;
+    path += ` L ${midX2} ${toY}`;
+    path += ` L ${toX} ${toY}`;
+  } else {
+    // More vertical than horizontal - S-shape with vertical first
+    const midY1 = fromY + (toY > fromY ? halfTileHeight : -halfTileHeight);
+    const midY2 = toY + (toY > fromY ? -halfTileHeight : halfTileHeight);
+    const midX = fromX + (toX - fromX) / 2;
+    
+    path += ` L ${fromX} ${midY1}`;
+    path += ` L ${midX} ${midY1}`;
+    path += ` L ${midX} ${midY2}`;
+    path += ` L ${toX} ${midY2}`;
+    path += ` L ${toX} ${toY}`;
+  }
+  
+  return path;
 }
 function deleteConnection(id){
   const i = connections.findIndex(c=>c.id===id);
@@ -1618,10 +1753,25 @@ function renderGraphList(list, target){
   list.forEach(g=>{
     const item=document.createElement('div');
     item.className='graph-item'; item.dataset.graphId=g.id;
+    item.draggable = true;
     item.innerHTML=`<div class="graph-title">${g.title}</div>
                     <div class="graph-meta">Updated: ${new Date(g.updated_at||Date.now()).toLocaleString()}</div>
                     <button class="graph-delete" onclick="deleteGraph('${g.id}')" title="Delete graph">×</button>`;
+    
+    // Click to load graph
     item.addEventListener('click', (e)=>{ if (!e.target.classList.contains('graph-delete')) loadGraph(g); });
+    
+    // Drag and drop functionality
+    item.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', g.id);
+      e.dataTransfer.setData('application/json', JSON.stringify(g));
+      item.classList.add('dragging');
+    });
+    
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+    });
+    
     container.appendChild(item);
   });
 }
@@ -2665,6 +2815,9 @@ function openTileToolbar(tile, at = null, force = false, focusSection = null) {
 }
 
 function openConnectionToolbar(conn, at) {
+  // Close other menus first
+  closeAllTileMenus();
+  
   const floatTB = document.getElementById('connectionToolbar');
   if (!floatTB) return;
   
@@ -2822,12 +2975,9 @@ function loadFromLocalStorage() {
     pushHistory(true);
     
     notify(`Loaded "${mostRecent.title}" from local storage`, 'success');
-  } else {
-    // Create a default demo graph if nothing is saved
-    const demoGraph = demoTemplateGraph();
-    currentGraph = demoGraph;
-    loadGraph(demoGraph);
-    notify('Created demo graph', 'info');
+  } else if (tiles.length === 0) {
+    // Don't create demo graph - let user create their own
+    notify('No saved graphs found. Create a new graph to get started.', 'info');
   }
 }
 
@@ -2835,16 +2985,29 @@ function addResizeHandles(tile) {
   // Remove existing handles
   tile.querySelectorAll('.resize-handle').forEach(h => h.remove());
   
-  // Create resize handles for each edge and corner
+  // Create resize handles for each edge (4 dots on each side) and corners
   const handles = [
-    { class: 'n', cursor: 'n-resize' },
-    { class: 's', cursor: 's-resize' },
-    { class: 'e', cursor: 'e-resize' },
-    { class: 'w', cursor: 'w-resize' },
-    { class: 'nw', cursor: 'nw-resize' },
-    { class: 'ne', cursor: 'ne-resize' },
-    { class: 'sw', cursor: 'sw-resize' },
-    { class: 'se', cursor: 'se-resize' }
+    // North edge - 4 dots
+    { class: 'n1', cursor: 'n-resize', position: '25%' },
+    { class: 'n2', cursor: 'n-resize', position: '50%' },
+    { class: 'n3', cursor: 'n-resize', position: '75%' },
+    // South edge - 4 dots
+    { class: 's1', cursor: 's-resize', position: '25%' },
+    { class: 's2', cursor: 's-resize', position: '50%' },
+    { class: 's3', cursor: 's-resize', position: '75%' },
+    // East edge - 4 dots
+    { class: 'e1', cursor: 'e-resize', position: '25%' },
+    { class: 'e2', cursor: 'e-resize', position: '50%' },
+    { class: 'e3', cursor: 'e-resize', position: '75%' },
+    // West edge - 4 dots
+    { class: 'w1', cursor: 'w-resize', position: '25%' },
+    { class: 'w2', cursor: 'w-resize', position: '50%' },
+    { class: 'w3', cursor: 'w-resize', position: '75%' },
+    // Corners
+    { class: 'nw', cursor: 'nw-resize', position: 'corner' },
+    { class: 'ne', cursor: 'ne-resize', position: 'corner' },
+    { class: 'sw', cursor: 'sw-resize', position: 'corner' },
+    { class: 'se', cursor: 'se-resize', position: 'corner' }
   ];
   
   handles.forEach(handle => {
@@ -2886,17 +3049,21 @@ function startResizing(tile, handleType, e) {
     
     // Handle different resize directions
     switch (handleType) {
-      case 'n': // North edge
+      // North edge handles
+      case 'n1': case 'n2': case 'n3':
         newHeight = Math.max(100, startHeight - deltaY);
         newTop = startTop + (startHeight - newHeight);
         break;
-      case 's': // South edge
+      // South edge handles
+      case 's1': case 's2': case 's3':
         newHeight = Math.max(100, startHeight + deltaY);
         break;
-      case 'e': // East edge
+      // East edge handles
+      case 'e1': case 'e2': case 'e3':
         newWidth = Math.max(150, startWidth + deltaX);
         break;
-      case 'w': // West edge
+      // West edge handles
+      case 'w1': case 'w2': case 'w3':
         newWidth = Math.max(150, startWidth - deltaX);
         newLeft = startLeft + (startWidth - newWidth);
         break;
@@ -2951,6 +3118,172 @@ function startResizing(tile, handleType, e) {
   document.addEventListener('mousemove', onMouseMove);
   document.addEventListener('mouseup', onMouseUp);
 }
+
+function openShareGraphModal() {
+  const modal = document.getElementById('shareGraphModal');
+  if (!modal) return;
+  
+  // Reset form
+  document.getElementById('shareEmail').value = '';
+  document.querySelector('input[name="permission"][value="view"]').checked = true;
+  
+  modal.classList.add('show');
+  modal.style.display = 'flex';
+}
+
+function closeShareGraphModal() {
+  const modal = document.getElementById('shareGraphModal');
+  if (!modal) return;
+  
+  modal.classList.remove('show');
+  modal.style.display = 'none';
+}
+
+function shareGraph() {
+  if (!currentGraph) return;
+  
+  const email = document.getElementById('shareEmail').value.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return notify('Invalid email address', 'error');
+  }
+  
+  const permission = document.querySelector('input[name="permission"]:checked').value;
+  
+  // Here you would typically send the share request to your server
+  // For now, we'll just show a success message
+  notify(`Graph shared with ${email} (${permission} access)`, 'success');
+  closeShareGraphModal();
+  
+  // In a real implementation, you would call:
+  // fetch(`/api/graphs/${currentGraph.id}/share`, {
+  //   method: 'POST',
+  //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('flowpad_token')}` },
+  //   body: JSON.stringify({ email, permission })
+  // });
+}
+
+function handleDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+
+function handleDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e, targetFolder) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  
+  const graphId = e.dataTransfer.getData('text/plain');
+  const graphData = e.dataTransfer.getData('application/json');
+  
+  if (!graphId || !graphData) return;
+  
+  try {
+    const graph = JSON.parse(graphData);
+    
+    // Remove from current folder
+    const currentFolder = findGraphFolder(graphId);
+    if (currentFolder && currentFolder !== targetFolder) {
+      removeGraphFromFolder(graphId, currentFolder);
+    }
+    
+    // Add to target folder
+    addGraphToFolder(graph, targetFolder);
+    
+    notify(`Graph "${graph.title}" moved to ${targetFolder}`, 'success');
+    
+  } catch (error) {
+    notify('Failed to move graph', 'error');
+  }
+}
+
+function findGraphFolder(graphId) {
+  // Find which folder currently contains this graph
+  const folders = ['myGraphs', 'sharedGraphs', 'inbox'];
+  for (const folder of folders) {
+    const container = document.getElementById(folder === 'myGraphs' ? 'ownGraphs' : folder === 'sharedGraphs' ? 'sharedGraphsContent' : 'inboxContent');
+    if (container.querySelector(`[data-graph-id="${graphId}"]`)) {
+      return folder;
+    }
+  }
+  return null;
+}
+
+function removeGraphFromFolder(graphId, folderId) {
+  const container = document.getElementById(folderId === 'myGraphs' ? 'ownGraphs' : folderId === 'sharedGraphs' ? 'sharedGraphsContent' : 'inboxContent');
+  const graphElement = container.querySelector(`[data-graph-id="${graphId}"]`);
+  if (graphElement) {
+    graphElement.remove();
+  }
+}
+
+function addGraphToFolder(graph, folderId) {
+  const container = document.getElementById(folderId === 'myGraphs' ? 'ownGraphs' : folderId === 'sharedGraphs' ? 'sharedGraphsContent' : 'inboxContent');
+  
+  const item = document.createElement('div');
+  item.className = 'graph-item';
+  item.dataset.graphId = graph.id;
+  item.draggable = true;
+  item.innerHTML = `
+    <div class="graph-title">${graph.title}</div>
+    <div class="graph-meta">Updated: ${new Date(graph.updated_at || Date.now()).toLocaleString()}</div>
+    <button class="graph-delete" onclick="deleteGraph('${graph.id}')" title="Delete graph">×</button>
+  `;
+  
+  // Click to load graph
+  item.addEventListener('click', (e) => { 
+    if (!e.target.classList.contains('graph-delete')) loadGraph(graph); 
+  });
+  
+  // Drag and drop functionality
+  item.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', graph.id);
+    e.dataTransfer.setData('application/json', JSON.stringify(graph));
+    item.classList.add('dragging');
+  });
+  
+  item.addEventListener('dragend', () => {
+    item.classList.remove('dragging');
+  });
+  
+  container.appendChild(item);
+}
+
+function updateTileMenuPosition() {
+  if (selectedTile) {
+    const toolbar = document.getElementById('tileToolbar');
+    if (toolbar && toolbar.classList.contains('show')) {
+      const rect = selectedTile.getBoundingClientRect();
+      const pos = {
+        x: (rect.left + rect.right) / 2,
+        y: rect.top - 8
+      };
+      toolbar.style.left = pos.x + 'px';
+      toolbar.style.top = pos.y + 'px';
+    }
+  }
+}
+
+function closeAllTileMenus() {
+  const tileToolbar = document.getElementById('tileToolbar');
+  const connectionToolbar = document.getElementById('connectionToolbar');
+  
+  if (tileToolbar) {
+    tileToolbar.classList.remove('show');
+  }
+  if (connectionToolbar) {
+    connectionToolbar.classList.remove('show');
+  }
+}
+
+// Add click outside listener to close menus
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.toolbar') && !e.target.closest('.tile') && !e.target.closest('.connection-dot')) {
+    closeAllTileMenus();
+  }
+});
 </script>
 </body>
 </html>
