@@ -24,24 +24,235 @@ const {
 // ----- Database (no optional flags / no dbInitialized guards) -----
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { rejectUnauthorized: false }, // works with most hosted PG (Neon/Render/Heroku)
-  max: 5
+  ssl: { 
+    rejectUnauthorized: false,
+    // Additional SSL options for Render
+    checkServerIdentity: () => undefined,
+    servername: undefined
+  },
+  max: 5,
+  min: 1,
+  idleTimeoutMillis: 30000, // 30 seconds
+  connectionTimeoutMillis: 10000, // 10 seconds
+  acquireTimeoutMillis: 10000, // 10 seconds
+  // Retry configuration for Render
+  retryDelay: 1000,
+  maxRetries: 3,
+  // Connection validation
+  allowExitOnIdle: false,
+  // Handle connection errors gracefully
+  onConnect: (client) => {
+    console.log('🔌 New database connection established');
+    // Set connection-specific timeouts
+    client.query('SET statement_timeout = 60000'); // 1 minute
+    client.query('SET idle_in_transaction_session_timeout = 60000'); // 1 minute
+  },
+  onError: (err, client) => {
+    console.error('❌ Database connection error:', err.message);
+  }
 });
+
+// Test database connectivity with retry logic
+async function testDatabaseConnection() {
+  let retries = 3;
+  let lastError;
+  
+  while (retries > 0) {
+    try {
+      const client = await pool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      console.log('✅ Database connection test successful');
+      return true;
+    } catch (error) {
+      lastError = error;
+      retries--;
+      console.error(`❌ Database connection test failed (${retries} retries left):`, error.message);
+      
+      if (retries > 0) {
+        console.log(`🔄 Retrying connection in 3 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 3000));
+      }
+    }
+  }
+  
+  console.error('❌ Database connection failed after all retries');
+  console.error('Last error:', lastError);
+  return false;
+}
+
+// In-memory cache for graphs (will be cleared on each serverless function invocation)
+const graphCache = new Map();
 
 async function initDatabase() {
   console.log('🔄 Initializing database...');
   
-  // Wipe and recreate database on every server restart
-  await wipeAndRecreateDatabase();
+  // Test database connectivity first
+  const connectionOk = await testDatabaseConnection();
+  if (!connectionOk) {
+    console.log('⚠️  App will run with limited database functionality');
+    return;
+  }
   
-  console.log('✅ Database initialization completed');
+  try {
+    // For Vercel deployment, we'll only create tables if they don't exist
+    // instead of wiping on every restart
+    await ensureDatabaseSchema();
+    
+    console.log('✅ Database initialization completed');
+  } catch (error) {
+    console.error('❌ Database schema initialization failed:', error.message);
+    console.log('⚠️  App will run with limited database functionality');
+  }
 }
 
+async function ensureDatabaseSchema() {
+  let client;
+  
+  try {
+    client = await pool.connect();
+    
+    console.log('🔍 Checking database schema...');
+    
+    // Check if tables exist, create them if they don't
+    const tablesExist = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `);
+    
+    if (!tablesExist.rows[0].exists) {
+      console.log('🏗️  Creating database schema...');
+      
+      // Users table
+      await client.query(`
+        CREATE TABLE users (
+          id SERIAL PRIMARY KEY,
+          google_id VARCHAR(255) UNIQUE NOT NULL,
+          email VARCHAR(255) UNIQUE NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('✅ Users table created');
+      
+      // Graphs table
+      await client.query(`
+        CREATE TABLE graphs (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          title VARCHAR(255) NOT NULL,
+          data JSONB NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('✅ Graphs table created');
+      
+      // Graph shares table
+      await client.query(`
+        CREATE TABLE graph_shares (
+          id SERIAL PRIMARY KEY,
+          graph_id INTEGER REFERENCES graphs(id) ON DELETE CASCADE,
+          shared_with_email VARCHAR(255) NOT NULL,
+          shared_by_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+          permission VARCHAR(50) DEFAULT 'viewer',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      console.log('✅ Graph shares table created');
+      
+      // Create indexes for better performance
+      await client.query('CREATE INDEX IF NOT EXISTS idx_graphs_user_id ON graphs(user_id);');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_graph_id ON graph_shares(graph_id);');
+      await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_email ON graph_shares(shared_with_email);');
+      console.log('✅ Performance indexes created');
+      
+      console.log('🎉 Database schema created successfully!');
+    } else {
+      console.log('✅ Database schema already exists');
+    }
+    
+  } catch (error) {
+    console.error('❌ Error during database schema check:', error);
+    throw error;
+  } finally {
+    if (client) {
+      try {
+        client.release();
+      } catch (releaseError) {
+        console.error('❌ Error releasing client:', releaseError);
+      }
+    }
+  }
+}
+initDatabase().catch(err => {
+  console.error('Failed to init DB:', err);
+  // Let the app run; API calls will throw if DB truly unreachable
+});
+
+// ----- Google OAuth -----
+const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+
+// ----- Helper: auth middleware -----
+async function authenticateToken(req, res, next) {
+  try {
+    const auth = req.headers['authorization'];
+    const headerToken = auth && auth.startsWith('Bearer ') ? auth.slice(7) : null;
+    const cookieToken = req.cookies?.auth_token || null;
+    const token = headerToken || cookieToken;
+    if (!token) return res.status(401).json({ error: 'Access token required' });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { rows } = await pool.query('SELECT * FROM users WHERE id=$1', [decoded.userId]);
+    if (rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
+
+    req.user = rows[0];
+    next();
+  } catch (e) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+}
+
+// ----- Static routes -----
+app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/graph', (_, res) => res.sendFile(path.join(__dirname, 'graph.html')));
+app.get('/privacy', (_, res) => res.sendFile(path.join(__dirname, 'privacy-policy.html')));
+app.get('/terms', (_, res) => res.sendFile(path.join(__dirname, 'terms-of-service.html')));
+
+// Manual database wipe endpoint (for development)
+app.post('/api/admin/wipe-database', async (req, res) => {
+  try {
+    console.log('🔄 Manual database wipe requested...');
+    
+    // Wipe and recreate database
+    await wipeAndRecreateDatabase();
+    
+    // Clear any in-memory caches
+    graphCache.clear();
+    
+    console.log('✅ Manual database wipe completed');
+    res.json({ message: 'Database wiped and recreated successfully' });
+  } catch (error) {
+    console.error('❌ Error during manual database wipe:', error);
+    res.status(500).json({ error: 'Failed to wipe database' });
+  }
+});
+
 async function wipeAndRecreateDatabase() {
-  const client = await pool.connect();
+  let client;
   
   try {
     console.log('🗑️  Wiping existing database...');
+    
+    // Get a fresh connection from the pool
+    client = await pool.connect();
+    
+    // Set a longer timeout for this operation
+    await client.query('SET statement_timeout = 300000'); // 5 minutes
     
     // Drop all tables in correct order (respecting foreign keys)
     await client.query('DROP TABLE IF EXISTS graph_shares CASCADE');
@@ -99,80 +310,59 @@ async function wipeAndRecreateDatabase() {
     console.log('✅ Performance indexes created');
     
     console.log('🎉 Database wipe and recreation completed!');
-    console.log('📊 Fresh schema created with:');
-    console.log('   - users table');
-    console.log('   - graphs table');
-    console.log('   - graph_shares table');
-    console.log('   - proper foreign key relationships');
-    console.log('   - performance indexes');
     
   } catch (error) {
     console.error('❌ Error during database wipe/recreation:', error);
+    
+    // If there was an error, try to ensure the connection is still valid
+    if (client) {
+      try {
+        await client.query('SELECT 1');
+      } catch (connError) {
+        console.error('❌ Connection lost during operation:', connError);
+      }
+    }
+    
     throw error;
   } finally {
-    client.release();
+    if (client) {
+      try {
+        client.release();
+      } catch (releaseError) {
+        console.error('❌ Error releasing client:', releaseError);
+      }
+    }
   }
 }
-initDatabase().catch(err => {
-  console.error('Failed to init DB:', err);
-  // Let the app run; API calls will throw if DB truly unreachable
-});
-
-// ----- Google OAuth -----
-const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
-
-// ----- Helper: auth middleware -----
-async function authenticateToken(req, res, next) {
-  try {
-    const auth = req.headers['authorization'];
-    const headerToken = auth && auth.startsWith('Bearer ') ? auth.slice(7) : null;
-    const cookieToken = req.cookies?.auth_token || null;
-    const token = headerToken || cookieToken;
-    if (!token) return res.status(401).json({ error: 'Access token required' });
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const { rows } = await pool.query('SELECT * FROM users WHERE id=$1', [decoded.userId]);
-    if (rows.length === 0) return res.status(401).json({ error: 'Invalid token' });
-
-    req.user = rows[0];
-    next();
-  } catch (e) {
-    return res.status(403).json({ error: 'Invalid token' });
-  }
-}
-
-// ----- Static routes -----
-app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
-app.get('/graph', (_, res) => res.sendFile(path.join(__dirname, 'graph.html')));
-app.get('/privacy', (_, res) => res.sendFile(path.join(__dirname, 'privacy-policy.html')));
-app.get('/terms', (_, res) => res.sendFile(path.join(__dirname, 'terms-of-service.html')));
-
-// Manual database wipe endpoint (for development)
-app.post('/api/admin/wipe-database', async (req, res) => {
-  try {
-    console.log('🔄 Manual database wipe requested...');
-    
-    // Wipe and recreate database
-    await wipeAndRecreateDatabase();
-    
-    // Clear any in-memory caches
-    graphCache.clear();
-    
-    console.log('✅ Manual database wipe completed');
-    res.json({ message: 'Database wiped and recreated successfully' });
-  } catch (error) {
-    console.error('❌ Error during manual database wipe:', error);
-    res.status(500).json({ error: 'Failed to wipe database' });
-  }
-});
 
 // Health check endpoint
 app.get('/api/health', async (_, res) => {
   try {
-    await pool.query('SELECT 1');
-    res.json({ status: 'ok', database: 'connected', ts: new Date().toISOString() });
-  } catch {
-    res.json({ status: 'ok', database: 'error', ts: new Date().toISOString() });
+    // Test database connection with timeout
+    const client = await pool.connect();
+    const result = await Promise.race([
+      client.query('SELECT 1 as test'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database timeout')), 5000)
+      )
+    ]);
+    client.release();
+    
+    res.json({ 
+      status: 'ok', 
+      database: 'connected', 
+      timestamp: new Date().toISOString(),
+      render: 'compatible'
+    });
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    res.json({ 
+      status: 'ok', 
+      database: 'error', 
+      timestamp: new Date().toISOString(),
+      error: error.message,
+      render: 'compatible'
+    });
   }
 });
 
