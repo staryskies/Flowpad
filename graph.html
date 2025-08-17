@@ -114,8 +114,8 @@
 .tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
 .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
 
-/* Resize outline for selected tiles - always rectangular */
-.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:8px;pointer-events:none;z-index:1;background:rgba(0,122,255,0.05)}
+/* Resize outline for selected tiles - always rectangular and separate from shape */
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:8px;pointer-events:none;z-index:100;background:rgba(0,122,255,0.05);clip-path:none !important}
 
 /* Resize handles for each edge and corner - 4 dots on each side, positioned farther from tile */
 .tile.selected .resize-handle{position:absolute;width:8px;height:8px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,0.3)}
@@ -164,7 +164,7 @@
   .tool-btn.active{background:var(--accent-primary);color:#fff}
   .tool-btn.cache-status-btn{background:var(--accent-primary);color:#fff}
   .tool-btn.force-save-btn{background:var(--inbox-pending);color:#fff}
-  .tool-btn.share-btn{background:var(--inbox-accepted);color:#fff}
+  .tool-btn.share-btn{background:var(--inbox-accepted);color:#fff;font-size:0.8rem}
   .tool-btn.new-graph-btn{background:var(--accent-primary);color:#fff;font-weight:bold}
   .tool-btn.snap-grid-btn.active,.tool-btn.snap-tiles-btn.active{background:var(--accent-primary);color:#fff}
   .tool-btn.snap-tiles-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
@@ -261,9 +261,9 @@
   .grid-snap-line.vertical{width:1px}
   .grid-snap-line.horizontal{height:1px}
 
-  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0.1;transition:opacity 0.3s ease}
-  .grid-overlay.show{opacity:0.2}
-  .grid-line{position:absolute;background:var(--accent-primary);opacity:0.3}
+  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0.15;transition:opacity 0.3s ease}
+.grid-overlay.show{opacity:0.4}
+.grid-line{position:absolute;background:var(--accent-primary);opacity:0.6;box-shadow:0 0 1px rgba(0,0,0,0.1)}
   .grid-line.vertical{width:1px;height:100%}
   .grid-line.horizontal{height:1px;width:100%}
 
@@ -577,15 +577,14 @@
   <div class="toolbar" id="toolbar">
     <div class="tool-label">Tools</div>
     <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
+    <button class="tool-btn" onclick="createTextRectangle()" title="Add Text Rectangle">T</button>
     <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">DEL</button>
     <button class="tool-btn" onclick="centerCanvas()" title="Center Canvas">⌂</button>
     <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">AI</button>
     <button class="tool-btn grid-toggle-btn" onclick="toggleGrid()" title="Show Grid (OFF)">▦</button>
-    <button class="tool-btn preset-btn" onclick="showPresetTileSelector()" title="Preset Tiles">Preset</button>
+    <button class="tool-btn preset-btn" onclick="showPresetTileSelector()" title="Preset Tiles">📋</button>
     <button class="tool-btn snap-grid-btn" onclick="toggleSnapToGrid()" title="Snap to Grid (ON)">⊞</button>
-    <button class="tool-btn snap-tiles-btn" onclick="toggleSnapToTiles()" title="Snap to Tiles (ON)">Link</button>
-    <button class="tool-btn force-save-btn" onclick="forceSave()" title="Force Save">Save</button>
-    <button class="tool-btn cache-status-btn" onclick="showCacheStatus()" title="Cache Status">Cache</button>
+    <button class="tool-btn snap-tiles-btn" onclick="toggleSnapToTiles()" title="Snap to Tiles (ON)">⊟</button>
     <button class="tool-btn share-btn" onclick="openShareGraphModal()" title="Share Graph">Share</button>
     <button class="tool-btn new-graph-btn" onclick="createNewGraph()" title="New Graph">+</button>
   </div>
@@ -957,29 +956,36 @@ function setupGridVisualization(){
   window.addEventListener('resize', createGridLines);
 }
 function createGridLines(){
-  let gridOverlay = document.getElementById('grid-overlay');
-  if (!gridOverlay){ gridOverlay = document.createElement('div'); gridOverlay.id='grid-overlay'; gridOverlay.className='grid-overlay'; canvas.appendChild(gridOverlay); }
-  gridOverlay.innerHTML = '';
-  const rect = canvas.getBoundingClientRect();
-  
-  // Calculate grid spacing in screen coordinates, accounting for zoom and offset
-  const screenGridSize = gridSize * zoom;
-  
-  // Start from the canvas offset and create grid lines
-  const startX = canvasOffset.x % screenGridSize;
-  const startY = canvasOffset.y % screenGridSize;
-  
-  for(let x = startX; x <= rect.width; x += screenGridSize){
-    const l = document.createElement('div'); 
-    l.className='grid-line vertical'; 
-    l.style.left = x + 'px'; 
-    gridOverlay.appendChild(l);
-  }
-  for(let y = startY; y <= rect.height; y += screenGridSize){
-    const l = document.createElement('div'); 
-    l.className='grid-line horizontal'; 
-    l.style.top = y + 'px'; 
-    gridOverlay.appendChild(l);
+  // Use requestAnimationFrame for smooth grid rendering
+  if (!createGridLines.rafId) {
+    createGridLines.rafId = requestAnimationFrame(() => {
+      let gridOverlay = document.getElementById('grid-overlay');
+      if (!gridOverlay){ gridOverlay = document.createElement('div'); gridOverlay.id='grid-overlay'; gridOverlay.className='grid-overlay'; canvas.appendChild(gridOverlay); }
+      gridOverlay.innerHTML = '';
+      const rect = canvas.getBoundingClientRect();
+      
+      // Calculate grid spacing in screen coordinates, accounting for zoom and offset
+      const screenGridSize = gridSize * zoom;
+      
+      // Start from the canvas offset and create grid lines
+      const startX = canvasOffset.x % screenGridSize;
+      const startY = canvasOffset.y % screenGridSize;
+      
+      for(let x = startX; x <= rect.width; x += screenGridSize){
+        const l = document.createElement('div'); 
+        l.className='grid-line vertical'; 
+        l.style.left = x + 'px'; 
+        gridOverlay.appendChild(l);
+      }
+      for(let y = startY; y <= rect.height; y += screenGridSize){
+        const l = document.createElement('div'); 
+        l.className='grid-line horizontal'; 
+        l.style.top = y + 'px'; 
+        gridOverlay.appendChild(l);
+      }
+      
+      createGridLines.rafId = null;
+    });
   }
 }
 function toggleGrid(){
@@ -1083,6 +1089,12 @@ function setupRealtimeUpdates(){
 function markAsDirty(){ isDirty=true; lastSaveTime=Date.now(); pushHistory(); }
 async function autoSaveGraph(){
   if (!currentGraph || !isDirty) return;
+  
+  // Prevent saving for invalid graph IDs (like demo-1)
+  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id === 'demo-1')) {
+    console.log('Skipping auto-save for demo graph');
+    return;
+  }
   const indicator = document.getElementById('autoSaveIndicator');
   const text = document.getElementById('autoSaveText');
   try{
@@ -1147,6 +1159,14 @@ function saveOnUnselect(){
 function addPendingUpdate(type, data){ pendingUpdates.push({type,data,timestamp:Date.now()}); }
 function sendRealtimeUpdates(){
   if (!currentGraph || !pendingUpdates.length) return;
+  
+  // Prevent sending updates for invalid graph IDs (like demo-1)
+  if (currentGraph.id && (currentGraph.id.toString().startsWith('demo-') || currentGraph.id === 'demo-1')) {
+    console.log('Skipping realtime updates for demo graph');
+    pendingUpdates.length = 0; // Clear pending updates
+    return;
+  }
+  
   const updates=[...pendingUpdates]; pendingUpdates=[];
   fetch(`/api/graphs/${currentGraph.id}/realtime`,{
     method:'POST',
@@ -1266,8 +1286,11 @@ function updateDragging(e){
       // Re-render connections immediately for responsive feel
       renderConnections();
       
-      // Update tile menu position to follow the tile
-      updateTileMenuPosition();
+      // Hide tile menu while dragging for cleaner UX
+      const tileToolbar = document.getElementById('tileToolbar');
+      if (tileToolbar) {
+        tileToolbar.classList.remove('show');
+      }
       
       // Mark as dirty and schedule save
       addPendingUpdate('tile_move', { tileId:selectedTile.dataset.tileId, x,y });
@@ -2190,11 +2213,11 @@ function createPresetTile(presetType) {
   switch(presetType) {
     case 'title':
       title = 'Title';
-      content = 'Enter your title here';
+      content = ''; // Title tiles don't have mini text
       shape = 'rounded';
       break;
     case 'notes':
-      title = 'Notes';
+      title = ''; // Notes don't have a title
       content = 'Enter your notes here';
       shape = 'rectangle';
       break;
@@ -2211,6 +2234,16 @@ function createPresetTile(presetType) {
   }
   
   const tile = createTile(x, y, title, content, null, shape, presetType);
+  
+  // Hide title field for notes, hide content field for titles
+  if (presetType === 'notes') {
+    const titleField = tile.querySelector('.tile-title');
+    if (titleField) titleField.style.display = 'none';
+  } else if (presetType === 'title') {
+    const contentField = tile.querySelector('.tile-content');
+    if (contentField) contentField.style.display = 'none';
+  }
+  
   tiles.push(tile);
   renderCanvas();
   scheduleSave();
@@ -3378,6 +3411,33 @@ document.addEventListener('click', (e) => {
     dropdowns.forEach(d => d.classList.remove('show'));
   }
 });
+
+// Function to create new text rectangles on tiles
+function createTextRectangle() {
+  const canvasRect = canvas.getBoundingClientRect();
+  const centerX = canvasRect.width / 2;
+  const centerY = canvasRect.height / 2;
+  const x = Math.max(20, Math.round(centerX - 75));
+  const y = Math.max(20, Math.round(centerY - 25));
+  
+  const tile = createTile(x, y, '', 'Text', null, 'rectangle', 'text');
+  
+  // Make text rectangles smaller and more suitable for labels
+  tile.style.width = '150px';
+  tile.style.height = '50px';
+  
+  // Focus on the content field for immediate editing
+  const contentField = tile.querySelector('.tile-content');
+  if (contentField) {
+    contentField.focus();
+    contentField.select();
+  }
+  
+  tiles.push(tile);
+  renderCanvas();
+  scheduleSave();
+  notify('Text rectangle added', 'success');
+}
 </script>
 </body>
 </html>
