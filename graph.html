@@ -626,11 +626,15 @@
     }
 
     function setupGridVisualization() {
-      // Create grid overlay
-      const gridOverlay = document.createElement('div');
-      gridOverlay.className = 'grid-overlay';
-      gridOverlay.id = 'grid-overlay';
-      canvas.appendChild(gridOverlay);
+      // Check if grid overlay already exists
+      let gridOverlay = document.getElementById('grid-overlay');
+      if (!gridOverlay) {
+        // Create grid overlay only if it doesn't exist
+        gridOverlay = document.createElement('div');
+        gridOverlay.className = 'grid-overlay';
+        gridOverlay.id = 'grid-overlay';
+        canvas.appendChild(gridOverlay);
+      }
       
       // Create grid lines
       createGridLines();
@@ -688,22 +692,28 @@
     }
 
     function setupSnapping() {
-      // Create snap indicators
-      for (let i = 0; i < 10; i++) {
-        const indicator = document.createElement('div');
-        indicator.className = 'snap-indicator';
-        indicator.id = `snap-indicator-${i}`;
-        canvas.appendChild(indicator);
-        snapIndicators.push(indicator);
+      // Check if snap indicators already exist
+      if (snapIndicators.length === 0) {
+        // Create snap indicators only if they don't exist
+        for (let i = 0; i < 10; i++) {
+          const indicator = document.createElement('div');
+          indicator.className = 'snap-indicator';
+          indicator.id = `snap-indicator-${i}`;
+          canvas.appendChild(indicator);
+          snapIndicators.push(indicator);
+        }
       }
       
-      // Create snap lines
-      for (let i = 0; i < 6; i++) {
-        const line = document.createElement('div');
-        line.className = 'grid-snap-line';
-        line.id = `snap-line-${i}`;
-        canvas.appendChild(line);
-        snapLines.push(line);
+      // Check if snap lines already exist
+      if (snapLines.length === 0) {
+        // Create snap lines only if they don't exist
+        for (let i = 0; i < 6; i++) {
+          const line = document.createElement('div');
+          line.className = 'grid-snap-line';
+          line.id = `snap-line-${i}`;
+          canvas.appendChild(line);
+          snapLines.push(line);
+        }
       }
     }
 
@@ -988,13 +998,23 @@
       tab.dataset.graphId = graph.id;
       tab.innerHTML = `
         ${graph.title || 'Untitled Graph'}
-        <button class="tab-close" onclick="closeTab('${graph.id}')" title="Close tab">×</button>
+        <button class="tab-close" title="Close tab">×</button>
       `;
       
-      tab.addEventListener('click', () => {
-        if (graph.id !== activeTabId) {
-          switchToTab(graph.id);
+      // Add click handler for tab selection
+      tab.addEventListener('click', (e) => {
+        if (!e.target.classList.contains('tab-close')) {
+          if (graph.id !== activeTabId) {
+            switchToTab(graph.id);
+          }
         }
+      });
+      
+      // Add click handler for close button
+      const closeBtn = tab.querySelector('.tab-close');
+      closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent tab selection
+        closeTab(graph.id);
       });
       
       openTabs.push({ id: graph.id, element: tab, graph: graph });
@@ -1106,30 +1126,74 @@
     }
 
     function deleteGraph(graphId) {
-      if (confirm('Are you sure you want to delete this graph? This action cannot be undone.')) {
-        // Remove from UI first
-        const graphElement = document.querySelector(`[data-graph-id="${graphId}"]`);
-        if (graphElement) {
-          graphElement.remove();
-        }
-        
-        // Close tab if open
-        if (openTabs.find(tab => tab.id === graphId)) {
-          closeTab(graphId);
-        }
-        
-        // Remove from arrays
-        if (currentGraph && currentGraph.id === graphId) {
-          currentGraph = null;
-          tiles = [];
-          connections = [];
-          renderCanvas();
-          document.getElementById('shareSection').style.display = 'none';
-        }
-        
-        // TODO: Add API call to delete from server
-        notify('Graph deleted', 'success');
+      // Show custom delete confirmation modal
+      showDeleteConfirmation(graphId);
+    }
+
+    function showDeleteConfirmation(graphId) {
+      // Create modal if it doesn't exist
+      let modal = document.getElementById('deleteConfirmModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'deleteConfirmModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+          <div class="modal-content">
+            <div class="modal-title">Delete Graph</div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete this graph?</p>
+              <p class="warning-text">This action cannot be undone.</p>
+            </div>
+            <div class="modal-actions">
+              <button class="modal-btn secondary" onclick="closeDeleteConfirmation()">Cancel</button>
+              <button class="modal-btn danger" id="confirmDeleteBtn">Delete</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
       }
+      
+      // Set up delete confirmation
+      const confirmBtn = modal.querySelector('#confirmDeleteBtn');
+      confirmBtn.onclick = () => confirmDeleteGraph(graphId);
+      
+      // Show modal
+      modal.classList.add('show');
+    }
+
+    function closeDeleteConfirmation() {
+      const modal = document.getElementById('deleteConfirmModal');
+      if (modal) {
+        modal.classList.remove('show');
+      }
+    }
+
+    function confirmDeleteGraph(graphId) {
+      // Remove from UI first
+      const graphElement = document.querySelector(`[data-graph-id="${graphId}"]`);
+      if (graphElement) {
+        graphElement.remove();
+      }
+      
+      // Close tab if open
+      if (openTabs.find(tab => tab.id === graphId)) {
+        closeTab(graphId);
+      }
+      
+      // Remove from arrays
+      if (currentGraph && currentGraph.id === graphId) {
+        currentGraph = null;
+        tiles = [];
+        connections = [];
+        renderCanvas();
+        document.getElementById('shareSection').style.display = 'none';
+      }
+      
+      // TODO: Add API call to delete from server
+      notify('Graph deleted', 'success');
+      
+      // Close modal
+      closeDeleteConfirmation();
     }
 
     function renderGraphList(list, id) {
