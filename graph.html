@@ -535,6 +535,33 @@
       border: 1px solid var(--border-primary) !important;
       box-shadow: 0 12px 30px var(--shadow-primary) !important;
     }
+    
+    /* Specific styling for floating toolbar */
+    .floating-toolbar {
+      background: var(--bg-secondary) !important;
+      border: 2px solid var(--accent-primary) !important;
+      border-radius: 12px !important;
+      padding: 8px !important;
+      min-width: 120px !important;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3) !important;
+    }
+    
+    .floating-toolbar .toolbar-button {
+      background: var(--bg-tertiary) !important;
+      border: 1px solid var(--border-primary) !important;
+      border-radius: 6px !important;
+      padding: 8px !important;
+      margin: 2px !important;
+      cursor: pointer !important;
+      font-size: 16px !important;
+      transition: all 0.2s ease !important;
+    }
+    
+    .floating-toolbar .toolbar-button:hover {
+      background: var(--accent-primary) !important;
+      color: white !important;
+      transform: scale(1.1) !important;
+    }
   </style>
 </head>
 <body>
@@ -724,7 +751,7 @@
      * and repositions on scroll/resize. Returns {el, close, updatePosition}.
      */
     function openPopover(trigger, content, opts={}){
-      const {prefer='bottom', offset=8, className=''} = opts;
+      const {prefer='bottom', offset=8, className='', autoClose=true} = opts;
       const pop = document.createElement('div');
       pop.className = `popover ${className}`.trim();
 
@@ -739,26 +766,36 @@
         const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
         const pr = pop.getBoundingClientRect();
 
-        // candidate positions (x,y) in viewport coords
-        const cand = {
-          bottom: { x: tr.left + tr.width/2 - pr.width/2, y: tr.bottom + offset },
-          top:    { x: tr.left + tr.width/2 - pr.width/2, y: tr.top - pr.height - offset },
-          right:  { x: tr.right + offset,                 y: tr.top + tr.height/2 - pr.height/2 },
-          left:   { x: tr.left - pr.width - offset,       y: tr.top + tr.height/2 - pr.height/2 },
-        };
+        // Try to center the popup in the viewport first
+        let x = (vw - pr.width) / 2;
+        let y = (vh - pr.height) / 2;
+        
+        // If centering would make it go off-screen, fall back to smart positioning
+        if (x < 8 || y < 8 || (x + pr.width) > (vw - 8) || (y + pr.height) > (vh - 8)) {
+          // candidate positions (x,y) in viewport coords
+          const cand = {
+            bottom: { x: tr.left + tr.width/2 - pr.width/2, y: tr.bottom + offset },
+            top:    { x: tr.left + tr.width/2 - pr.width/2, y: tr.top - pr.height - offset },
+            right:  { x: tr.right + offset,                 y: tr.top + tr.height/2 - pr.height/2 },
+            left:   { x: tr.left - pr.width - offset,       y: tr.top + tr.height/2 - pr.height/2 },
+          };
 
-        // try prefer, then fallbacks
-        const order = [prefer, 'bottom','top','right','left'].filter((v,i,a)=>a.indexOf(v)===i);
-        let best = cand[order[0]];
-        for (const key of order){
-          const p = cand[key];
-          const fits = p.x >= 8 && p.y >= 8 && (p.x+pr.width) <= (vw-8) && (p.y+pr.height) <= (vh-8);
-          if (fits){ best = p; break; }
+          // try prefer, then fallbacks
+          const order = [prefer, 'bottom','top','right','left'].filter((v,i,a)=>a.indexOf(v)===i);
+          let best = cand[order[0]];
+          for (const key of order){
+            const p = cand[key];
+            const fits = p.x >= 8 && p.y >= 8 && (p.x+pr.width) <= (vw-8) && (p.y+pr.height) <= (vh-8);
+            if (fits){ best = p; break; }
+          }
+          x = best.x;
+          y = best.y;
         }
+        
         // clamp to viewport with small padding
         const pad = 8;
-        const x = Math.min(Math.max(best.x, pad), vw - pr.width - pad);
-        const y = Math.min(Math.max(best.y, pad), vh - pr.height - pad);
+        x = Math.min(Math.max(x, pad), vw - pr.width - pad);
+        y = Math.min(Math.max(y, pad), vh - pr.height - pad);
 
         // fixed positioning uses viewport coords (no scroll math needed)
         pop.style.left = `${Math.round(x)}px`;
@@ -782,6 +819,15 @@
       window.addEventListener('resize', onResize);
       window.addEventListener('keydown', onKey);
       document.addEventListener('mousedown', onClickAway, true);
+
+      // Auto-close after a delay if specified
+      if (autoClose) {
+        setTimeout(() => {
+          if (pop.parentNode) {
+            close();
+          }
+        }, 10000); // Auto-close after 10 seconds
+      }
 
       // initial place after append so size is known
       place();
@@ -1442,6 +1488,15 @@
     }
 
     function loadGraph(graph, skipTabSwitch = false) {
+      // Clear existing content first
+      tiles = [];
+      connections = [];
+      
+      // Clear the canvas completely
+      if (canvas) {
+        canvas.innerHTML = '';
+      }
+      
       currentGraph = graph;
       tiles = (graph.data?.tiles || []).map(t => {
         const tile = createTile(t.x, t.y, t.title, t.content, t.id);
@@ -1478,8 +1533,10 @@
       
       renderCanvas();
       
-      // Load collaborators
-      loadCollaborators();
+      // Load collaborators only if there are any
+      if (graph.sharedUsers && graph.sharedUsers.length > 0) {
+        loadCollaborators();
+      }
       
       // Add cache status buttons
       addCacheStatusButton();
@@ -1912,6 +1969,7 @@
     }
 
     function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle', presetType = null) {
+      console.log('createTile called with:', { x, y, title, content, id, shape, presetType });
       const tile = document.createElement('div');
       tile.className = `tile ${shape}`;
       tile.dataset.tileId = id || 'tile_' + Date.now();
@@ -1934,10 +1992,12 @@
       `;
       
       // Add click handler for toolbar
+      console.log('Adding click handler to tile:', tile);
       addTileClickHandler(tile);
       
       tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
       
+      console.log('Tile created successfully:', tile);
       return tile;
     }
 
@@ -3245,7 +3305,7 @@
           tile.style.background = c;
           saveRecentColor(c);
           scheduleSave();
-          api.close();
+          api.close(); // Auto-close after selection
         };
         grid.appendChild(d);
       });
@@ -3261,7 +3321,7 @@
             tile.style.background = c;
             saveRecentColor(c);
             scheduleSave();
-            api.close();
+            api.close(); // Auto-close after selection
           };
           rg.appendChild(d);
         });
@@ -3298,14 +3358,26 @@
     function loadCollaborators() {
       if (!currentGraph) return;
       
-      // Simulate loading collaborators (replace with actual API call)
-      const collaborators = [
-        { name: 'John Doe', status: 'online' },
-        { name: 'Jane Smith', status: 'away' },
-        { name: 'Bob Johnson', status: 'online' }
-      ];
+      // Hide collaborators list by default
+      const collaboratorsList = document.getElementById('collaboratorsList');
+      if (collaboratorsList) {
+        collaboratorsList.style.display = 'none';
+      }
       
-      updateCollaboratorsList(collaborators);
+      // Only show if there are actual collaborators
+      if (currentGraph.sharedUsers && currentGraph.sharedUsers.length > 0) {
+        if (collaboratorsList) {
+          collaboratorsList.style.display = 'block';
+        }
+        
+        // Simulate loading collaborators (replace with actual API call)
+        const collaborators = currentGraph.sharedUsers.map(user => ({
+          name: user.email.split('@')[0], // Use email prefix as name
+          status: 'online'
+        }));
+        
+        updateCollaboratorsList(collaborators);
+      }
     }
 
     async function showCacheStatus() {
@@ -4037,43 +4109,18 @@
 
     // Add click event to tiles for toolbar
     function addTileClickHandler(tile) {
-      let clickTimer = null;
-      let isClick = false;
-      
-      tile.addEventListener('mousedown', (e) => {
-        e.stopPropagation();
-        
-        // Start long press timer
-        startLongPress(e, tile);
-        
-        // Set click timer
-        clickTimer = setTimeout(() => {
-          isClick = true;
-        }, 100);
-      });
-      
-      tile.addEventListener('mouseup', (e) => {
-        e.stopPropagation();
-        
-        // Cancel long press
-        cancelLongPress();
-        
-        // Handle click if it was a short press
-        if (isClick && !isLongPressing) {
-          const rect = tile.getBoundingClientRect();
-          showFloatingToolbar(tile, rect.left, rect.top);
-          selectTile(tile);
+      console.log('Adding click handler to tile:', tile);
+      tile.addEventListener('click', (e)=>{
+        console.log('Tile clicked:', tile, 'Event target:', e.target);
+        // avoid focusing when editing text
+        if (e.target.classList.contains('tile-title') || e.target.classList.contains('tile-content')) {
+          console.log('Clicked on text area, ignoring');
+          return;
         }
-        
-        // Reset flags
-        isClick = false;
-        clearTimeout(clickTimer);
-      });
-      
-      tile.addEventListener('mouseleave', () => {
-        cancelLongPress();
-        clearTimeout(clickTimer);
-        isClick = false;
+
+        console.log('Calling selectTile and showTileToolbar');
+        selectTile(tile);
+        showTileToolbar(tile, e);
       });
     }
     
@@ -4664,17 +4711,8 @@
 
     let _tileToolbar = null;
 
-    function addTileClickHandler(tile){
-      tile.addEventListener('click', (e)=>{
-        // avoid focusing when editing text
-        if (e.target.classList.contains('tile-title') || e.target.classList.contains('tile-content')) return;
-
-        selectTile(tile);
-        showTileToolbar(tile, e);
-      });
-    }
-
     function showTileToolbar(tile, event){
+      console.log('showTileToolbar called for tile:', tile);
       hideFloatingToolbar();
 
       const wrap = document.createElement('div');
@@ -4688,17 +4726,31 @@
         </div>
       `;
 
-      wrap.querySelector('#tb-color').onclick = (ev)=> showColorPicker(tile, ev.currentTarget);
-      wrap.querySelector('#tb-del').onclick   = ()=> { selectedTile = tile; deleteSelected(); };
+      wrap.querySelector('#tb-color').onclick = (ev)=> { 
+        console.log('Color button clicked');
+        showColorPicker(tile, ev.currentTarget); 
+      };
+      wrap.querySelector('#tb-del').onclick   = ()=> { 
+        console.log('Delete button clicked');
+        selectedTile = tile; 
+        deleteSelected(); 
+      };
       wrap.querySelector('#tb-dup').onclick   = ()=> {
+        console.log('Duplicate button clicked');
         const x = (parseInt(tile.dataset.baseX)||0) + 24;
         const y = (parseInt(tile.dataset.baseY)||0) + 24;
         const t2 = createTile(x, y, tile.querySelector('.tile-title').value, tile.querySelector('.tile-content').value);
-        tiles.push(t2); canvas.appendChild(t2); scheduleSave(); renderCanvas(); selectTile(t2);
+        tiles.push(t2); 
+        canvas.appendChild(t2); 
+        scheduleSave(); 
+        renderCanvas(); 
+        selectTile(t2);
       };
 
       const pref = 'top';
-      _tileToolbar = openPopover(tile, wrap, { prefer:pref, offset:10, className:'floating-toolbar tile-toolbar' });
+      console.log('Opening popover with tile:', tile);
+      _tileToolbar = openPopover(tile, wrap, { prefer:pref, offset:10, className:'floating-toolbar tile-toolbar', autoClose: false });
+      console.log('Toolbar created:', _tileToolbar);
     }
 
     function hideFloatingToolbar(){
