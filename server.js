@@ -29,36 +29,89 @@ const pool = new Pool({
 });
 
 async function initDatabase() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
-      id SERIAL PRIMARY KEY,
-      google_id VARCHAR(255) UNIQUE NOT NULL,
-      email VARCHAR(255) UNIQUE NOT NULL,
-      name VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS graphs (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      title VARCHAR(255) NOT NULL,
-      data JSONB NOT NULL,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS graph_shares (
-      id SERIAL PRIMARY KEY,
-      graph_id INTEGER REFERENCES graphs(id) ON DELETE CASCADE,
-      shared_with_email VARCHAR(255) NOT NULL,
-      shared_by_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-      permission VARCHAR(50) DEFAULT 'viewer',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
+  console.log('🔄 Initializing database...');
+  
+  // Wipe and recreate database on every server restart
+  await wipeAndRecreateDatabase();
+  
+  console.log('✅ Database initialization completed');
+}
+
+async function wipeAndRecreateDatabase() {
+  const client = await pool.connect();
+  
+  try {
+    console.log('🗑️  Wiping existing database...');
+    
+    // Drop all tables in correct order (respecting foreign keys)
+    await client.query('DROP TABLE IF EXISTS graph_shares CASCADE');
+    await client.query('DROP TABLE IF EXISTS graphs CASCADE');
+    await client.query('DROP TABLE IF EXISTS users CASCADE');
+    
+    console.log('✅ All tables dropped successfully');
+    
+    // Recreate tables with fresh schema
+    console.log('🏗️  Creating fresh database schema...');
+    
+    // Users table
+    await client.query(`
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        google_id VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Users table created');
+    
+    // Graphs table
+    await client.query(`
+      CREATE TABLE graphs (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        data JSONB NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Graphs table created');
+    
+    // Graph shares table
+    await client.query(`
+      CREATE TABLE graph_shares (
+        id SERIAL PRIMARY KEY,
+        graph_id INTEGER REFERENCES graphs(id) ON DELETE CASCADE,
+        shared_with_email VARCHAR(255) NOT NULL,
+        shared_by_user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        permission VARCHAR(50) DEFAULT 'viewer',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Graph shares table created');
+    
+    // Create indexes for better performance
+    await client.query('CREATE INDEX IF NOT EXISTS idx_graphs_user_id ON graphs(user_id);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_graph_id ON graph_shares(graph_id);');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_email ON graph_shares(shared_with_email);');
+    console.log('✅ Performance indexes created');
+    
+    console.log('🎉 Database wipe and recreation completed!');
+    console.log('📊 Fresh schema created with:');
+    console.log('   - users table');
+    console.log('   - graphs table');
+    console.log('   - graph_shares table');
+    console.log('   - proper foreign key relationships');
+    console.log('   - performance indexes');
+    
+  } catch (error) {
+    console.error('❌ Error during database wipe/recreation:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 initDatabase().catch(err => {
   console.error('Failed to init DB:', err);
@@ -94,7 +147,26 @@ app.get('/graph', (_, res) => res.sendFile(path.join(__dirname, 'graph.html')));
 app.get('/privacy', (_, res) => res.sendFile(path.join(__dirname, 'privacy-policy.html')));
 app.get('/terms', (_, res) => res.sendFile(path.join(__dirname, 'terms-of-service.html')));
 
-// ----- Health -----
+// Manual database wipe endpoint (for development)
+app.post('/api/admin/wipe-database', async (req, res) => {
+  try {
+    console.log('🔄 Manual database wipe requested...');
+    
+    // Wipe and recreate database
+    await wipeAndRecreateDatabase();
+    
+    // Clear any in-memory caches
+    graphCache.clear();
+    
+    console.log('✅ Manual database wipe completed');
+    res.json({ message: 'Database wiped and recreated successfully' });
+  } catch (error) {
+    console.error('❌ Error during manual database wipe:', error);
+    res.status(500).json({ error: 'Failed to wipe database' });
+  }
+});
+
+// Health check endpoint
 app.get('/api/health', async (_, res) => {
   try {
     await pool.query('SELECT 1');
