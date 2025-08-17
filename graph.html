@@ -107,15 +107,26 @@
   .canvas{position:relative;width:100%;height:100%;background-image:linear-gradient(var(--grid-color) 1px,transparent 1px),linear-gradient(90deg,var(--grid-color) 1px,transparent 1px);background-size:20px 20px;cursor:grab}
   .canvas-content{position:absolute;left:0;top:0;transform-origin:0 0;}
 
-  .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.3s ease;resize:both;overflow:hidden}
-  .tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
-  .tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(0, 122, 255, 0.3)}
-  .tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;font-weight:400}
-  .tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
-  .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
+  .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.1s ease;overflow:hidden}
+.tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
+.tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(0, 122, 255, 0.3)}
+.tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;font-weight:400}
+.tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
+.tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
 
-  .tile::after{content:'';position:absolute;bottom:0;right:0;width:30px;height:30px;cursor:se-resize;background:linear-gradient(-45deg,transparent 30%,var(--border-primary) 30%,var(--border-primary) 40%,transparent 40%,transparent 60%,var(--border-primary) 60%,var(--border-primary) 70%,transparent 70%);border-radius:0 0 12px 0}
-  .tile::before{content:'';position:absolute;top:0;left:0;width:30px;height:30px;cursor:nw-resize;background:linear-gradient(45deg,transparent 30%,var(--border-primary) 30%,var(--border-primary) 40%,transparent 40%,transparent 60%,var(--border-primary) 60%,var(--border-primary) 70%,transparent 70%);border-radius:12px 0 0 0}
+/* Resize outline for selected tiles */
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid var(--accent-primary);border-radius:16px;pointer-events:none;z-index:1}
+
+/* Resize handles for each edge and corner */
+.tile.selected .resize-handle{position:absolute;width:8px;height:8px;background:var(--accent-primary);border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:2;box-shadow:0 2px 4px rgba(0,0,0,0.3)}
+.tile.selected .resize-handle.n{top:-6px;left:50%;transform:translateX(-50%);cursor:n-resize}
+.tile.selected .resize-handle.s{bottom:-6px;left:50%;transform:translateX(-50%);cursor:s-resize}
+.tile.selected .resize-handle.e{right:-6px;top:50%;transform:translateY(-50%);cursor:e-resize}
+.tile.selected .resize-handle.w{left:-6px;top:50%;transform:translateY(-50%);cursor:w-resize}
+.tile.selected .resize-handle.nw{top:-6px;left:-6px;cursor:nw-resize}
+.tile.selected .resize-handle.ne{top:-6px;right:-6px;cursor:ne-resize}
+.tile.selected .resize-handle.sw{bottom:-6px;left:-6px;cursor:sw-resize}
+.tile.selected .resize-handle.se{bottom:-6px;right:-6px;cursor:se-resize}
 
   /* quick picker hover areas */
   .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
@@ -519,7 +530,7 @@
   </div>
 
   <!-- Main toolbar -->
-  <div class="toolbar" id="toolbar" style="display:none;">
+  <div class="toolbar" id="toolbar">
     <div class="tool-label">Tools</div>
     <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
     <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">DEL</button>
@@ -530,7 +541,7 @@
     <button class="tool-btn snap-grid-btn" onclick="toggleSnapToGrid()" title="Snap to Grid (ON)">⊞</button>
     <button class="tool-btn snap-tiles-btn" onclick="toggleSnapToTiles()" title="Snap to Tiles (ON)">Link</button>
     <button class="tool-btn force-save-btn" onclick="forceSave()" title="Force Save">Save</button>
-    <button class="tool-btn cache-status-btn" onclick="showCacheStatus()" title="Cache Status">��</button>
+    <button class="tool-btn cache-status-btn" onclick="showCacheStatus()" title="Cache Status">Cache</button>
   </div>
 
   <!-- AI panel -->
@@ -737,6 +748,12 @@ async function init(){
   try { await checkAuth(); } catch {}
   await loadGraphs().catch(()=>{});
   await loadInbox().catch(()=>{});
+  
+  // Load from localStorage if no graphs loaded from server
+  if (!currentGraph) {
+    loadFromLocalStorage();
+  }
+  
   setupCanvas();
   setupTheme();
   setupRealtimeUpdates();
@@ -956,16 +973,41 @@ async function autoSaveGraph(){
     indicator.classList.add('show','saving'); text.textContent='Saving...';
     const token = localStorage.getItem('flowpad_token');
     const data = serializeGraph();
-    const res = await fetch(`/api/graphs/${currentGraph.id}`,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
-      body: JSON.stringify({ title: currentGraph.title, data })
-    });
-    if (!res.ok) throw new Error('Save failed');
-    isDirty=false; lastSaveTime=Date.now();
-    indicator.classList.remove('saving'); indicator.classList.add('saved');
-    text.textContent = `Saved at ${new Date().toLocaleTimeString()}`;
-    setTimeout(()=>indicator.classList.remove('show','saved'), 2000);
+    
+    if (token) {
+      // Try to save to server if authenticated
+      try {
+        const res = await fetch(`/api/graphs/${currentGraph.id}`,{
+          method:'PUT',
+          headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+          body: JSON.stringify({ title: currentGraph.title, data })
+        });
+        if (res.ok) {
+          isDirty=false; lastSaveTime=Date.now();
+          indicator.classList.remove('saving'); indicator.classList.add('saved');
+          text.textContent = `Saved to server at ${new Date().toLocaleTimeString()}`;
+          setTimeout(()=>indicator.classList.remove('show','saved'), 2000);
+          return;
+        }
+      } catch (serverError) {
+        console.log('Server save failed, falling back to local storage');
+      }
+    }
+    
+    // Fallback to localStorage (demo mode)
+    try {
+      localStorage.setItem(`flowpad_graph_${currentGraph.id}`, JSON.stringify({
+        title: currentGraph.title,
+        data: data,
+        updated_at: Date.now()
+      }));
+      isDirty=false; lastSaveTime=Date.now();
+      indicator.classList.remove('saving'); indicator.classList.add('saved');
+      text.textContent = `Saved locally at ${new Date().toLocaleTimeString()}`;
+      setTimeout(()=>indicator.classList.remove('show','saved'), 2000);
+    } catch (localError) {
+      throw new Error('Local save failed');
+    }
   }catch(e){
     indicator.classList.remove('saving'); indicator.classList.add('error');
     text.textContent='Save failed'; setTimeout(()=>indicator.classList.remove('show','error'), 3000);
@@ -1072,10 +1114,20 @@ function updateDragging(e){
   const w = screenToWorld(e.clientX, e.clientY);
   let x = w.x - dragOffsetWorld.x, y = w.y - dragOffsetWorld.y;
   const snap = getSnapPosition(x,y); x=snap.x; y=snap.y;
-  selectedTile.dataset.baseX = x; selectedTile.dataset.baseY = y;
-  selectedTile.style.left = x+'px'; selectedTile.style.top=y+'px';
+  
+  // Update tile position immediately for responsive feel
+  selectedTile.dataset.baseX = x; 
+  selectedTile.dataset.baseY = y;
+  selectedTile.style.left = x+'px'; 
+  selectedTile.style.top = y+'px';
+  
+  // Add updating class for visual feedback
   selectedTile.classList.add('tile-updating');
+  
+  // Re-render connections immediately for responsive feel
   renderConnections();
+  
+  // Mark as dirty and schedule save
   addPendingUpdate('tile_move', { tileId:selectedTile.dataset.tileId, x,y });
   markAsDirty();
 }
@@ -1183,13 +1235,13 @@ function createTile(x=100,y=100,title='',content='',id=null,shape='rectangle',pr
   t.dataset.tileId = id || ('tile_'+Date.now()+'_'+Math.floor(Math.random()*1000));
   t.dataset.baseX = x; t.dataset.baseY = y;
   t.dataset.shape = shape; t.dataset.presetType = preset;
-  t.style.left=x+'px'; t.style.top=y+'px'; t.style.backgroundColor=color;
+  t.style.left=x+'px'; t.style.top=y+'px'; t.style.width='200px'; t.style.height='120px'; t.style.backgroundColor=color;
   t.innerHTML = `
     <div class="shape-palette">
       <div class="shape-option" title="Rounded" data-shape="rounded">Round</div>
       <div class="shape-option" title="Circle" data-shape="circular">Circle</div>
       <div class="shape-option" title="Diamond" data-shape="diamond">Diamond</div>
-              <div class="shape-option" title="Hex" data-shape="hexagon">Hex</div>
+      <div class="shape-option" title="Hex" data-shape="hexagon">Hex</div>
       <div class="shape-option" title="Triangle" data-shape="triangle">Triangle</div>
       <div class="shape-option" title="Parallelogram" data-shape="parallelogram">Para</div>
     </div>
@@ -1230,10 +1282,18 @@ function selectTile(tile){
   tile.classList.add('selected');
   selectedTile = tile;
   selectedConnection = null;
+  
+  // Add resize handles
+  addResizeHandles(tile);
+  
   openTileToolbar(tile);
 }
 function clearSelection(){
-  tiles.forEach(t=>t.classList.remove('selected'));
+  tiles.forEach(t=>{
+    t.classList.remove('selected');
+    // Remove resize handles
+    t.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  });
   selectedTile=null; selectedConnection=null;
   hideFloatingToolbars();
 }
@@ -1247,6 +1307,11 @@ function duplicateTile(tile){
     tile.dataset.presetType,
     tile.style.backgroundColor || '#ffffff'
   );
+  
+  // Copy dimensions from original tile
+  if (tile.style.width) t2.style.width = tile.style.width;
+  if (tile.style.height) t2.style.height = tile.style.height;
+  
   tiles.push(t2); renderCanvas(); scheduleSave(); notify('Duplicated');
 }
 function deleteSelected(){
@@ -1265,14 +1330,21 @@ const floatTB = document.createElement('div'); floatTB.className='floating-toolb
 function hideFloatingToolbars(){ floatTB.classList.remove('show'); }
 function openTileToolbar(tile, at=null, force=false, focusSection=null){
   if (!tile && !force) return;
-  const pos = at || { x: (tile.getBoundingClientRect().left + tile.getBoundingClientRect().right)/2,
-                      y: tile.getBoundingClientRect().top - 8 };
-  floatTB.innerHTML = `
+  
+  const toolbar = document.getElementById('tileToolbar');
+  if (!toolbar) return;
+  
+  const pos = at || { 
+    x: (tile.getBoundingClientRect().left + tile.getBoundingClientRect().right) / 2,
+    y: tile.getBoundingClientRect().top - 8 
+  };
+  
+  toolbar.innerHTML = `
     <div class="toolbar-section">
       <div class="toolbar-section-title">Tile</div>
       <div class="toolbar-row">
-        <button class="toolbar-button" title="Duplicate">Copy</button>
-        <button class="toolbar-button" title="Delete">Delete</button>
+        <button class="toolbar-button" onclick="duplicateTile()" title="Duplicate">Copy</button>
+        <button class="toolbar-button" onclick="deleteSelected()" title="Delete">Delete</button>
         <div class="toolbar-color" id="tileColorPick" title="Color"></div>
       </div>
     </div>
@@ -1280,51 +1352,65 @@ function openTileToolbar(tile, at=null, force=false, focusSection=null){
       <div class="toolbar-section-title">Shape</div>
       <div class="toolbar-row">
         ${['rectangle','rounded','circular','diamond','hexagon','triangle','parallelogram']
-          .map(s=>`<button class="toolbar-button ${tile?.dataset.shape===s?'active':''}" data-shape="${s}">${shapeIcon(s)}</button>`).join('')}
+          .map(s=>`<button class="toolbar-button ${tile?.dataset.shape===s?'active':''}" onclick="changeTileShape('${s}')" data-shape="${s}">${shapeIcon(s)}</button>`).join('')}
       </div>
     </div>
   `;
-  floatTB.style.left = (pos.x)+'px';
-  floatTB.style.top  = (pos.y)+'px';
-  floatTB.classList.add('show');
-
-  // actions
-  floatTB.querySelectorAll('[data-shape]').forEach(b=>b.onclick = ()=>{ setTileShape(tile, b.dataset.shape); openTileToolbar(tile, pos); });
-  floatTB.querySelector('.toolbar-button[title="Duplicate"]').onclick = ()=>duplicateTile(tile);
-  floatTB.querySelector('.toolbar-button[title="Delete"]').onclick = ()=>{ selectedTile=tile; deleteSelected(); };
-  const colorBtn = floatTB.querySelector('#tileColorPick');
-  colorBtn.onclick = ()=>openColorPopup(colorBtn, c=>setTileColor(tile,c));
-  if (focusSection==='shape'){ /* already highlighted */ }
+  
+  // Position the toolbar
+  toolbar.style.left = pos.x + 'px';
+  toolbar.style.top = pos.y + 'px';
+  toolbar.classList.add('show');
+  
+  // Add color picker functionality
+  const colorBtn = toolbar.querySelector('#tileColorPick');
+  if (colorBtn) {
+    colorBtn.onclick = () => openColorPopup(colorBtn, (c) => setTileColor(tile, c));
+  }
 }
 function openConnectionToolbar(conn, at){
   selectedConnection = conn;
-  floatTB.innerHTML = `
+  
+  const toolbar = document.getElementById('connectionToolbar');
+  if (!toolbar) return;
+  
+  toolbar.innerHTML = `
     <div class="toolbar-section">
       <div class="toolbar-section-title">Connection</div>
       <div class="toolbar-row">
         <div class="toolbar-color" id="connColorPick" title="Color"></div>
-        <button class="toolbar-button" data-style="solid"  title="Solid">—</button>
-        <button class="toolbar-button" data-style="dashed" title="Dashed">- -</button>
-        <button class="toolbar-button" data-style="dotted" title="Dotted">⋯</button>
-        <button class="toolbar-button" data-style="dash-dot" title="Dash-dot">-⋅-</button>
+        <button class="toolbar-button" onclick="changeLineStyle('solid')" title="Solid">—</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dashed')" title="Dashed">- -</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dotted')" title="Dotted">⋯</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dash-dot')" title="Dash-dot">-⋅-</button>
       </div>
     </div>
     <div class="toolbar-section">
       <div class="toolbar-section-title">Head</div>
       <div class="toolbar-row">
-        <button class="toolbar-button" data-marker="arrow" title="Arrow">➤</button>
-        <button class="toolbar-button" data-marker="line"  title="Line">—</button>
-        <button class="toolbar-button" data-marker="dot"   title="Dot">•</button>
-        <button class="toolbar-button" data-marker="diamond" title="Diamond">Diamond</button>
-        <button class="toolbar-button" title="Delete">Delete</button>
+        <button class="toolbar-button" onclick="changeConnectionMarker('arrow')" title="Arrow">➤</button>
+        <button class="toolbar-button" onclick="changeConnectionMarker('line')" title="Line">—</button>
+        <button class="toolbar-button" onclick="changeConnectionMarker('dot')" title="Dot">•</button>
+        <button class="toolbar-button" onclick="changeConnectionMarker('diamond')" title="Diamond">Diamond</button>
+        <button class="toolbar-button" onclick="deleteSelectedConnection()" title="Delete">Delete</button>
       </div>
     </div>
   `;
-  floatTB.style.left = at.x+'px'; floatTB.style.top = (at.y)+'px'; floatTB.classList.add('show');
-  floatTB.querySelector('#connColorPick').onclick = ()=>openColorPopup(floatTB.querySelector('#connColorPick'), c=>{ conn.color=c; scheduleSave(); renderCanvas(); });
-  floatTB.querySelectorAll('[data-style]').forEach(b=>b.onclick = ()=>{ conn.style=b.dataset.style; scheduleSave(); renderCanvas(); });
-  floatTB.querySelectorAll('[data-marker]').forEach(b=>b.onclick = ()=>{ conn.marker=b.dataset.marker; scheduleSave(); renderCanvas(); });
-  floatTB.querySelector('button[title="Delete"]').onclick = ()=>deleteConnection(conn.id);
+  
+  // Position the toolbar
+  toolbar.style.left = at.x + 'px';
+  toolbar.style.top = at.y + 'px';
+  toolbar.classList.add('show');
+  
+  // Add color picker functionality
+  const colorBtn = toolbar.querySelector('#connColorPick');
+  if (colorBtn) {
+    colorBtn.onclick = () => openColorPopup(colorBtn, (c) => {
+      conn.color = c;
+      scheduleSave();
+      renderCanvas();
+    });
+  }
 }
 function shapeIcon(s){ return ({rectangle:'Rect', rounded:'Round', circular:'Circle', diamond:'Diamond', hexagon:'Hex', triangle:'Triangle', parallelogram:'Para'})[s]||'Rect'; }
 
@@ -1376,9 +1462,23 @@ function openPresets(cx=null, cy=null){
       const worldY = (centerY - r.top - canvasOffset.y) / zoom;
       
       addPresetTile(type, worldX, worldY);
+      
+      // Close the modal after creating the tile
       modal.classList.remove('show');
+      modal.style.display = 'none';
+      
+      // Hide any floating toolbars
+      hideFloatingToolbars();
     };
   });
+  
+  // Add click outside to close functionality
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+    }
+  };
 }
 function addPresetTile(type, x, y){
   const presets = {
@@ -1529,7 +1629,13 @@ function loadGraph(graph, skipTab=false){
   tiles=[]; connections=[]; canvasContent.innerHTML='';
   currentGraph = graph;
   (graph.data?.tiles||[]).forEach(t=>{
-    tiles.push(createTile(t.x,t.y,t.title,t.content,t.id,t.shape||'rectangle',t.preset||'custom',t.color||'#ffffff'));
+    const tile = createTile(t.x,t.y,t.title,t.content,t.id,t.shape||'rectangle',t.preset||'custom',t.color||'#ffffff');
+    
+    // Set custom dimensions if they exist in the saved data
+    if (t.width) tile.style.width = t.width + 'px';
+    if (t.height) tile.style.height = t.height + 'px';
+    
+    tiles.push(tile);
   });
   connections = graph.data?.connections || [];
   if (!openTabs.find(t=>t.id===graph.id)) createTab(graph);
@@ -1666,7 +1772,9 @@ function serializeGraph(){
       content:t.querySelector('.tile-content').value||'',
       color:t.style.backgroundColor || '#ffffff',
       shape:t.dataset.shape||'rectangle',
-      preset:t.dataset.presetType||'custom'
+      preset:t.dataset.presetType||'custom',
+      width:parseInt(t.style.width) || 200,
+      height:parseInt(t.style.height) || 120
     })),
     connections:[...connections]
   };
@@ -1702,7 +1810,15 @@ function redo(){
 }
 function restoreFrom(d){
   tiles=[]; connections=[];
-  (d.tiles||[]).forEach(t=>tiles.push(createTile(t.x,t.y,t.title,t.content,t.id,t.shape||'rectangle',t.preset||'custom',t.color||'#ffffff')));
+  (d.tiles||[]).forEach(t=>{
+    const tile = createTile(t.x,t.y,t.title,t.content,t.id,t.shape||'rectangle',t.preset||'custom',t.color||'#ffffff');
+    
+    // Restore custom dimensions if they exist
+    if (t.width) tile.style.width = t.width + 'px';
+    if (t.height) tile.style.height = t.height + 'px';
+    
+    tiles.push(tile);
+  });
   connections=d.connections||[];
   renderCanvas();
 }
@@ -1718,7 +1834,7 @@ function setupKeyboardShortcuts(){
     else if (e.ctrlKey && e.key.toLowerCase()==='z'){ e.preventDefault(); undo(); }
     else if (e.ctrlKey && e.key.toLowerCase()==='y'){ e.preventDefault(); redo(); }
     else if (e.key==='Delete' || e.key==='Backspace'){ if (selectedTile || selectedConnection){ e.preventDefault(); deleteSelected(); } }
-    else if (e.key.toLowerCase()==='n'){ addTile(); }
+    else if (e.key.toLowerCase()==='n' && !e.target.matches('input, textarea, [contenteditable]')){ addTile(); }
     else if (e.key.toLowerCase()==='p'){ openPresets(); }
     else if (e.key.toLowerCase()==='g'){ toggleGrid(); }
     else if (e.key.toLowerCase()==='t'){ toggleSnapTiles(document.querySelector('.snap-tiles-btn')); }
@@ -2111,14 +2227,27 @@ function changeConnectionColor() {
 function changeLineStyle(style) {
   if (!selectedConnection) return notify('No connection selected', 'error');
   
-  const connectionId = selectedConnection.dataset.connectionId;
-  const connection = connections.find(c => c.id === connectionId);
-  if (connection) {
-    connection.lineStyle = style;
-    renderConnections();
-    scheduleSave();
-    notify(`Line style changed to ${style}`, 'success');
+  selectedConnection.style.strokeDasharray = style === 'solid' ? 'none' : 
+                                           style === 'dashed' ? '5,5' : 
+                                           style === 'dotted' ? '2,2' : '10,2,2,2';
+  
+  scheduleSave();
+  renderCanvas();
+  notify(`Line style changed to ${style}`);
+}
+
+function changeConnectionMarker(marker) {
+  if (!selectedConnection) return notify('No connection selected', 'error');
+  
+  // Update the connection marker
+  const path = selectedConnection.querySelector('path');
+  if (path) {
+    path.setAttribute('marker-end', marker === 'line' ? '' : `url(#${marker === 'dot' ? 'dotmarker' : marker === 'diamond' ? 'diamondmarker' : 'arrowhead'})`);
   }
+  
+  scheduleSave();
+  renderCanvas();
+  notify(`Connection marker changed to ${marker}`);
 }
 
 // Enhanced Tile Creation with Connection Dots - using existing createTile function
@@ -2634,6 +2763,194 @@ function addTileClickHandler(tile) {
 // Using existing findOptimalPort function
 
 // Using existing createSmartPath function
+
+function loadFromLocalStorage() {
+  // Look for any saved graphs in localStorage
+  const savedGraphs = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith('flowpad_graph_')) {
+      try {
+        const graphData = JSON.parse(localStorage.getItem(key));
+        if (graphData && graphData.title && graphData.data) {
+          savedGraphs.push({
+            id: key.replace('flowpad_graph_', ''),
+            title: graphData.title,
+            updated_at: graphData.updated_at || Date.now(),
+            data: graphData.data,
+            type: 'local'
+          });
+        }
+      } catch (e) {
+        console.log('Failed to parse saved graph:', key);
+      }
+    }
+  }
+  
+  if (savedGraphs.length > 0) {
+    // Sort by most recently updated
+    savedGraphs.sort((a, b) => (b.updated_at || 0) - (a.updated_at || 0));
+    
+    // Load the most recent graph
+    const mostRecent = savedGraphs[0];
+    currentGraph = mostRecent;
+    
+    // Create tiles and connections
+    tiles = [];
+    connections = [];
+    (mostRecent.data.tiles || []).forEach(t => {
+      const tile = createTile(t.x, t.y, t.title, t.content, t.id, t.shape || 'rectangle', t.preset || 'custom', t.color || '#ffffff');
+      
+      // Restore custom dimensions if they exist
+      if (t.width) tile.style.width = t.width + 'px';
+      if (t.height) tile.style.height = t.height + 'px';
+      
+      tiles.push(tile);
+    });
+    connections = mostRecent.data.connections || [];
+    
+    // Create a tab for the loaded graph
+    if (!openTabs.find(t => t.id === mostRecent.id)) {
+      createTab(mostRecent);
+    }
+    switchToTab(mostRecent.id);
+    
+    // Render the canvas
+    renderCanvas();
+    isDirty = false;
+    updateTileColorsForTheme(document.documentElement.getAttribute('data-theme'));
+    pushHistory(true);
+    
+    notify(`Loaded "${mostRecent.title}" from local storage`, 'success');
+  } else {
+    // Create a default demo graph if nothing is saved
+    const demoGraph = demoTemplateGraph();
+    currentGraph = demoGraph;
+    loadGraph(demoGraph);
+    notify('Created demo graph', 'info');
+  }
+}
+
+function addResizeHandles(tile) {
+  // Remove existing handles
+  tile.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  
+  // Create resize handles for each edge and corner
+  const handles = [
+    { class: 'n', cursor: 'n-resize' },
+    { class: 's', cursor: 's-resize' },
+    { class: 'e', cursor: 'e-resize' },
+    { class: 'w', cursor: 'w-resize' },
+    { class: 'nw', cursor: 'nw-resize' },
+    { class: 'ne', cursor: 'ne-resize' },
+    { class: 'sw', cursor: 'sw-resize' },
+    { class: 'se', cursor: 'se-resize' }
+  ];
+  
+  handles.forEach(handle => {
+    const div = document.createElement('div');
+    div.className = `resize-handle ${handle.class}`;
+    div.style.cursor = handle.cursor;
+    div.dataset.handle = handle.class;
+    
+    // Add event listeners for resizing
+    div.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      startResizing(tile, handle.class, e);
+    });
+    
+    tile.appendChild(div);
+  });
+}
+
+function startResizing(tile, handleType, e) {
+  e.preventDefault();
+  
+  const startX = e.clientX;
+  const startY = e.clientY;
+  const startWidth = tile.offsetWidth;
+  const startHeight = tile.offsetHeight;
+  const startLeft = parseFloat(tile.style.left) || 0;
+  const startTop = parseFloat(tile.style.top) || 0;
+  
+  const isResizing = true;
+  
+  function onMouseMove(e) {
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+    
+    let newWidth = startWidth;
+    let newHeight = startHeight;
+    let newLeft = startLeft;
+    let newTop = startTop;
+    
+    // Handle different resize directions
+    switch (handleType) {
+      case 'n': // North edge
+        newHeight = Math.max(100, startHeight - deltaY);
+        newTop = startTop + (startHeight - newHeight);
+        break;
+      case 's': // South edge
+        newHeight = Math.max(100, startHeight + deltaY);
+        break;
+      case 'e': // East edge
+        newWidth = Math.max(150, startWidth + deltaX);
+        break;
+      case 'w': // West edge
+        newWidth = Math.max(150, startWidth - deltaX);
+        newLeft = startLeft + (startWidth - newWidth);
+        break;
+      case 'nw': // Northwest corner
+        newWidth = Math.max(150, startWidth - deltaX);
+        newHeight = Math.max(100, startHeight - deltaY);
+        newLeft = startLeft + (startWidth - newWidth);
+        newTop = startTop + (startHeight - newHeight);
+        break;
+      case 'ne': // Northeast corner
+        newWidth = Math.max(150, startWidth + deltaX);
+        newHeight = Math.max(100, startHeight - deltaY);
+        newTop = startTop + (startHeight - newHeight);
+        break;
+      case 'sw': // Southwest corner
+        newWidth = Math.max(150, startWidth - deltaX);
+        newHeight = Math.max(100, startHeight + deltaY);
+        newLeft = startLeft + (startWidth - newWidth);
+        break;
+      case 'se': // Southeast corner
+        newWidth = Math.max(150, startWidth + deltaX);
+        newHeight = Math.max(100, startHeight + deltaY);
+        break;
+    }
+    
+    // Apply new dimensions
+    tile.style.width = newWidth + 'px';
+    tile.style.height = newHeight + 'px';
+    tile.style.left = newLeft + 'px';
+    tile.style.top = newTop + 'px';
+    
+    // Update tile data
+    tile.dataset.baseX = newLeft;
+    tile.dataset.baseY = newTop;
+    
+    // Mark as dirty and schedule save
+    markAsDirty();
+    scheduleSave();
+    
+    // Re-render connections
+    renderConnections();
+  }
+  
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    
+    // Final save
+    scheduleSave();
+  }
+  
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
 </script>
 </body>
 </html>
