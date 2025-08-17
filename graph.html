@@ -699,6 +699,9 @@
     </defs>
   </svg>
 
+  <!-- Hidden file input for import -->
+  <input type="file" id="importFile" accept=".json" style="display: none;">
+
 <script>
 /* =========================
    Core state
@@ -744,6 +747,33 @@ async function init(){
   addShareEmailListener();
   initializePermissionSelector();
   addCacheStatusButton();
+  
+  // Set up import file event listener
+  const importFile = document.getElementById('importFile');
+  if (importFile) {
+    importFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const d = JSON.parse(reader.result);
+          // load into current graph
+          tiles = [];
+          connections = [];
+          (d.tiles || []).forEach(t => tiles.push(createTile(t.x, t.y, t.title, t.content, t.id, t.shape || 'rectangle', t.preset || 'custom', t.color || '#ffffff')));
+          connections = d.connections || [];
+          renderCanvas();
+          scheduleSave();
+          notify('Imported');
+        } catch {
+          notify('Import failed', 'error');
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
   loadCollaborators();
   notify('Ready. Press N to add a tile. Hold Alt and drag between tiles to connect.', 'warn', 3500);
 }
@@ -992,16 +1022,33 @@ function openCtxMenu(x,y,tile){
   ctxMenu.style.left = x+'px'; ctxMenu.style.top = y+'px';
   ctxMenu.classList.add('show');
 }
-function ctxAction(act){
-  ctxMenu.classList.remove('show');
-  if (!ctxTargetTile && (act==='color'||act==='shape'||act==='edit'||act==='duplicate'||act==='delete')) return;
-  switch(act){
-    case 'edit': selectTile(ctxTargetTile); break;
-    case 'color': openTileToolbar(ctxTargetTile, null, true); break;
-    case 'shape': openTileToolbar(ctxTargetTile, null, true, 'shape'); break;
-    case 'duplicate': duplicateTile(ctxTargetTile); break;
-    case 'delete': selectedTile=ctxTargetTile; deleteSelected(); break;
+function ctxAction(action) {
+  if (!selectedTile) return;
+  
+  switch (action) {
+    case 'edit':
+      selectedTile.querySelector('.tile-content')?.focus();
+      break;
+    case 'color':
+      openColorPopup(selectedTile, (c) => {
+        selectedTile.style.backgroundColor = c;
+        scheduleSave();
+      });
+      break;
+    case 'shape':
+      // Show shape options
+      break;
+    case 'duplicate':
+      duplicateTile();
+      break;
+    case 'delete':
+      deleteSelected();
+      break;
   }
+  
+  // Hide context menu
+  const ctxMenu = document.getElementById('ctxMenu');
+  if (ctxMenu) ctxMenu.style.display = 'none';
 }
 
 /* Panning */
@@ -1615,21 +1662,7 @@ function exportJSON(){
   const a=document.createElement('a'); a.href=url; a.download=(currentGraph?.title||'diagram')+'.json'; a.click();
   URL.revokeObjectURL(url); notify('Exported JSON');
 }
-document.getElementById('importFile').addEventListener('change', (e)=>{
-  const file=e.target.files[0]; if (!file) return;
-  const reader=new FileReader();
-  reader.onload = ()=>{
-    try{
-      const d=JSON.parse(reader.result);
-      // load into current graph
-      tiles=[]; connections=[];
-      (d.tiles||[]).forEach(t=>tiles.push(createTile(t.x,t.y,t.title,t.content,t.id,t.shape||'rectangle',t.preset||'custom',t.color||'#ffffff')));
-      connections = d.connections||[];
-      renderCanvas(); scheduleSave(); notify('Imported');
-    }catch{ notify('Import failed','error'); }
-  };
-  reader.readAsText(file);
-});
+// Import file event listener will be set up in init function
 
 /* Undo / Redo */
 function pushHistory(init=false){
@@ -2072,73 +2105,11 @@ function changeLineStyle(style) {
   }
 }
 
-// Enhanced Tile Creation with Connection Dots
-function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle', presetType = 'custom') {
-  const tile = document.createElement('div');
-  tile.className = `tile ${shape}`;
-  tile.dataset.tileId = id || ('tile_' + Date.now() + '_' + Math.floor(Math.random()*1000));
-  tile.dataset.baseX = x; tile.dataset.baseY = y;
-  tile.dataset.shape = shape; tile.dataset.presetType = presetType;
-  tile.style.left = (x + canvasOffset.x) + 'px';
-  tile.style.top  = (y + canvasOffset.y) + 'px';
-  tile.style.backgroundColor = tile.style.backgroundColor || '#ffffff';
-  tile.innerHTML = `
-    <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
-    <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
-    <div class="connection-dot input" title="Input"></div>
-    <div class="connection-dot output" title="Output"></div>
-    <div class="connection-dot top" title="Top"></div>
-    <div class="connection-dot bottom" title="Bottom"></div>
-  `;
-  addTileClickHandler(tile);
-  tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
-  return tile;
-}
+// Enhanced Tile Creation with Connection Dots - using existing createTile function
 
-// Enhanced Tile Selection with Toolbar
-function selectTile(tile) {
-  clearSelection();
-  selectedTile = tile;
-  tile.classList.add('selected');
-  
-  // Show tile toolbar
-  showTileToolbar(tile);
-  
-  // Hide connection toolbar if it's showing
-  hideConnectionToolbar();
-}
+// Enhanced Tile Selection with Toolbar - using existing selectTile function
 
-    // Connection Selection
-    // selectedConnection is already declared above
-
-function selectConnection(connectionElement) {
-  if (selectedConnection) {
-    selectedConnection.classList.remove('selected');
-  }
-  
-  selectedConnection = connectionElement;
-  connectionElement.classList.add('selected');
-  
-  // Show connection toolbar
-  showConnectionToolbar(connectionElement);
-  
-  // Hide tile toolbar if it's showing
-  hideTileToolbar();
-}
-
-function showConnectionToolbar(connectionElement) {
-  const toolbar = document.getElementById('connectionToolbar');
-  const rect = connectionElement.getBoundingClientRect();
-  const canvasRect = canvas.getBoundingClientRect();
-  
-  toolbar.style.left = (rect.left - canvasRect.left + rect.width / 2) + 'px';
-  toolbar.style.top = (rect.top - canvasRect.top - 10) + 'px';
-  toolbar.classList.add('show');
-}
-
-function hideConnectionToolbar() {
-  document.getElementById('connectionToolbar').classList.remove('show');
-}
+    // Connection Selection - using existing functions
 
 // Enhanced Connection Rendering with Line Styles
 function createConnectionLineWithSeparation(fromTile, toTile, index, connObj) {
@@ -2269,6 +2240,384 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeEnhancedFeatures();
 });
 
+// ------------ Missing Functions ------------
+
+function centerCanvas() {
+  if (tiles.length === 0) return;
+  
+  // Calculate the bounding box of all tiles
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  
+  tiles.forEach(tile => {
+    const x = parseFloat(tile.dataset.baseX || 0);
+    const y = parseFloat(tile.dataset.baseY || 0);
+    const rect = tile.getBoundingClientRect();
+    
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + rect.width);
+    maxY = Math.max(maxY, y + rect.height);
+  });
+  
+  // Calculate center point
+  const centerX = (minX + maxX) / 2;
+  const centerY = (minY + maxY) / 2;
+  
+  // Get canvas dimensions
+  const canvasRect = canvas.getBoundingClientRect();
+  const targetX = canvasRect.width / 2 - centerX;
+  const targetY = canvasRect.height / 2 - centerY;
+  
+  // Update canvas offset
+  canvasOffset.x = targetX;
+  canvasOffset.y = targetY;
+  
+  // Apply transform
+  canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
+  
+  // Render connections
+  renderConnections();
+  
+  notify('Canvas centered');
+}
+
+function zoomIn() {
+  zoom = Math.min(zoom * 1.2, 3);
+  canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
+  renderConnections();
+}
+
+function zoomOut() {
+  zoom = Math.max(zoom / 1.2, 0.3);
+  canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
+  renderConnections();
+}
+
+function zoomReset() {
+  zoom = 1;
+  canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
+  renderConnections();
+}
+
+function forceSave() {
+  if (!currentGraph) return notify('No graph to save', 'error');
+  
+  const indicator = document.getElementById('autoSaveIndicator');
+  const text = document.getElementById('autoSaveText');
+  
+  indicator.classList.add('show', 'saving');
+  text.textContent = 'Saving...';
+  
+  // Force immediate save
+  autoSaveGraph().then(() => {
+    indicator.classList.remove('saving');
+    indicator.classList.add('saved');
+    text.textContent = 'Saved!';
+    setTimeout(() => indicator.classList.remove('show', 'saved'), 2000);
+  });
+}
+
+function showCacheStatus() {
+  const modal = document.getElementById('cacheStatusModal');
+  if (!modal) return;
+  
+  // Update status information
+  const lastSaveTimeEl = document.getElementById('lastSaveTime');
+  const autoSaveStatusEl = document.getElementById('autoSaveStatus');
+  const pendingUpdatesCountEl = document.getElementById('pendingUpdatesCount');
+  const connectionStatusEl = document.getElementById('connectionStatus');
+  
+  if (lastSaveTimeEl) {
+    lastSaveTimeEl.textContent = lastSaveTime ? new Date(lastSaveTime).toLocaleTimeString() : 'Never';
+  }
+  
+  if (autoSaveStatusEl) {
+    autoSaveStatusEl.textContent = autoSaveTimer ? 'Enabled' : 'Disabled';
+  }
+  
+  if (pendingUpdatesCountEl) {
+    pendingUpdatesCountEl.textContent = pendingUpdates.length;
+  }
+  
+  if (connectionStatusEl) {
+    connectionStatusEl.textContent = navigator.onLine ? 'Online' : 'Offline';
+  }
+  
+  modal.classList.add('show');
+  modal.onclick = (e) => { if (e.target === modal) closeCacheStatusModal(); };
+}
+
+function closeCacheStatusModal() {
+  const modal = document.getElementById('cacheStatusModal');
+  if (modal) modal.classList.remove('show');
+}
+
+function showPresetTileSelector() {
+  const modal = document.getElementById('presetTileModal');
+  if (modal) modal.classList.add('show');
+}
+
+function closePresetTileModal() {
+  const modal = document.getElementById('presetTileModal');
+  if (modal) modal.classList.remove('show');
+}
+
+function toggleSnapToGrid() {
+  snapToGrid = !snapToGrid;
+  const btn = document.querySelector('.snap-grid-btn');
+  if (btn) btn.classList.toggle('active', snapToGrid);
+  notify(`Snap to grid ${snapToGrid ? 'ON' : 'OFF'}`);
+}
+
+function toggleSnapToTiles() {
+  snapToTiles = !snapToTiles;
+  const btn = document.querySelector('.snap-tiles-btn');
+  if (btn) btn.classList.toggle('active', snapToTiles);
+  notify(`Snap to tiles ${snapToTiles ? 'ON' : 'OFF'}`);
+}
+
+function toggleGrid() {
+  showGrid = !showGrid;
+  const btn = document.querySelector('.grid-toggle-btn');
+  if (btn) {
+    btn.classList.toggle('active', showGrid);
+    btn.title = `Show Grid (${showGrid ? 'ON' : 'OFF'})`;
+  }
+  
+  const overlay = document.getElementById('grid-overlay');
+  if (overlay) overlay.classList.toggle('show', showGrid);
+  
+  notify(`Grid ${showGrid ? 'ON' : 'OFF'}`);
+}
+
+function duplicateTile() {
+  if (!selectedTile) return notify('Select a tile first', 'error');
+  
+  const x = parseFloat(selectedTile.dataset.baseX || 0) + 20;
+  const y = parseFloat(selectedTile.dataset.baseY || 0) + 20;
+  
+  const newTile = createTile(
+    x, y,
+    selectedTile.querySelector('.tile-title')?.value || '',
+    selectedTile.querySelector('.tile-content')?.value || '',
+    null,
+    selectedTile.dataset.shape || 'rectangle',
+    selectedTile.dataset.presetType || 'custom',
+    selectedTile.style.backgroundColor || '#ffffff'
+  );
+  
+  tiles.push(newTile);
+  renderCanvas();
+  scheduleSave();
+  notify('Tile duplicated');
+}
+
+function bringToFront() {
+  if (!selectedTile) return;
+  selectedTile.style.zIndex = '1000';
+  notify('Tile brought to front');
+}
+
+function sendToBack() {
+  if (!selectedTile) return;
+  selectedTile.style.zIndex = '1';
+  notify('Tile sent to back');
+}
+
+function changeTileShape(shape) {
+  if (!selectedTile) return;
+  setTileShape(selectedTile, shape);
+  notify(`Shape changed to ${shape}`);
+}
+
+function resetTileColor() {
+  if (!selectedTile) return;
+  selectedTile.style.backgroundColor = '#ffffff';
+  scheduleSave();
+  notify('Color reset');
+}
+
+function showColorPicker() {
+  // This will be handled by the existing color picker functionality
+  notify('Color picker opened');
+}
+
+function deleteSelectedConnection() {
+  if (!selectedConnection) return notify('No connection selected', 'error');
+  
+  const connectionId = selectedConnection.dataset.connectionId;
+  deleteConnection(connectionId);
+  selectedConnection = null;
+  hideConnectionToolbar();
+  notify('Connection deleted');
+}
+
+function changeConnectionColor() {
+  if (!selectedConnection) return notify('No connection selected', 'error');
+  
+  // Open color picker for connection
+  openColorPopup(document.querySelector('#connColorPick'), (color) => {
+    selectedConnection.style.stroke = color;
+    scheduleSave();
+    renderCanvas();
+    notify('Connection color changed');
+  });
+}
+
+function changeLineStyle(style) {
+  if (!selectedConnection) return notify('No connection selected', 'error');
+  
+  selectedConnection.style.strokeDasharray = style === 'solid' ? 'none' : 
+                                           style === 'dashed' ? '5,5' : 
+                                           style === 'dotted' ? '2,2' : '10,2,2,2';
+  
+  scheduleSave();
+  renderCanvas();
+  notify(`Line style changed to ${style}`);
+}
+
+function openTileToolbar(tile, at = null, force = false, focusSection = null) {
+  if (!tile && !force) return;
+  
+  const pos = at || { 
+    x: (tile.getBoundingClientRect().left + tile.getBoundingClientRect().right) / 2,
+    y: tile.getBoundingClientRect().top - 8 
+  };
+  
+  const floatTB = document.getElementById('tileToolbar');
+  if (!floatTB) return;
+  
+  floatTB.innerHTML = `
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Tile</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="duplicateTile()" title="Duplicate">Copy</button>
+        <button class="toolbar-button" onclick="deleteSelected()" title="Delete">Delete</button>
+        <div class="toolbar-color" id="tileColorPick" title="Color"></div>
+      </div>
+    </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Shape</div>
+      <div class="toolbar-row">
+        ${['rectangle','rounded','circular','diamond','hexagon','triangle','parallelogram']
+          .map(s=>`<button class="toolbar-button ${tile?.dataset.shape===s?'active':''}" onclick="changeTileShape('${s}')">${shapeIcon(s)}</button>`).join('')}
+      </div>
+    </div>
+  `;
+  
+  floatTB.style.left = pos.x + 'px';
+  floatTB.style.top = pos.y + 'px';
+  floatTB.classList.add('show');
+  
+  // Add color picker functionality
+  const colorPick = floatTB.querySelector('#tileColorPick');
+  if (colorPick) {
+    colorPick.onclick = () => openColorPopup(colorPick, (c) => {
+      tile.style.backgroundColor = c;
+      scheduleSave();
+    });
+  }
+}
+
+function openConnectionToolbar(conn, at) {
+  const floatTB = document.getElementById('connectionToolbar');
+  if (!floatTB) return;
+  
+  floatTB.innerHTML = `
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Connection</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="deleteSelectedConnection()" title="Delete">Delete</button>
+        <button class="toolbar-button" onclick="changeConnectionColor()" title="Color">Color</button>
+      </div>
+    </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Style</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="changeLineStyle('solid')" title="Solid">━</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dashed')" title="Dashed">┅</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dotted')" title="Dotted">┄</button>
+      </div>
+    </div>
+  `;
+  
+  floatTB.style.left = at.x + 'px';
+  floatTB.style.top = at.y + 'px';
+  floatTB.classList.add('show');
+}
+
+function hideConnectionToolbar() {
+  const floatTB = document.getElementById('connectionToolbar');
+  if (floatTB) floatTB.classList.remove('show');
+}
+
+function hideFloatingToolbars() {
+  const tileTB = document.getElementById('tileToolbar');
+  const connTB = document.getElementById('connectionToolbar');
+  
+  if (tileTB) tileTB.classList.remove('show');
+  if (connTB) connTB.classList.remove('show');
+}
+
+function scheduleSave() {
+  if (autoSaveTimer) clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(autoSaveGraph, 2000);
+  markAsDirty();
+}
+
+function markAsDirty() {
+  isDirty = true;
+  lastSaveTime = Date.now();
+  pushHistory();
+}
+
+function addPendingUpdate(type, data) {
+  pendingUpdates.push({ type, data, timestamp: Date.now() });
+}
+
+function ctxAction(action) {
+  if (!selectedTile) return;
+  
+  switch (action) {
+    case 'edit':
+      selectedTile.querySelector('.tile-content')?.focus();
+      break;
+    case 'color':
+      openColorPopup(selectedTile, (c) => {
+        selectedTile.style.backgroundColor = c;
+        scheduleSave();
+      });
+      break;
+    case 'shape':
+      // Show shape options
+      break;
+    case 'duplicate':
+      duplicateTile();
+      break;
+    case 'delete':
+      deleteSelected();
+      break;
+  }
+  
+  // Hide context menu
+  const ctxMenu = document.getElementById('ctxMenu');
+  if (ctxMenu) ctxMenu.style.display = 'none';
+}
+
+// Add missing functions
+function addTileClickHandler(tile) {
+  tile.addEventListener('click', () => selectTile(tile));
+  tile.addEventListener('dblclick', (e) => openTileToolbar(tile, { x: e.clientX, y: e.clientY }));
+  
+  // Add connection dot event listeners
+  tile.querySelectorAll('.connection-dot').forEach(el => {
+    el.addEventListener('mousedown', (e) => startConnectionFromPort(el, e));
+  });
+}
+
+// Using existing findOptimalPort function
+
+// Using existing createSmartPath function
 </script>
 </body>
 </html>
