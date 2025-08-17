@@ -724,7 +724,7 @@ let historyStack = [], futureStack = [];
 const canvas = document.getElementById('canvas');
 const canvasContent = document.getElementById('canvasContent');
 const tabContainer = document.getElementById('tabContainer');
-const presetPopup = document.getElementById('presetPopup');
+// presetPopup removed - using presetTileModal instead
 const ctxMenu = document.getElementById('ctxMenu');
 let ctxTargetTile = null;
 
@@ -1350,17 +1350,33 @@ function openColorPopup(anchorEl, onPick){
    Presets / Templates
 ========================= */
 function openPresets(cx=null, cy=null){
-  const r = canvas.getBoundingClientRect();
-  presetPopup.style.left = (cx || r.left + 20)+'px';
-  presetPopup.style.top  = (cy || r.top + 20)+'px';
-  presetPopup.classList.add('show');
-  // one-time attach
-  presetPopup.querySelectorAll('.preset-card').forEach(card=>{
-    card.onclick = ()=>{
-      const type = card.dataset.type;
-      const center = screenToWorld((cx|| (r.left+200)), (cy|| (r.top+100)));
-      addPresetTile(type, center.x, center.y);
-      presetPopup.classList.remove('show');
+  // Use the existing preset tile modal instead of the missing presetPopup
+  const modal = document.getElementById('presetTileModal');
+  if (!modal) return;
+  
+  // Position the modal in the center of the screen
+  modal.style.display = 'flex';
+  modal.classList.add('show');
+  
+  // Set up click handlers for preset tiles
+  const presetTiles = modal.querySelectorAll('.preset-tile');
+  presetTiles.forEach(tile => {
+    tile.onclick = () => {
+      const type = tile.classList.contains('title') ? 'title' :
+                   tile.classList.contains('notes') ? 'notes' :
+                   tile.classList.contains('component') ? 'component' : 'custom';
+      
+      // Calculate center position for the new tile
+      const r = canvas.getBoundingClientRect();
+      const centerX = cx || (r.left + r.width / 2);
+      const centerY = cy || (r.top + r.height / 2);
+      
+      // Convert screen coordinates to world coordinates
+      const worldX = (centerX - r.left - canvasOffset.x) / zoom;
+      const worldY = (centerY - r.top - canvasOffset.y) / zoom;
+      
+      addPresetTile(type, worldX, worldY);
+      modal.classList.remove('show');
     };
   });
 }
