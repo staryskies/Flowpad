@@ -1158,10 +1158,17 @@
       header.classList.toggle('active');
     }
 
+    function toggleShareSection() {
+      const section = document.getElementById('shareSection');
+      const btn = section.querySelector('.share-toggle');
+      const visible = section.classList.toggle('show');
+      btn.textContent = visible ? 'Hide' : 'Show';
+    }
+
     function toggleSharing() {
-      const toggle = document.getElementById('shareToggle');
+      const toggle = document.querySelector('.share-toggle');
       const email = document.getElementById('shareEmail');
-      const shareBtn = document.getElementById('shareBtn');
+      const shareBtn = document.querySelector('.share-btn');
       
       if (toggle.textContent === 'ON') {
         toggle.textContent = 'OFF';
@@ -1458,16 +1465,15 @@
       // Show share section
       document.getElementById('shareSection').style.display = 'block';
       if (graph.sharingEnabled !== false) {
-        document.getElementById('shareToggle').textContent = 'ON';
-        document.getElementById('shareToggle').textContent = 'ON';
-        document.getElementById('shareToggle').classList.remove('off');
+        document.querySelector('.share-toggle').textContent = 'ON';
+        document.querySelector('.share-toggle').classList.remove('off');
         document.getElementById('shareEmail').style.display = 'block';
-        document.getElementById('shareBtn').style.display = 'block';
+        document.querySelector('.share-btn').style.display = 'block';
       } else {
-        document.getElementById('shareToggle').textContent = 'OFF';
-        document.getElementById('shareToggle').classList.add('off');
+        document.querySelector('.share-toggle').textContent = 'OFF';
+        document.querySelector('.share-toggle').classList.add('off');
         document.getElementById('shareEmail').style.display = 'none';
-        document.getElementById('shareBtn').style.display = 'none';
+        document.querySelector('.share-btn').style.display = 'none';
       }
       
       renderCanvas();
@@ -4589,6 +4595,71 @@
           </div>
         </div>
       `).join('');
+    }
+
+    // Change user permission
+    async function changeUserPermission(userEmail) {
+      if (!currentGraph) return;
+      
+      try {
+        const token = localStorage.getItem('flowpad_token');
+        const newPermission = prompt('Enter new permission (viewer/editor):', 'viewer');
+        
+        if (newPermission && ['viewer', 'editor'].includes(newPermission.toLowerCase())) {
+          const response = await fetch(`/api/graphs/${currentGraph.id}/change-permission`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              userEmail: userEmail,
+              permission: newPermission.toLowerCase()
+            })
+          });
+          
+          if (response.ok) {
+            notify('Permission updated successfully', 'success');
+            // Refresh the shared users list
+            await loadSharedUsers();
+          } else {
+            notify('Failed to update permission', 'error');
+          }
+        }
+      } catch (error) {
+        console.error('Error changing permission:', error);
+        notify('Failed to update permission', 'error');
+      }
+    }
+
+    // Remove shared user
+    async function removeSharedUser(userEmail) {
+      if (!currentGraph) return;
+      
+      if (confirm(`Are you sure you want to remove ${userEmail} from this graph?`)) {
+        try {
+          const token = localStorage.getItem('flowpad_token');
+          const response = await fetch(`/api/graphs/${currentGraph.id}/remove-user`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ userEmail: userEmail })
+          });
+          
+          if (response.ok) {
+            notify('User removed successfully', 'success');
+            // Refresh the shared users list
+            await loadSharedUsers();
+          } else {
+            notify('Failed to remove user', 'error');
+          }
+        } catch (error) {
+          console.error('Error removing user:', error);
+          notify('Failed to remove user', 'error');
+        }
+      }
     }
 
     let _tileToolbar = null;
