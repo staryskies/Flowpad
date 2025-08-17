@@ -586,7 +586,7 @@
           <span class="folder-arrow">▶</span>
         </div>
         <div class="folder-content expanded" id="myGraphs">
-          <div id="ownGraphs"></div>
+      <div id="ownGraphs"></div>
         </div>
       </div>
       
@@ -1449,7 +1449,7 @@
         notify('Graph deleted successfully', 'success');
         
         // Refresh graphs list
-        await loadGraphs();
+      await loadGraphs();
         
       } catch (error) {
         console.error('Error deleting graph:', error);
@@ -1998,8 +1998,8 @@
       tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
       
       console.log('Tile created successfully:', tile);
-      return tile;
-    }
+        return tile;
+      }
 
     function selectTile(tile) {
       clearSelection();
@@ -2050,7 +2050,7 @@
       if (connectionIndex !== -1) {
         connections.splice(connectionIndex, 1);
         renderCanvas();
-        scheduleSave();
+      scheduleSave();
         notify('Connection deleted successfully', 'success');
       }
     }
