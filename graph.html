@@ -278,6 +278,159 @@
     .grid-snap-line.show{opacity:0.6}
     .grid-snap-line.vertical{width:1px}
     .grid-snap-line.horizontal{height:1px}
+    
+    /* Grid visualization */
+    .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50;opacity:0.1;transition:opacity 0.3s ease}
+    .grid-overlay.show{opacity:0.2}
+    .grid-line{position:absolute;background:var(--accent-primary);opacity:0.3}
+    .grid-line.vertical{width:1px;height:100%}
+    .grid-line.horizontal{height:1px;width:100%}
+    
+    /* Grid toggle button */
+    .tool-btn.grid-toggle-btn{background:var(--accent-primary);color:#fff}
+    .tool-btn.grid-toggle-btn:hover{background:var(--accent-secondary)}
+    .tool-btn.grid-toggle-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
+    
+    /* Floating Toolbar System */
+    .floating-toolbar{position:absolute;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:8px;display:none;z-index:1000;pointer-events:auto;min-width:200px;transform:translateY(-50%)}
+    .floating-toolbar.show{display:block}
+    .floating-toolbar.tile-toolbar{min-width:180px;transform:translateY(-50%)}
+    .floating-toolbar.connection-toolbar{min-width:160px;transform:translateY(-50%)}
+    
+    .toolbar-section{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+    .toolbar-section:last-child{margin-bottom:0}
+    .toolbar-section-title{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500}
+    
+    .toolbar-row{display:flex;gap:4px;align-items:center}
+    .toolbar-button{width:32px;height:32px;border:1px solid var(--border-primary);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.2s ease}
+    .toolbar-button:hover{background:var(--bg-tertiary);border-color:var(--accent-primary)}
+    .toolbar-button.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+    .toolbar-button.small{width:28px;height:28px;font-size:12px}
+    
+    .toolbar-color-picker{width:32px;height:32px;border:1px solid var(--border-primary);border-radius:6px;cursor:pointer;position:relative;overflow:hidden}
+    .toolbar-color-picker::before{content:'';position:absolute;top:2px;left:2px;right:2px;bottom:2px;background:var(--tile-color, #ffffff);border-radius:4px}
+    
+    /* Secondary Popup System */
+    .secondary-popup{position:absolute;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:12px;display:none;z-index:1001;pointer-events:auto;min-width:240px}
+    .secondary-popup.show{display:block}
+    
+    .popup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-primary)}
+    .popup-title{font-size:14px;font-weight:500;color:var(--text-primary)}
+    .popup-close{width:24px;height:24px;border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all 0.2s ease}
+    .popup-close:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+    
+    .popup-content{display:grid;grid-template-columns:repeat(auto-fit, minmax(40px, 1fr));gap:8px}
+    .popup-option{width:40px;height:40px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--bg-primary)}
+    .popup-option:hover{transform:scale(1.05);border-color:var(--accent-primary)}
+    .popup-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+    
+    /* Improved Line Routing */
+    .connection-line{stroke:var(--connection-color, #007AFF);stroke-width:2;fill:none;cursor:pointer;transition:all 0.2s ease}
+    .connection-line:hover{stroke-width:3;stroke:var(--connection-hover-color, #0056CC)}
+    .connection-line.selected{stroke-width:3;stroke:var(--accent-primary);stroke-dasharray:5,5}
+    
+    /* Line Style Options */
+    .line-style-solid{stroke-dasharray: none}
+    .line-style-dashed{stroke-dasharray: 5,5}
+    .line-style-dotted{stroke-dasharray: 2,2}
+    .line-style-dash-dot{stroke-dasharray: 10,2,2,2}
+    
+    /* Connection Types */
+    .connection-type-arrow{marker-end: url(#arrowhead)}
+    .connection-type-line{marker-end: none}
+    .connection-type-dot{marker-end: url(#dotmarker)}
+    .connection-type-diamond{marker-end: url(#diamondmarker)}
+    
+    /* Remove old tile controls */
+    .tile .color-picker-trigger{display:none}
+    .tile .shape-palette{display:none}
+    .tile .connection-dot{display:none}
+    
+    /* Preset Tile Types */
+    .preset-tile{position:relative;cursor:pointer;transition:all 0.3s ease}
+    .preset-tile:hover{transform:scale(1.05)}
+    .preset-tile.selected{transform:scale(1.1);box-shadow:0 0 20px var(--accent-primary)}
+    
+    .preset-tile.title{background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border-radius:12px}
+    .preset-tile.notes{background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);color:#fff;border-radius:12px}
+    .preset-tile.component{background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);color:#fff;border-radius:12px}
+    .preset-tile.custom{background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);color:#fff;border-radius:12px}
+    
+    .preset-tile-icon{font-size:24px;margin-bottom:8px}
+    .preset-tile-label{font-size:12px;font-weight:500;text-align:center}
+    
+    /* Improved Toolbar Positioning */
+    .floating-toolbar{position:absolute;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:8px;display:none;z-index:1000;pointer-events:auto;min-width:200px;transform:translateY(-50%)}
+    .floating-toolbar.show{display:block}
+    .floating-toolbar.tile-toolbar{min-width:180px;transform:translateY(-50%)}
+    .floating-toolbar.connection-toolbar{min-width:160px;transform:translateY(-50%)}
+    
+    /* Long Press Indicator */
+    .long-press-indicator{position:absolute;width:60px;height:60px;border:3px solid var(--accent-primary);border-radius:50%;pointer-events:none;z-index:1001;opacity:0;transition:all 0.3s ease;display:flex;align-items:center;justify-content:center;color:var(--accent-primary);font-size:20px;background:rgba(0,122,255,0.1)}
+    .long-press-indicator.show{opacity:1;transform:scale(1.2)}
+    .long-press-indicator.pulse{animation:pulse 1s infinite}
+    
+    @keyframes pulse{0%{transform:scale(1)}50%{transform:scale(1.1)}100%{transform:scale(1)}}
+    
+    /* Preset Selection Popup */
+    .preset-popup{position:absolute;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.2);padding:16px;display:none;z-index:1002;pointer-events:auto;min-width:280px}
+    .preset-popup.show{display:block}
+    
+    .preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+    .preset-item{display:flex;flex-direction:column;align-items:center;padding:16px;border:2px solid var(--border-primary);border-radius:8px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-primary)}
+    .preset-item:hover{transform:translateY(-2px);border-color:var(--accent-primary);box-shadow:0 4px 15px rgba(0,122,255,0.2)}
+    .preset-item.selected{border-color:var(--accent-primary);background:rgba(0,122,255,0.1)}
+    
+    .preset-item-icon{font-size:32px;margin-bottom:8px}
+    .preset-item-label{font-size:14px;font-weight:500;color:var(--text-primary);text-align:center}
+    .preset-item-desc{font-size:11px;color:var(--text-secondary);text-align:center;margin-top:4px}
+    
+    /* Add CSS for preset buttons */
+    .tool-btn.preset-btn {
+      background: var(--accent-primary);
+      color: #fff;
+      transition: all 0.3s ease;
+    }
+    .tool-btn.preset-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    /* Sharing Permission System */
+    .share-permission-selector{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+    .permission-option{display:flex;align-items:center;gap:6px;padding:8px 12px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-primary)}
+    .permission-option:hover{border-color:var(--accent-primary);background:var(--bg-tertiary)}
+    .permission-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+    .permission-option input[type="radio"]{display:none}
+    .permission-icon{font-size:16px}
+    .permission-label{font-size:14px;font-weight:500}
+    .permission-description{font-size:11px;color:var(--text-secondary);margin-top:2px}
+    
+    .share-section{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;padding:16px;margin-top:16px;display:none}
+    .share-section.show{display:block}
+    .share-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .share-title{font-size:16px;font-weight:500;color:var(--text-primary)}
+    .share-toggle{background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;transition:all 0.3s ease}
+    .share-toggle:hover{background:var(--accent-secondary)}
+    .share-toggle.active{background:var(--inbox-pending)}
+    
+    .share-email-section{display:flex;gap:8px;margin-bottom:12px}
+    .share-email{flex:1;padding:8px 12px;border:1px solid var(--border-primary);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);font-size:14px}
+    .share-email:focus{outline:none;border-color:var(--accent-primary)}
+    .share-btn{background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;transition:all 0.3s ease}
+    .share-btn:hover{background:var(--accent-secondary)}
+    .share-btn:disabled{background:var(--border-primary);color:var(--text-secondary);cursor:not-allowed}
+    
+    .shared-users-list{margin-top:16px}
+    .shared-user-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border-primary);border-radius:6px;margin-bottom:8px}
+    .shared-user-info{display:flex;flex-direction:column}
+    .shared-user-email{font-size:14px;color:var(--text-primary);font-weight:500}
+    .shared-user-permission{font-size:12px;color:var(--text-secondary)}
+    .shared-user-actions{display:flex;gap:4px}
+    .remove-user-btn{background:var(--inbox-rejected);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+    .remove-user-btn:hover{background:var(--accent-secondary)}
+    .change-permission-btn{background:var(--accent-primary);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+    .change-permission-btn:hover{background:var(--accent-secondary)}
   </style>
 </head>
 <body>
@@ -327,12 +480,38 @@
       </div>
       
       <div class="share-section" id="shareSection">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-          <span style="font-weight:500;color:var(--text-primary)">Share Current Graph</span>
-          <button class="share-toggle" id="shareToggle" onclick="toggleSharing()">ON</button>
+        <div class="share-header">
+          <div class="share-title">Share Graph</div>
+          <button class="share-toggle" onclick="toggleShareSection()">Hide</button>
         </div>
-        <input type="email" id="shareEmail" class="share-email" placeholder="Enter email address" style="display:none"/>
-        <button id="shareBtn" class="share-btn" style="display:none" onclick="shareGraph()">Share</button>
+        
+        <div class="share-permission-selector">
+          <label class="permission-option" data-permission="viewer">
+            <input type="radio" name="permission" value="viewer" checked>
+            <div class="permission-icon">👁️</div>
+            <div class="permission-info">
+              <div class="permission-label">Viewer</div>
+              <div class="permission-description">Can view only</div>
+            </div>
+          </label>
+          <label class="permission-option" data-permission="editor">
+            <input type="radio" name="permission" value="editor">
+            <div class="permission-icon">✏️</div>
+            <div class="permission-info">
+              <div class="permission-label">Editor</div>
+              <div class="permission-description">Can view and edit</div>
+            </div>
+          </label>
+        </div>
+        
+        <div class="share-email-section">
+          <input type="email" class="share-email" id="shareEmail" placeholder="Enter email address" />
+          <button class="share-btn" onclick="shareGraph()">Share</button>
+        </div>
+        
+        <div class="shared-users-list" id="sharedUsersList">
+          <!-- Shared users will be populated here -->
+        </div>
       </div>
     </div>
   </div>
@@ -422,8 +601,10 @@
     let snapToGrid = true;
     let snapToTiles = true;
     let gridSize = 20;
+    let showGrid = false;
     let snapIndicators = [];
     let snapLines = [];
+    let gridLines = [];
     
     const canvas = document.getElementById('canvas');
     const tabContainer = document.getElementById('tabContainer');
@@ -439,6 +620,71 @@
       setupRealtimeUpdates();
       setupAutoSave();
       setupSnapping();
+      setupGridVisualization();
+      initializePermissionSelector();
+      addShareEmailListener();
+    }
+
+    function setupGridVisualization() {
+      // Create grid overlay
+      const gridOverlay = document.createElement('div');
+      gridOverlay.className = 'grid-overlay';
+      gridOverlay.id = 'grid-overlay';
+      canvas.appendChild(gridOverlay);
+      
+      // Create grid lines
+      createGridLines();
+      
+      // Update grid when canvas resizes
+      window.addEventListener('resize', createGridLines);
+    }
+
+    function createGridLines() {
+      // Clear existing grid lines
+      gridLines.forEach(line => line.remove());
+      gridLines = [];
+      
+      const gridOverlay = document.getElementById('grid-overlay');
+      if (!gridOverlay) return;
+      
+      const canvasRect = canvas.getBoundingClientRect();
+      const width = canvasRect.width;
+      const height = canvasRect.height;
+      
+      // Create vertical grid lines
+      for (let x = 0; x <= width; x += gridSize) {
+        const line = document.createElement('div');
+        line.className = 'grid-line vertical';
+        line.style.left = x + 'px';
+        gridOverlay.appendChild(line);
+        gridLines.push(line);
+      }
+      
+      // Create horizontal grid lines
+      for (let y = 0; y <= height; y += gridSize) {
+        const line = document.createElement('div');
+        line.className = 'grid-line horizontal';
+        line.style.top = y + 'px';
+        gridOverlay.appendChild(line);
+        gridLines.push(line);
+      }
+    }
+
+    function toggleGrid() {
+      showGrid = !showGrid;
+      const gridOverlay = document.getElementById('grid-overlay');
+      const btn = document.querySelector('.grid-toggle-btn');
+      
+      if (gridOverlay) {
+        gridOverlay.classList.toggle('show', showGrid);
+      }
+      
+      if (btn) {
+        btn.classList.toggle('active', showGrid);
+        btn.title = showGrid ? 'Hide Grid (ON)' : 'Show Grid (OFF)';
+      }
+      
+      notify(`Grid: ${showGrid ? 'ON' : 'OFF'}`, 'success');
     }
 
     function setupSnapping() {
@@ -1110,7 +1356,8 @@
 
     function handleCanvasClick(e) {
       if (e.target === canvas) {
-        clearSelection();
+        hideFloatingToolbar();
+        // Other canvas click handling...
       }
     }
 
@@ -1471,25 +1718,12 @@
     }
 
     function addTile() {
-      const newTile = createTile(200, 200, 'New Tile', '', null, 'rectangle');
-      tiles.push(newTile);
+      // Show preset selection popup
+      const canvasRect = canvas.getBoundingClientRect();
+      const centerX = canvasRect.width / 2;
+      const centerY = canvasRect.height / 2;
       
-      // Add to pending updates
-      addPendingUpdate('tile_create', {
-        id: newTile.dataset.tileId,
-        x: 200,
-        y: 200,
-        title: 'New Tile',
-        content: '',
-        color: '#ffffff',
-        shape: 'rectangle'
-      });
-      
-      // Mark as dirty
-      markAsDirty();
-      
-      renderCanvas();
-      notify('New tile added', 'success');
+      showPresetPopup(centerX, centerY);
     }
 
     function deleteSelected() {
@@ -1773,31 +2007,52 @@
     }
 
     function createSmartPath(fromX, fromY, toX, toY) {
-      // Find obstacles (tiles) between the connection points
-      const obstacles = findObstacles(fromX, fromY, toX, toY);
+      // Use grid-based routing with obstacle avoidance
+      const path = createGridPathWithObstacles(fromX, fromY, toX, toY);
+      return optimizeGridPath(path);
+    }
+
+    function createGridPath(fromX, fromY, toX, toY) {
+      // Snap start and end points to grid
+      const startX = Math.round(fromX / gridSize) * gridSize;
+      const startY = Math.round(fromY / gridSize) * gridSize;
+      const endX = Math.round(toX / gridSize) * gridSize;
+      const endY = Math.round(toY / gridSize) * gridSize;
       
-      if (obstacles.length === 0) {
-        // No obstacles, use smooth S-curve with better control points
-        const midX = (fromX + toX) / 2;
-        const midY = (fromY + toY) / 2;
-        const distance = Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2);
-        const curveIntensity = Math.max(distance * 0.3, 40); // Minimum curve intensity
-        
-        // Create smooth cubic bezier curve with more pronounced curves
-        const control1 = { 
-          x: fromX + (midX - fromX) * 0.5, 
-          y: fromY + (fromY < toY ? curveIntensity : -curveIntensity) 
-        };
-        const control2 = { 
-          x: toX - (toX - midX) * 0.5, 
-          y: toY + (toY < fromY ? curveIntensity : -curveIntensity) 
-        };
-        
-        return `M ${fromX} ${fromY} C ${control1.x} ${control1.y}, ${control2.x} ${control2.y}, ${toX} ${toY}`;
+      // Calculate midpoints for 90-degree bends
+      const midX = Math.round((startX + endX) / 2 / gridSize) * gridSize;
+      const midY = Math.round((startY + endY) / 2 / gridSize) * gridSize;
+      
+      // Create path with 2 90-degree bends at midpoints
+      const path = [];
+      
+      // Start point
+      path.push({ x: startX, y: startY });
+      
+      // First bend - horizontal to midpoint
+      if (startX !== midX) {
+        path.push({ x: midX, y: startY });
       }
       
-      // Use Manhattan routing for obstacle avoidance
-      return createManhattanPath(fromX, fromY, toX, toY, obstacles);
+      // Second bend - vertical to midpoint
+      if (startY !== midY) {
+        path.push({ x: midX, y: midY });
+      }
+      
+      // Third bend - horizontal to end
+      if (midX !== endX) {
+        path.push({ x: endX, y: midY });
+      }
+      
+      // Fourth bend - vertical to end
+      if (midY !== endY) {
+        path.push({ x: endX, y: endY });
+      }
+      
+      // End point
+      path.push({ x: endX, y: endY });
+      
+      return path;
     }
 
     function findObstacles(fromX, fromY, toX, toY) {
@@ -2347,32 +2602,107 @@
     }
 
     function renderConnections() {
-      // Remove existing connections
-      document.querySelectorAll('.connection-svg').forEach(svg => svg.remove());
+      // Clear existing connections
+      const existingLines = document.querySelectorAll('.connection-line');
+      existingLines.forEach(line => line.remove());
       
-      connections.forEach(conn => {
-        const fromTile = tiles.find(t => t.dataset.tileId === conn.fromTile);
-        const toTile = tiles.find(t => t.dataset.tileId === conn.toTile);
+      // Create SVG container if it doesn't exist
+      let svgContainer = document.querySelector('#connections-svg');
+      if (!svgContainer) {
+        svgContainer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svgContainer.id = 'connections-svg';
+        svgContainer.style.position = 'absolute';
+        svgContainer.style.top = '0';
+        svgContainer.style.left = '0';
+        svgContainer.style.width = '100%';
+        svgContainer.style.height = '100%';
+        svgContainer.style.pointerEvents = 'none';
+        svgContainer.style.zIndex = '100';
         
-        if (fromTile && toTile) {
-          // Use automatic port selection for optimal connection points
-          const ports = findOptimalPort(fromTile, toTile, conn.fromDot, conn.toDot);
-          
-          if (ports.fromPort && ports.toPort) {
-            const connectionLine = createConnectionLine(
-              ports.fromPort.x, 
-              ports.fromPort.y, 
-              ports.toPort.x, 
-              ports.toPort.y, 
-              false, 
-              conn.color, 
-              conn.id
-            );
-            connectionLine.classList.add('connection-svg');
-            canvas.appendChild(connectionLine);
-          }
+        // Add arrow marker definition
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        
+        // Arrow marker
+        const arrowMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        arrowMarker.setAttribute('id', 'arrowhead');
+        arrowMarker.setAttribute('markerWidth', '10');
+        arrowMarker.setAttribute('markerHeight', '7');
+        arrowMarker.setAttribute('refX', '9');
+        arrowMarker.setAttribute('refY', '3.5');
+        arrowMarker.setAttribute('orient', 'auto');
+        
+        const arrowPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        arrowPolygon.setAttribute('points', '0 0, 10 3.5, 0 7');
+        arrowPolygon.setAttribute('fill', '#007AFF');
+        
+        arrowMarker.appendChild(arrowPolygon);
+        defs.appendChild(arrowMarker);
+        
+        // Dot marker
+        const dotMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        dotMarker.setAttribute('id', 'dotmarker');
+        dotMarker.setAttribute('markerWidth', '8');
+        dotMarker.setAttribute('markerHeight', '8');
+        dotMarker.setAttribute('refX', '4');
+        dotMarker.setAttribute('refY', '4');
+        dotMarker.setAttribute('orient', 'auto');
+        
+        const dotCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dotCircle.setAttribute('cx', '4');
+        dotCircle.setAttribute('cy', '4');
+        dotCircle.setAttribute('r', '3');
+        dotCircle.setAttribute('fill', '#007AFF');
+        
+        dotMarker.appendChild(dotCircle);
+        defs.appendChild(dotMarker);
+        
+        // Diamond marker
+        const diamondMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        diamondMarker.setAttribute('id', 'diamondmarker');
+        diamondMarker.setAttribute('markerWidth', '10');
+        diamondMarker.setAttribute('markerHeight', '7');
+        diamondMarker.setAttribute('refX', '9');
+        diamondMarker.setAttribute('refY', '3.5');
+        diamondMarker.setAttribute('orient', 'auto');
+        
+        const diamondPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        diamondPolygon.setAttribute('points', '5 0, 10 3.5, 5 7, 0 3.5');
+        diamondPolygon.setAttribute('fill', '#007AFF');
+        
+        diamondMarker.appendChild(diamondPolygon);
+        defs.appendChild(diamondMarker);
+        
+        svgContainer.appendChild(defs);
+        
+        canvas.appendChild(svgContainer);
+      }
+      
+      // Group connections by tile pairs to handle multiple connections
+      const connectionGroups = {};
+      connections.forEach(connection => {
+        const key = `${connection.fromTile}-${connection.toTile}`;
+        if (!connectionGroups[key]) {
+          connectionGroups[key] = [];
         }
+        connectionGroups[key].push(connection);
       });
+      
+      // Render each connection group
+      Object.values(connectionGroups).forEach((group, groupIndex) => {
+        group.forEach((connection, connectionIndex) => {
+          const fromTile = tiles.find(t => t.dataset.tileId === connection.fromTile);
+          const toTile = tiles.find(t => t.dataset.tileId === connection.toTile);
+          
+          if (fromTile && toTile) {
+            const line = createConnectionLineWithSeparation(fromTile, toTile, connectionIndex);
+            svgContainer.appendChild(line);
+          }
+        });
+      });
+      
+      // Update SVG viewBox to match canvas
+      const canvasRect = canvas.getBoundingClientRect();
+      svgContainer.setAttribute('viewBox', `0 0 ${canvasRect.width} ${canvasRect.height}`);
     }
 
     async function shareGraph() {
@@ -2836,8 +3166,53 @@
         snapTilesBtn.onclick = toggleSnapToTiles;
         snapTilesBtn.classList.add('active'); // Default enabled
         toolbar.appendChild(snapTilesBtn);
+        
+        // Add grid visualization toggle
+        const gridToggleBtn = document.createElement('button');
+        gridToggleBtn.className = 'tool-btn grid-toggle-btn';
+        gridToggleBtn.title = 'Show Grid';
+        gridToggleBtn.textContent = '⊞⊞';
+        gridToggleBtn.onclick = toggleGrid;
+        toolbar.appendChild(gridToggleBtn);
+        
+        // Add preset tile buttons
+        Object.entries(PRESET_TILES).forEach(([key, preset]) => {
+          const presetBtn = document.createElement('button');
+          presetBtn.className = 'tool-btn preset-btn';
+          presetBtn.title = `Create ${preset.name}`;
+          presetBtn.textContent = preset.icon;
+          presetBtn.onclick = () => createPresetTile(preset);
+          presetBtn.style.background = preset.color;
+          presetBtn.style.color = '#fff';
+          toolbar.appendChild(presetBtn);
+        });
       }
     }
+    
+    // Update addTile to show preset selection
+    function addTile() {
+      // Show preset selection popup
+      const canvasRect = canvas.getBoundingClientRect();
+      const centerX = canvasRect.width / 2;
+      const centerY = canvasRect.height / 2;
+      
+      showPresetPopup(centerX, centerY);
+    }
+    
+    // Add CSS for preset buttons
+    const style = document.createElement('style');
+    style.textContent = `
+      .tool-btn.preset-btn {
+        background: var(--accent-primary);
+        color: #fff;
+        transition: all 0.3s ease;
+      }
+      .tool-btn.preset-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      }
+    `;
+    document.head.appendChild(style);
 
     function toggleSnapToGrid() {
       snapToGrid = !snapToGrid;
@@ -2872,6 +3247,1268 @@
       setTimeout(() => {
         indicator.classList.remove('show', 'saving', 'saved');
       }, 3000);
+    }
+
+    function createGridPathWithObstacles(fromX, fromY, toX, toY) {
+      // Snap to grid
+      const startX = Math.round(fromX / gridSize) * gridSize;
+      const startY = Math.round(fromY / gridSize) * gridSize;
+      const endX = Math.round(toX / gridSize) * gridSize;
+      const endY = Math.round(toY / gridSize) * gridSize;
+      
+      // Simple 90-degree routing with basic obstacle avoidance
+      const path = [];
+      path.push({ x: startX, y: startY });
+      
+      // Calculate grid coordinates
+      const startGridX = Math.round(startX / gridSize);
+      const startGridY = Math.round(startY / gridSize);
+      const endGridX = Math.round(endX / gridSize);
+      const endGridY = Math.round(endY / gridSize);
+      
+      // Determine routing strategy
+      const deltaX = endGridX - startGridX;
+      const deltaY = endGridY - startGridY;
+      
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        // Horizontal first routing
+        if (deltaX !== 0) {
+          // Move horizontally to target X
+          path.push({ x: endX, y: startY });
+        }
+        if (deltaY !== 0) {
+          // Move vertically to target Y
+          path.push({ x: endX, y: endY });
+        }
+      } else {
+        // Vertical first routing
+        if (deltaY !== 0) {
+          // Move vertically to target Y
+          path.push({ x: startX, y: endY });
+        }
+        if (deltaX !== 0) {
+          // Move horizontally to target X
+          path.push({ x: endX, y: endY });
+        }
+      }
+      
+      // Add end point
+      path.push({ x: endX, y: endY });
+      
+      return path;
+    }
+
+    function optimizeGridPath(path) {
+      // Remove unnecessary waypoints for cleaner paths
+      const optimized = [path[0]];
+      
+      for (let i = 1; i < path.length - 1; i++) {
+        const prev = path[i - 1];
+        const current = path[i];
+        const next = path[i + 1];
+        
+        // Check if current point is necessary
+        const isHorizontal = Math.abs(current.x - prev.x) > 0 && Math.abs(current.x - next.x) > 0;
+        const isVertical = Math.abs(current.y - prev.y) > 0 && Math.abs(current.y - next.y) > 0;
+        
+        if (isHorizontal || isVertical) {
+          optimized.push(current);
+        }
+      }
+      
+      optimized.push(path[path.length - 1]);
+      return optimized;
+    }
+
+    function adjustGridPathForSeparation(path, connectionIndex, totalConnections) {
+      if (totalConnections <= 1) return path;
+      
+      // Calculate separation offset based on connection index
+      const separation = 8; // pixels between parallel lines
+      const offset = (connectionIndex - (totalConnections - 1) / 2) * separation;
+      
+      // Apply offset to middle segments (avoiding start and end points)
+      const adjustedPath = [...path];
+      
+      for (let i = 1; i < adjustedPath.length - 1; i++) {
+        const segment = adjustedPath[i];
+        const prevSegment = adjustedPath[i - 1];
+        
+        // Determine if this is a horizontal or vertical segment
+        if (Math.abs(segment.x - prevSegment.x) > 0) {
+          // Horizontal segment - offset vertically
+          segment.y += offset;
+        } else {
+          // Vertical segment - offset horizontally
+          segment.x += offset;
+        }
+      }
+      
+      return adjustedPath;
+    }
+
+    function createConnectionLineWithSeparation(fromTile, toTile, connectionIndex = 0) {
+      // Count total connections between these tiles
+      const totalConnections = connections.filter(c => 
+        (c.fromTile === fromTile.dataset.tileId && c.toTile === toTile.dataset.tileId) ||
+        (c.fromTile === toTile.dataset.tileId && c.toTile === fromTile.dataset.tileId)
+      ).length;
+      
+      // Find optimal connection ports
+      const fromPort = findOptimalPort(fromTile, toTile, 'output');
+      const toPort = findOptimalPort(toTile, fromTile, 'input');
+      
+      const fromX = fromPort.x;
+      const fromY = fromPort.y;
+      const toX = toPort.x;
+      const toY = toPort.y;
+      
+      // Create grid-based path
+      let path = createGridPath(fromX, fromY, toX, toY);
+      
+      // Adjust for multiple connections
+      if (totalConnections > 1) {
+        path = adjustGridPathForSeparation(path, connectionIndex, totalConnections);
+      }
+      
+      // Create SVG path string
+      let pathString = `M ${path[0].x} ${path[0].y}`;
+      
+      for (let i = 1; i < path.length; i++) {
+        pathString += ` L ${path[i].x} ${path[i].y}`;
+      }
+      
+      // Create connection line element
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      line.setAttribute('d', pathString);
+      line.setAttribute('stroke', '#007AFF');
+      line.setAttribute('stroke-width', '2');
+      line.setAttribute('fill', 'none');
+      line.setAttribute('marker-end', 'url(#arrowhead)');
+      line.setAttribute('class', 'connection-line');
+      line.dataset.fromTile = fromTile.dataset.tileId;
+      line.dataset.toTile = toTile.dataset.tileId;
+      
+      // Add hover effects
+      line.addEventListener('mouseenter', () => {
+        line.setAttribute('stroke-width', '3');
+        line.setAttribute('stroke', '#0056CC');
+      });
+      
+      line.addEventListener('mouseleave', () => {
+        line.setAttribute('stroke-width', '2');
+        line.setAttribute('stroke', '#007AFF');
+      });
+      
+      // Add click to delete
+      line.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteConnection(fromTile.dataset.tileId, toTile.dataset.tileId);
+      });
+      
+      return line;
+    }
+
+    let selectedElement = null;
+    let floatingToolbar = null;
+    let secondaryPopup = null;
+    let toolbarTimeout = null;
+    
+    // Create floating toolbar
+    function createFloatingToolbar() {
+      if (floatingToolbar) return floatingToolbar;
+      
+      floatingToolbar = document.createElement('div');
+      floatingToolbar.className = 'floating-toolbar';
+      floatingToolbar.innerHTML = `
+        <div class="toolbar-section">
+          <div class="toolbar-section-title">Type</div>
+          <div class="toolbar-row">
+            <button class="toolbar-button" data-action="type" data-type="general" title="Change Type">⚙️</button>
+          </div>
+        </div>
+        <div class="toolbar-section">
+          <div class="toolbar-section-title">Style</div>
+          <div class="toolbar-row">
+            <button class="toolbar-button" data-action="style" data-style="general" title="Change Style">🎨</button>
+          </div>
+        </div>
+        <div class="toolbar-section">
+          <div class="toolbar-section-title">Color</div>
+          <div class="toolbar-row">
+            <div class="toolbar-color-picker" data-action="color" title="Change Color"></div>
+          </div>
+        </div>
+        <div class="toolbar-section">
+          <div class="toolbar-row">
+            <button class="toolbar-button small" data-action="delete" title="Delete">🗑️</button>
+            <button class="toolbar-button small" data-action="duplicate" title="Duplicate">📋</button>
+          </div>
+        </div>
+      `;
+      
+      // Add event listeners
+      floatingToolbar.addEventListener('click', handleToolbarAction);
+      
+      document.body.appendChild(floatingToolbar);
+      return floatingToolbar;
+    }
+    
+    // Create secondary popup
+    function createSecondaryPopup() {
+      if (secondaryPopup) return secondaryPopup;
+      
+      secondaryPopup = document.createElement('div');
+      secondaryPopup.className = 'secondary-popup';
+      secondaryPopup.innerHTML = `
+        <div class="popup-header">
+          <div class="popup-title">Select Option</div>
+          <button class="popup-close">×</button>
+        </div>
+        <div class="popup-content"></div>
+      `;
+      
+      // Add event listeners
+      secondaryPopup.querySelector('.popup-close').addEventListener('click', hideSecondaryPopup);
+      
+      document.body.appendChild(secondaryPopup);
+      return secondaryPopup;
+    }
+    
+    // Show floating toolbar
+    function showFloatingToolbar(element, x, y) {
+      const toolbar = createFloatingToolbar();
+      const popup = createSecondaryPopup();
+      
+      // Position toolbar
+      toolbar.style.left = (x + 10) + 'px';
+      toolbar.style.top = (y - 10) + 'px';
+      
+      // Adjust position if it goes off screen
+      const rect = toolbar.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        toolbar.style.left = (x - rect.width - 10) + 'px';
+      }
+      if (rect.bottom > window.innerHeight) {
+        toolbar.style.top = (y - rect.height - 10) + 'px';
+      }
+      
+      // Set toolbar type
+      if (element.classList.contains('tile')) {
+        toolbar.classList.add('tile-toolbar');
+        setupTileToolbar(toolbar, element);
+      } else if (element.classList.contains('connection-line')) {
+        toolbar.classList.add('connection-toolbar');
+        setupConnectionToolbar(toolbar, element);
+      }
+      
+      toolbar.classList.add('show');
+      selectedElement = element;
+      
+      // Auto-hide after delay
+      clearTimeout(toolbarTimeout);
+      toolbarTimeout = setTimeout(() => {
+        if (!toolbar.matches(':hover') && !popup.matches(':hover')) {
+          hideFloatingToolbar();
+        }
+      }, 3000);
+    }
+    
+    // Hide floating toolbar
+    function hideFloatingToolbar() {
+      if (floatingToolbar) {
+        floatingToolbar.classList.remove('show');
+      }
+      if (secondaryPopup) {
+        secondaryPopup.classList.remove('show');
+      }
+      selectedElement = null;
+      clearTimeout(toolbarTimeout);
+    }
+    
+    // Setup tile toolbar
+    function setupTileToolbar(toolbar, tile) {
+      // Update color picker
+      const colorPicker = toolbar.querySelector('.toolbar-color-picker');
+      const tileColor = tile.style.backgroundColor || '#ffffff';
+      colorPicker.style.setProperty('--tile-color', tileColor);
+      
+      // Update type button
+      const typeBtn = toolbar.querySelector('[data-action="type"]');
+      const currentShape = tile.dataset.shape || 'rectangle';
+      typeBtn.textContent = getShapeIcon(currentShape);
+      typeBtn.title = `Current: ${currentShape}`;
+    }
+    
+    // Setup connection toolbar
+    function setupConnectionToolbar(toolbar, connection) {
+      // Update color picker
+      const colorPicker = toolbar.querySelector('.toolbar-color-picker');
+      const lineColor = connection.getAttribute('stroke') || '#007AFF';
+      colorPicker.style.setProperty('--tile-color', lineColor);
+      
+      // Update style button
+      const styleBtn = toolbar.querySelector('[data-action="style"]');
+      const currentStyle = connection.dataset.style || 'solid';
+      styleBtn.textContent = getStyleIcon(currentStyle);
+      styleBtn.title = `Current: ${currentStyle}`;
+    }
+    
+    // Get shape icon
+    function getShapeIcon(shape) {
+      const icons = {
+        'rectangle': '□',
+        'rounded': '◐',
+        'circular': '○',
+        'hexagon': '⬡',
+        'diamond': '◇',
+        'triangle': '△'
+      };
+      return icons[shape] || '□';
+    }
+    
+    // Get style icon
+    function getStyleIcon(style) {
+      const icons = {
+        'solid': '━',
+        'dashed': '┅',
+        'dotted': '┄',
+        'dash-dot': '┄━'
+      };
+      return icons[style] || '━';
+    }
+    
+    // Handle toolbar actions
+    function handleToolbarAction(e) {
+      const button = e.target.closest('[data-action]');
+      if (!button) return;
+      
+      const action = button.dataset.action;
+      
+      switch (action) {
+        case 'type':
+          showTypePopup(button);
+          break;
+        case 'style':
+          showStylePopup(button);
+          break;
+        case 'color':
+          showColorPopup(button);
+          break;
+        case 'delete':
+          deleteSelectedElement();
+          break;
+        case 'duplicate':
+          duplicateSelectedElement();
+          break;
+      }
+    }
+    
+    // Show type popup
+    function showTypePopup(button) {
+      const popup = createSecondaryPopup();
+      const content = popup.querySelector('.popup-content');
+      
+      if (selectedElement.classList.contains('tile')) {
+        // Tile shapes
+        const shapes = ['rectangle', 'rounded', 'circular', 'hexagon', 'diamond', 'triangle'];
+        content.innerHTML = shapes.map(shape => 
+          `<div class="popup-option" data-type="shape" data-value="${shape}">${getShapeIcon(shape)}</div>`
+        ).join('');
+      } else {
+        // Connection types
+        const types = ['arrow', 'line', 'dot', 'diamond'];
+        content.innerHTML = types.map(type => 
+          `<div class="popup-option" data-type="connection" data-value="${type}">${getConnectionIcon(type)}</div>`
+        ).join('');
+      }
+      
+      // Add event listeners
+      content.addEventListener('click', handlePopupSelection);
+      
+      // Position popup
+      const buttonRect = button.getBoundingClientRect();
+      popup.style.left = (buttonRect.right + 10) + 'px';
+      popup.style.top = buttonRect.top + 'px';
+      
+      popup.classList.add('show');
+    }
+    
+    // Show style popup
+    function showStylePopup(button) {
+      const popup = createSecondaryPopup();
+      const content = popup.querySelector('.popup-content');
+      
+      const styles = ['solid', 'dashed', 'dotted', 'dash-dot'];
+      content.innerHTML = styles.map(style => 
+        `<div class="popup-option" data-type="style" data-value="${style}">${getStyleIcon(style)}</div>`
+      ).join('');
+      
+      // Add event listeners
+      content.addEventListener('click', handlePopupSelection);
+      
+      // Position popup
+      const buttonRect = button.getBoundingClientRect();
+      popup.style.left = (buttonRect.right + 10) + 'px';
+      popup.style.top = buttonRect.top + 'px';
+      
+      popup.classList.add('show');
+    }
+    
+    // Show color popup
+    function showColorPopup(button) {
+      const popup = createSecondaryPopup();
+      const content = popup.querySelector('.popup-content');
+      
+      const colors = ['#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ff8800', '#8800ff'];
+      content.innerHTML = colors.map(color => 
+        `<div class="popup-option" data-type="color" data-value="${color}" style="background-color: ${color}"></div>`
+      ).join('');
+      
+      // Add event listeners
+      content.addEventListener('click', handlePopupSelection);
+      
+      // Position popup
+      const buttonRect = button.getBoundingClientRect();
+      popup.style.left = (buttonRect.right + 10) + 'px';
+      popup.style.top = buttonRect.top + 'px';
+      
+      popup.classList.add('show');
+    }
+    
+    // Handle popup selection
+    function handlePopupSelection(e) {
+      const option = e.target.closest('.popup-option');
+      if (!option) return;
+      
+      const type = option.dataset.type;
+      const value = option.dataset.value;
+      
+      if (selectedElement) {
+        switch (type) {
+          case 'shape':
+            changeTileShape(selectedElement, value);
+            break;
+          case 'connection':
+            changeConnectionType(selectedElement, value);
+            break;
+          case 'style':
+            changeConnectionStyle(selectedElement, value);
+            break;
+          case 'color':
+            changeElementColor(selectedElement, value);
+            break;
+        }
+      }
+      
+      hideSecondaryPopup();
+      updateToolbar();
+    }
+    
+    // Change tile shape
+    function changeTileShape(tile, shape) {
+      tile.className = `tile ${shape}`;
+      tile.dataset.shape = shape;
+      
+      // Update connections
+      renderConnections();
+      
+      // Mark as dirty
+      markAsDirty();
+    }
+    
+    // Change connection type
+    function changeConnectionType(connection, type) {
+      connection.dataset.connectionType = type;
+      
+      // Update marker
+      const markerId = type === 'arrow' ? 'arrowhead' : 
+                      type === 'dot' ? 'dotmarker' : 
+                      type === 'diamond' ? 'diamondmarker' : null;
+      
+      if (markerId) {
+        connection.setAttribute('marker-end', `url(#${markerId})`);
+      } else {
+        connection.removeAttribute('marker-end');
+      }
+      
+      // Mark as dirty
+      markAsDirty();
+    }
+    
+    // Change connection style
+    function changeConnectionStyle(connection, style) {
+      connection.dataset.style = style;
+      
+      // Update stroke dasharray
+      const dashArray = {
+        'solid': 'none',
+        'dashed': '5,5',
+        'dotted': '2,2',
+        'dash-dot': '10,2,2,2'
+      };
+      
+      connection.setAttribute('stroke-dasharray', dashArray[style] || 'none');
+      
+      // Mark as dirty
+      markAsDirty();
+    }
+    
+    // Change element color
+    function changeElementColor(element, color) {
+      if (element.classList.contains('tile')) {
+        element.style.backgroundColor = color;
+        element.dataset.color = color;
+      } else if (element.classList.contains('connection-line')) {
+        element.setAttribute('stroke', color);
+        element.dataset.color = color;
+      }
+      
+      // Mark as dirty
+      markAsDirty();
+    }
+    
+    // Delete selected element
+    function deleteSelectedElement() {
+      if (selectedElement) {
+        if (selectedElement.classList.contains('tile')) {
+          deleteSelected();
+        } else if (selectedElement.classList.contains('connection-line')) {
+          const fromTile = selectedElement.dataset.fromTile;
+          const toTile = selectedElement.dataset.toTile;
+          deleteConnection(fromTile, toTile);
+        }
+        hideFloatingToolbar();
+      }
+    }
+    
+    // Duplicate selected element
+    function duplicateSelectedElement() {
+      if (selectedElement && selectedElement.classList.contains('tile')) {
+        const rect = selectedElement.getBoundingClientRect();
+        const newTile = createTile(
+          rect.left + 20,
+          rect.top + 20,
+          selectedElement.querySelector('.tile-title').value + ' (Copy)',
+          selectedElement.querySelector('.tile-content').value,
+          null,
+          selectedElement.dataset.shape || 'rectangle'
+        );
+        
+        // Copy color
+        if (selectedElement.dataset.color) {
+          newTile.style.backgroundColor = selectedElement.dataset.color;
+          newTile.dataset.color = selectedElement.dataset.color;
+        }
+        
+        tiles.push(newTile);
+        renderCanvas();
+        renderConnections();
+        
+        // Mark as dirty
+        markAsDirty();
+      }
+    }
+    
+    // Update toolbar
+    function updateToolbar() {
+      if (floatingToolbar && selectedElement) {
+        if (selectedElement.classList.contains('tile')) {
+          setupTileToolbar(floatingToolbar, selectedElement);
+        } else if (selectedElement.classList.contains('connection-line')) {
+          setupConnectionToolbar(floatingToolbar, selectedElement);
+        }
+      }
+    }
+    
+    // Hide secondary popup
+    function hideSecondaryPopup() {
+      if (secondaryPopup) {
+        secondaryPopup.classList.remove('show');
+      }
+    }
+
+    // Add click event to tiles for toolbar
+    function addTileClickHandler(tile) {
+      let clickTimer = null;
+      let isClick = false;
+      
+      tile.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        
+        // Start long press timer
+        startLongPress(e, tile);
+        
+        // Set click timer
+        clickTimer = setTimeout(() => {
+          isClick = true;
+        }, 100);
+      });
+      
+      tile.addEventListener('mouseup', (e) => {
+        e.stopPropagation();
+        
+        // Cancel long press
+        cancelLongPress();
+        
+        // Handle click if it was a short press
+        if (isClick && !isLongPressing) {
+          const rect = tile.getBoundingClientRect();
+          showFloatingToolbar(tile, rect.left, rect.top);
+          selectTile(tile);
+        }
+        
+        // Reset flags
+        isClick = false;
+        clearTimeout(clickTimer);
+      });
+      
+      tile.addEventListener('mouseleave', () => {
+        cancelLongPress();
+        clearTimeout(clickTimer);
+        isClick = false;
+      });
+    }
+    
+    // Add click event to connections for toolbar
+    function addConnectionClickHandler(connection) {
+      connection.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Show floating toolbar
+        const bbox = connection.getBBox();
+        const svg = connection.closest('svg');
+        const pt = svg.createSVGPoint();
+        pt.x = bbox.x + bbox.width / 2;
+        pt.y = bbox.y + bbox.height / 2;
+        const ctm = svg.getScreenCTM();
+        const globalPt = pt.matrixTransform(ctm);
+        
+        showFloatingToolbar(connection, globalPt.x, globalPt.y);
+        
+        // Select connection
+        selectConnection(connection);
+      });
+    }
+    
+    // Select tile
+    function selectTile(tile) {
+      // Remove previous selection
+      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
+      
+      // Add selection to current tile
+      tile.classList.add('selected');
+      selectedElement = tile;
+    }
+    
+    // Select connection
+    function selectConnection(connection) {
+      // Remove previous selection
+      document.querySelectorAll('.connection-line.selected').forEach(c => c.classList.remove('selected'));
+      
+      // Add selection to current connection
+      connection.classList.add('selected');
+      selectedElement = connection;
+    }
+    
+    // Update createTile to include preset support
+    function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle', presetType = null) {
+      const tile = document.createElement('div');
+      tile.className = `tile ${shape}`;
+      tile.dataset.tileId = id || 'tile_' + Date.now();
+      tile.dataset.baseX = x;
+      tile.dataset.baseY = y;
+      tile.dataset.shape = shape;
+      tile.dataset.presetType = presetType || 'custom';
+      tile.style.left = (x + canvasOffset.x) + 'px';
+      tile.style.top = (y + canvasOffset.y) + 'px';
+      
+      tile.innerHTML = `
+        <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
+        <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
+      `;
+      
+      // Add click handler for toolbar
+      addTileClickHandler(tile);
+      
+      tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
+      
+      return tile;
+    }
+    
+    // Get connection icon
+    function getConnectionIcon(type) {
+      const icons = {
+        'arrow': '→',
+        'line': '─',
+        'dot': '●',
+        'diamond': '◆'
+      };
+      return icons[type] || '→';
+    }
+    
+    // Add global click handler to hide toolbars
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.floating-toolbar') && !e.target.closest('.secondary-popup')) {
+        hideFloatingToolbar();
+      }
+    });
+    
+    // Add escape key handler
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        hideFloatingToolbar();
+      }
+    });
+
+    // Preset tile types
+    const PRESET_TILES = {
+      title: {
+        name: 'Title',
+        description: 'Main heading tile',
+        icon: '📝',
+        shape: 'rounded',
+        color: '#667eea',
+        defaultContent: 'Title',
+        defaultTitle: 'Main Title'
+      },
+      notes: {
+        name: 'Notes',
+        description: 'Text content tile',
+        icon: '📝',
+        shape: 'rectangle',
+        color: '#f093fb',
+        defaultContent: 'Add your notes here...',
+        defaultTitle: 'Notes'
+      },
+      component: {
+        name: 'Component',
+        description: 'Functional element',
+        icon: '⚙️',
+        shape: 'hexagon',
+        color: '#4facfe',
+        defaultContent: 'Component description',
+        defaultTitle: 'Component'
+      },
+      custom: {
+        name: 'Custom',
+        description: 'Create your own type',
+        icon: '✨',
+        shape: 'rectangle',
+        color: '#43e97b',
+        defaultContent: 'Custom content',
+        defaultTitle: 'Custom'
+      }
+    };
+    
+    // Long press variables
+    let longPressTimer = null;
+    let longPressThreshold = 500; // milliseconds
+    let isLongPressing = false;
+    let longPressIndicator = null;
+    
+    // Create long press indicator
+    function createLongPressIndicator() {
+      if (longPressIndicator) return longPressIndicator;
+      
+      longPressIndicator = document.createElement('div');
+      longPressIndicator.className = 'long-press-indicator';
+      longPressIndicator.innerHTML = '⏱️';
+      longPressIndicator.style.display = 'none';
+      
+      document.body.appendChild(longPressIndicator);
+      return longPressIndicator;
+    }
+    
+    // Show preset selection popup
+    function showPresetPopup(x, y) {
+      const popup = createPresetPopup();
+      
+      // Position popup
+      popup.style.left = (x + 20) + 'px';
+      popup.style.top = (y - 20) + 'px';
+      
+      // Adjust position if it goes off screen
+      const rect = popup.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        popup.style.left = (x - rect.width - 20) + 'px';
+      }
+      if (rect.bottom > window.innerHeight) {
+        popup.style.top = (y - rect.height - 20) + 'px';
+      }
+      
+      popup.classList.add('show');
+      
+      // Store connection target
+      popup.dataset.connectToTile = connectToTile ? connectToTile.dataset.tileId : '';
+    }
+    
+    // Create preset popup
+    function createPresetPopup() {
+      let popup = document.querySelector('.preset-popup');
+      if (!popup) {
+        popup = document.createElement('div');
+        popup.className = 'preset-popup';
+        popup.innerHTML = `
+          <div class="popup-header">
+            <div class="popup-title">Choose Tile Type</div>
+            <button class="popup-close">×</button>
+          </div>
+          <div class="preset-grid"></div>
+        `;
+        
+        // Add event listeners
+        popup.querySelector('.popup-close').addEventListener('click', hidePresetPopup);
+        
+        document.body.appendChild(popup);
+      }
+      
+      // Populate preset options
+      const grid = popup.querySelector('.preset-grid');
+      grid.innerHTML = Object.entries(PRESET_TILES).map(([key, preset]) => `
+        <div class="preset-item" data-preset="${key}">
+          <div class="preset-item-icon">${preset.icon}</div>
+          <div class="preset-item-label">${preset.name}</div>
+          <div class="preset-item-desc">${preset.description}</div>
+        </div>
+      `).join('');
+      
+      // Add click handlers
+      grid.addEventListener('click', handlePresetSelection);
+      
+      return popup;
+    }
+    
+    // Handle preset selection
+    function handlePresetSelection(e) {
+      const item = e.target.closest('.preset-item');
+      if (!item) return;
+      
+      const popup = item.closest('.preset-popup');
+      const connectToTileId = popup.dataset.connectToTile;
+      const connectToTile = connectToTileId ? tiles.find(t => t.dataset.tileId === connectToTileId) : null;
+      
+      const presetKey = item.dataset.preset;
+      const preset = PRESET_TILES[presetKey];
+      
+      if (presetKey === 'custom') {
+        showCustomTileCreator(connectToTile);
+      } else {
+        createPresetTile(preset, connectToTile);
+      }
+      
+      hidePresetPopup();
+    }
+    
+    // Create preset tile
+    function createPresetTile(preset, connectToTile = null) {
+      const x = Math.random() * 400 + 100;
+      const y = Math.random() * 300 + 100;
+      
+      const tile = createTile(x, y, preset.defaultTitle, preset.defaultContent, null, preset.shape);
+      
+      // Apply preset styling
+      tile.style.backgroundColor = preset.color;
+      tile.dataset.color = preset.color;
+      tile.dataset.presetType = preset.name.toLowerCase();
+      
+      tiles.push(tile);
+      
+      // If connecting to another tile, create a connection
+      if (connectToTile) {
+        const connection = {
+          fromTile: connectToTile.dataset.tileId,
+          toTile: tile.dataset.tileId
+        };
+        
+        connections.push(connection);
+        
+        // Mark as dirty
+        markAsDirty();
+        
+        notify(`Created ${preset.name} tile with connection`, 'success');
+      } else {
+        notify(`Created ${preset.name} tile`, 'success');
+      }
+      
+      renderCanvas();
+      renderConnections();
+      
+      // Mark as dirty
+      markAsDirty();
+      
+      return tile;
+    }
+    
+    // Show custom tile creator
+    function showCustomTileCreator(connectToTile = null) {
+      const customTile = createTile(
+        Math.random() * 400 + 100,
+        Math.random() * 300 + 100,
+        'Custom Tile',
+        'Custom content...',
+        null,
+        'rectangle',
+        'custom'
+      );
+      
+      // Apply default styling
+      customTile.style.backgroundColor = '#ffffff';
+      customTile.dataset.color = '#ffffff';
+      customTile.dataset.presetType = 'custom';
+      
+      tiles.push(customTile);
+      
+      // If connecting to another tile, create a connection
+      if (connectToTile) {
+        const connection = {
+          fromTile: connectToTile.dataset.tileId,
+          toTile: customTile.dataset.tileId
+        };
+        
+        connections.push(connection);
+        
+        // Mark as dirty
+        markAsDirty();
+        
+        notify('Created custom tile with connection', 'success');
+      } else {
+        notify('Created custom tile', 'success');
+      }
+      
+      renderCanvas();
+      renderConnections();
+      
+      // Mark as dirty
+      markAsDirty();
+    }
+    
+    // Hide preset popup
+    function hidePresetPopup() {
+      const popup = document.querySelector('.preset-popup');
+      if (popup) {
+        popup.classList.remove('show');
+      }
+    }
+    
+    // Start long press timer
+    function startLongPress(e, element) {
+      if (longPressTimer) return;
+      
+      const indicator = createLongPressIndicator();
+      const rect = element.getBoundingClientRect();
+      
+      // Position indicator near the element
+      indicator.style.left = (rect.left + rect.width / 2 - 30) + 'px';
+      indicator.style.top = (rect.top + rect.height / 2 - 30) + 'px';
+      indicator.style.display = 'block';
+      
+      longPressTimer = setTimeout(() => {
+        isLongPressing = true;
+        indicator.classList.add('show', 'pulse');
+        
+        // Show preset popup after long press
+        setTimeout(() => {
+          // If it's a tile, offer to create connected tile
+          if (element.classList.contains('tile')) {
+            showPresetPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, element);
+          } else {
+            showPresetPopup(rect.left + rect.width / 2, rect.top + rect.height / 2);
+          }
+          indicator.style.display = 'none';
+        }, 300);
+        
+      }, longPressThreshold);
+    }
+    
+    // Cancel long press
+    function cancelLongPress() {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+      }
+      
+      if (longPressIndicator) {
+        longPressIndicator.style.display = 'none';
+        longPressIndicator.classList.remove('show', 'pulse');
+      }
+      
+      isLongPressing = false;
+    }
+    
+    // Update toolbar positioning to hover further from tiles
+    function showFloatingToolbar(element, x, y) {
+      const toolbar = createFloatingToolbar();
+      const popup = createSecondaryPopup();
+      
+      // Position toolbar further from element
+      const offset = 30; // Increased offset
+      toolbar.style.left = (x + offset) + 'px';
+      toolbar.style.top = (y - offset) + 'px';
+      
+      // Adjust position if it goes off screen
+      const rect = toolbar.getBoundingClientRect();
+      if (rect.right > window.innerWidth) {
+        toolbar.style.left = (x - rect.width - offset) + 'px';
+      }
+      if (rect.bottom > window.innerHeight) {
+        toolbar.style.top = (y - rect.height - offset) + 'px';
+      }
+      
+      // Set toolbar type
+      if (element.classList.contains('tile')) {
+        toolbar.classList.add('tile-toolbar');
+        setupTileToolbar(toolbar, element);
+      } else if (element.classList.contains('connection-line')) {
+        toolbar.classList.add('connection-toolbar');
+        setupConnectionToolbar(toolbar, element);
+      }
+      
+      toolbar.classList.add('show');
+      selectedElement = element;
+      
+      // Auto-hide after delay
+      clearTimeout(toolbarTimeout);
+      toolbarTimeout = setTimeout(() => {
+        if (!toolbar.matches(':hover') && !popup.matches(':hover')) {
+          hideFloatingToolbar();
+        }
+      }, 3000);
+    }
+
+    // Share permission system
+    let currentSharePermission = 'viewer';
+    
+    // Initialize permission selector
+    function initializePermissionSelector() {
+      const permissionOptions = document.querySelectorAll('.permission-option');
+      
+      permissionOptions.forEach(option => {
+        option.addEventListener('click', () => {
+          // Remove selected class from all options
+          permissionOptions.forEach(opt => opt.classList.remove('selected'));
+          
+          // Add selected class to clicked option
+          option.classList.add('selected');
+          
+          // Update current permission
+          const radio = option.querySelector('input[type="radio"]');
+          radio.checked = true;
+          currentSharePermission = radio.value;
+          
+          // Update share button state
+          updateShareButtonState();
+        });
+        
+        // Set initial selected state
+        if (option.querySelector('input[type="radio"]').checked) {
+          option.classList.add('selected');
+        }
+      });
+    }
+    
+    // Update share button state based on permission
+    function updateShareButtonState() {
+      const shareBtn = document.querySelector('.share-btn');
+      const shareEmail = document.getElementById('shareEmail');
+      
+      if (shareEmail.value.trim() === '') {
+        shareBtn.disabled = true;
+        shareBtn.textContent = 'Enter Email';
+      } else {
+        shareBtn.disabled = false;
+        shareBtn.textContent = `Share as ${currentSharePermission}`;
+      }
+    }
+    
+    // Enhanced share graph function with permissions
+    async function shareGraph() {
+      const email = document.getElementById('shareEmail').value.trim();
+      if (!email) {
+        notify('Please enter an email address', 'error');
+        return;
+      }
+      
+      if (!currentGraph) {
+        notify('No graph selected', 'error');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/graphs/${currentGraph}/share`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            email: email,
+            permission: currentSharePermission
+          })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          notify(`Graph shared with ${email} as ${currentSharePermission}`, 'success');
+          
+          // Clear email input
+          document.getElementById('shareEmail').value = '';
+          updateShareButtonState();
+          
+          // Refresh shared users list
+          loadSharedUsers();
+          
+          // Mark as dirty
+          markAsDirty();
+        } else {
+          const error = await response.json();
+          notify(`Failed to share: ${error.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error sharing graph:', error);
+        notify('Failed to share graph', 'error');
+      }
+    }
+    
+    // Load shared users for current graph
+    async function loadSharedUsers() {
+      if (!currentGraph) return;
+      
+      try {
+        const response = await fetch(`/api/graphs/${currentGraph}/shared-users`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        
+        if (response.ok) {
+          const sharedUsers = await response.json();
+          renderSharedUsers(sharedUsers);
+        }
+      } catch (error) {
+        console.error('Error loading shared users:', error);
+      }
+    }
+    
+    // Render shared users list
+    function renderSharedUsers(sharedUsers) {
+      const container = document.getElementById('sharedUsersList');
+      
+      if (sharedUsers.length === 0) {
+        container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:16px;">No users shared yet</div>';
+        return;
+      }
+      
+      container.innerHTML = sharedUsers.map(user => `
+        <div class="shared-user-item">
+          <div class="shared-user-info">
+            <div class="shared-user-email">${user.email}</div>
+            <div class="shared-user-permission">${user.permission} access</div>
+          </div>
+          <div class="shared-user-actions">
+            <button class="change-permission-btn" onclick="changeUserPermission('${user.email}')">Change</button>
+            <button class="remove-user-btn" onclick="removeSharedUser('${user.email}')">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    // Change user permission
+    async function changeUserPermission(email) {
+      if (!currentGraph) return;
+      
+      // Show permission selector for this user
+      const newPermission = currentSharePermission === 'viewer' ? 'editor' : 'viewer';
+      
+      try {
+        const response = await fetch(`/api/graphs/${currentGraph}/change-permission`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            email: email,
+            permission: newPermission
+          })
+        });
+        
+        if (response.ok) {
+          notify(`Permission changed for ${email} to ${newPermission}`, 'success');
+          loadSharedUsers();
+          markAsDirty();
+        } else {
+          const error = await response.json();
+          notify(`Failed to change permission: ${error.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error changing permission:', error);
+        notify('Failed to change permission', 'error');
+      }
+    }
+    
+    // Remove shared user
+    async function removeSharedUser(email) {
+      if (!currentGraph) return;
+      
+      if (!confirm(`Remove ${email} from this graph?`)) return;
+      
+      try {
+        const response = await fetch(`/api/graphs/${currentGraph}/remove-user`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            email: email
+          })
+        });
+        
+        if (response.ok) {
+          notify(`Removed ${email} from graph`, 'success');
+          loadSharedUsers();
+          markAsDirty();
+        } else {
+          const error = await response.json();
+          notify(`Failed to remove user: ${error.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error removing user:', error);
+        notify('Failed to remove user', 'error');
+      }
+    }
+    
+    // Enhanced toggle share section
+    function toggleShareSection() {
+      const shareSection = document.getElementById('shareSection');
+      const toggleBtn = document.querySelector('.share-toggle');
+      
+      if (shareSection.classList.contains('show')) {
+        shareSection.classList.remove('show');
+        toggleBtn.textContent = 'Share';
+        toggleBtn.classList.remove('active');
+      } else {
+        shareSection.classList.add('show');
+        toggleBtn.textContent = 'Hide';
+        toggleBtn.classList.add('active');
+        
+        // Load shared users when opening
+        loadSharedUsers();
+      }
+    }
+    
+    // Add email input listener for real-time button updates
+    function addShareEmailListener() {
+      const shareEmail = document.getElementById('shareEmail');
+      if (shareEmail) {
+        shareEmail.addEventListener('input', updateShareButtonState);
+        shareEmail.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            shareGraph();
+          }
+        });
+      }
     }
   </script>
 </body>
