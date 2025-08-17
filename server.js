@@ -405,6 +405,60 @@ app.get('/api/graphs', authenticateToken, async (req, res) => {
   }
 });
 
+// ---------- Inbox API ----------
+app.get('/api/graphs/inbox', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    // Get pending invitations for the user
+    const invitations = await pool.query(`
+      SELECT 
+        gs.id,
+        g.title as graph_title,
+        u.name as sharer_name,
+        gs.permission,
+        gs.created_at as shared_at,
+        'pending' as status
+      FROM graph_shares gs
+      INNER JOIN graphs g ON gs.graph_id = g.id
+      INNER JOIN users u ON gs.shared_by_user_id = u.id
+      WHERE gs.shared_with_email = $1
+      ORDER BY gs.created_at DESC
+    `, [req.user.email]);
+    
+    res.json(invitations.rows);
+  } catch (error) {
+    console.error('Error fetching inbox:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/graphs/inbox/:id/:action', authenticateToken, async (req, res) => {
+  try {
+    const { id, action } = req.params;
+    
+    if (!['accept', 'reject'].includes(action)) {
+      return res.status(400).json({ error: 'Invalid action' });
+    }
+    
+    if (action === 'reject') {
+      // Remove the share
+      await pool.query(
+        'DELETE FROM graph_shares WHERE id = $1 AND shared_with_email = $2',
+        [id, req.user.email]
+      );
+      res.json({ message: 'Invitation rejected' });
+    } else {
+      // Accept the invitation (keep the share as is)
+      res.json({ message: 'Invitation accepted' });
+    }
+  } catch (error) {
+    console.error('Error responding to invitation:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ---------- Graph by ID ----------
 app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -725,6 +779,32 @@ app.delete('/api/graphs/:id/remove-user', authenticateToken, async (req, res) =>
   } catch (error) {
     console.error('Error removing user:', error);
     res.status(500).json({ message: 'Failed to remove user' });
+  }
+});
+
+// ---------- Graph Deletion ----------
+app.delete('/api/graphs/:id', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    // Check if user owns the graph
+    const graphCheck = await pool.query(
+      'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
+      [id, userId]
+    );
+    
+    if (graphCheck.rows.length === 0) {
+      return res.status(403).json({ message: 'You can only delete graphs you own' });
+    }
+
+    // Delete the graph (this will cascade to graph_shares)
+    await pool.query('DELETE FROM graphs WHERE id = $1', [id]);
+    
+    res.json({ message: 'Graph deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting graph:', error);
+    res.status(500).json({ message: 'Failed to delete graph' });
   }
 });
 
