@@ -455,6 +455,15 @@
     }
 
     /* Grid and Snap Fixes */
+    /* Keep layers sensible */
+    #connections-svg{ z-index:5 }
+    .tile{ z-index:10 }
+    .floating-toolbar{ z-index:11000 }       /* above tiles */
+    .popover{ position:fixed; z-index:11000; background:var(--bg-tertiary);
+      border:1px solid var(--border-primary); border-radius:10px; box-shadow:0 12px 30px var(--shadow-primary);
+      padding:10px; pointer-events:auto; backdrop-filter:blur(20px); min-width:200px }
+    .modal-overlay{ z-index:12000 }          /* over everything */
+    .notification{ z-index:13000 }           /* toast wins */
   </style>
 </head>
 <body>
@@ -629,6 +638,84 @@
     let snapIndicators = [];
     let snapLines = [];
     let gridLines = [];
+    
+    // === Generic popover utilities ==============================================
+    function getRect(target){
+      if (!target) return {left:0, top:0, width:0, height:0};
+      if (target.getBoundingClientRect) return target.getBoundingClientRect();
+      // allow passing a plain rect
+      return target;
+    }
+
+    /**
+     * openPopover(triggerElOrRect, htmlOrEl, opts)
+     * Places a .popover near the trigger, keeps it inside the viewport,
+     * and repositions on scroll/resize. Returns {el, close, updatePosition}.
+     */
+    function openPopover(trigger, content, opts={}){
+      const {prefer='bottom', offset=8, className=''} = opts;
+      const pop = document.createElement('div');
+      pop.className = `popover ${className}`.trim();
+
+      if (typeof content === 'string'){ pop.innerHTML = content; }
+      else if (content instanceof Element){ pop.appendChild(content); }
+
+      document.body.appendChild(pop);
+
+      function place(){
+        const tr = getRect(trigger);
+        const vw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0);
+        const vh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0);
+        const pr = pop.getBoundingClientRect();
+
+        // candidate positions (x,y) in viewport coords
+        const cand = {
+          bottom: { x: tr.left + tr.width/2 - pr.width/2, y: tr.bottom + offset },
+          top:    { x: tr.left + tr.width/2 - pr.width/2, y: tr.top - pr.height - offset },
+          right:  { x: tr.right + offset,                 y: tr.top + tr.height/2 - pr.height/2 },
+          left:   { x: tr.left - pr.width - offset,       y: tr.top + tr.height/2 - pr.height/2 },
+        };
+
+        // try prefer, then fallbacks
+        const order = [prefer, 'bottom','top','right','left'].filter((v,i,a)=>a.indexOf(v)===i);
+        let best = cand[order[0]];
+        for (const key of order){
+          const p = cand[key];
+          const fits = p.x >= 8 && p.y >= 8 && (p.x+pr.width) <= (vw-8) && (p.y+pr.height) <= (vh-8);
+          if (fits){ best = p; break; }
+        }
+        // clamp to viewport with small padding
+        const pad = 8;
+        const x = Math.min(Math.max(best.x, pad), vw - pr.width - pad);
+        const y = Math.min(Math.max(best.y, pad), vh - pr.height - pad);
+
+        // fixed positioning uses viewport coords (no scroll math needed)
+        pop.style.left = `${Math.round(x)}px`;
+        pop.style.top  = `${Math.round(y)}px`;
+      }
+
+      const onScroll = () => place();
+      const onResize = () => place();
+      const onKey = (e)=>{ if (e.key === 'Escape') close(); };
+      const onClickAway = (e)=>{ if (!pop.contains(e.target)) close(); };
+
+      function close(){
+        window.removeEventListener('scroll', onScroll, true);
+        window.removeEventListener('resize', onResize);
+        window.removeEventListener('keydown', onKey);
+        document.removeEventListener('mousedown', onClickAway, true);
+        pop.remove();
+      }
+
+      window.addEventListener('scroll', onScroll, true);
+      window.addEventListener('resize', onResize);
+      window.addEventListener('keydown', onKey);
+      document.addEventListener('mousedown', onClickAway, true);
+
+      // initial place after append so size is known
+      place();
+      return { el: pop, close, updatePosition: place };
+    }
     
     const canvas = document.getElementById('canvas');
     const tabContainer = document.getElementById('tabContainer');
@@ -1079,8 +1166,8 @@
       tab.element.classList.add('active');
       activeTabId = graphId;
       
-      // Load the graph
-      loadGraph(tab.graph);
+      // Load the graph but skip tab switching to prevent recursion
+      loadGraph(tab.graph, true);
       
       // Auto-scroll to center the graph
       centerCanvas();
@@ -1266,7 +1353,7 @@
       });
     }
 
-    function loadGraph(graph) {
+    function loadGraph(graph, skipTabSwitch = false) {
       currentGraph = graph;
       tiles = (graph.data?.tiles || []).map(t => {
         const tile = createTile(t.x, t.y, t.title, t.content, t.id);
@@ -1277,15 +1364,20 @@
       });
       connections = graph.data?.connections || [];
       
-      // Create or update tab
+      // Create or update tab, but only switch if not already loading
       if (!openTabs.find(tab => tab.id === graph.id)) {
         createTab(graph);
       }
-      switchToTab(graph.id);
+      
+      // Only switch tabs if not already in the process of loading
+      if (!skipTabSwitch) {
+        switchToTab(graph.id);
+      }
       
       // Show share section
       document.getElementById('shareSection').style.display = 'block';
       if (graph.sharingEnabled !== false) {
+        document.getElementById('shareToggle').textContent = 'ON';
         document.getElementById('shareToggle').textContent = 'ON';
         document.getElementById('shareToggle').classList.remove('off');
         document.getElementById('shareEmail').style.display = 'block';
@@ -1785,29 +1877,25 @@
     }
 
     function deleteSelected() {
-      if (selectedTile) {
-        const tileId = selectedTile.dataset.tileId;
-        
-        // Remove the tile from DOM
-        selectedTile.remove();
-        
-        // Remove from tiles array
-        tiles = tiles.filter(t => t !== selectedTile);
-        
-        // Remove all connections involving this tile
-        connections = connections.filter(c => c.fromTile !== tileId && c.toTile !== tileId);
-        
-        // Clear selection
-        selectedTile = null;
-        
-        // Re-render and save
-        renderCanvas();
-        scheduleSave();
-        
-        notify('Tile deleted successfully', 'success');
-      } else {
-        notify('No tile selected for deletion', 'error');
+      if (!selectedTile) return;
+      
+      // Remove from tiles array
+      const index = tiles.indexOf(selectedTile);
+      if (index > -1) {
+        tiles.splice(index, 1);
       }
+      
+      // Remove from DOM
+      selectedTile.remove();
+      
+      // Clear selection
+      selectedTile = null;
+      
+      // Re-render canvas
+      renderCanvas();
+      
+      // Mark as dirty for auto-save
+      markAsDirty();
     }
 
     function deleteConnection(connectionId) {
@@ -2640,22 +2728,22 @@
     }
 
     function renderCanvas() {
-      // Clear canvas
+      // Clear canvas (but keep the grid overlay if present)
+      const gridOverlay = document.getElementById('grid-overlay');
       canvas.innerHTML = '';
-      
-      // Add tiles with proper positioning
-      tiles.forEach(t => {
-        // Position tiles relative to viewport, not transformed canvas
-        const x = parseInt(t.style.left) || 0;
-        const y = parseInt(t.style.top) || 0;
-        t.style.left = (x + canvasOffset.x) + 'px';
-        t.style.top = (y + canvasOffset.y) + 'px';
+      if (gridOverlay) canvas.appendChild(gridOverlay);
+
+      // Position tiles purely from base coords + current canvasOffset
+      tiles.forEach(t=>{
+        const bx = parseInt(t.dataset.baseX)||0;
+        const by = parseInt(t.dataset.baseY)||0;
+        t.style.left = (bx + canvasOffset.x) + 'px';
+        t.style.top  = (by + canvasOffset.y) + 'px';
         t.style.position = 'absolute';
         t.style.zIndex = '10';
         canvas.appendChild(t);
       });
-      
-      // Add connections
+
       renderConnections();
     }
 
@@ -3037,96 +3125,65 @@
     }
 
     function showColorPicker(tile, trigger) {
-      // Remove existing color picker
-      const existing = document.querySelector('.color-picker-popout');
-      if (existing) existing.remove();
-      
-      const popout = document.createElement('div');
-      popout.className = 'color-picker-popout';
-      
-      const currentColor = tile.style.background || '#ffffff';
+      // content
       const recentColors = getRecentColors();
-      
-      popout.innerHTML = `
+      const palette = [
+        "#ffffff","#f8f9fa","#e9ecef","#dee2e6","#ced4da",
+        "#adb5bd","#6c757d","#495057","#343a40","#212529",
+        "#ff6b6b","#4ecdc4","#45b7d1","#96ceb4","#feca57",
+        "#ff9ff3","#54a0ff","#5f27cd","#00d2d3","#ff9f43"
+      ];
+
+      const root = document.createElement('div');
+      root.innerHTML = `
         <div class="color-picker-header">
           <span class="color-picker-title">Choose Color</span>
-          <button class="color-picker-close" onclick="this.closest('.color-picker-popout').remove()">×</button>
+          <button class="color-picker-close">×</button>
         </div>
-        <div class="color-picker-grid">
-          <div class="color-picker-option" data-color="#ffffff" style="background:#ffffff" data-selected="${currentColor === '#ffffff'}"></div>
-          <div class="color-picker-option" data-color="#f8f9fa" style="background:#f8f9fa" data-selected="${currentColor === '#f8f9fa'}"></div>
-          <div class="color-picker-option" data-color="#e9ecef" style="background:#e9ecef" data-selected="${currentColor === '#e9ecef'}"></div>
-          <div class="color-picker-option" data-color="#dee2e6" style="background:#dee2e6" data-selected="${currentColor === '#dee2e6'}"></div>
-          <div class="color-picker-option" data-color="#ced4da" style="background:#ced4da" data-selected="${currentColor === '#ced4da'}"></div>
-          <div class="color-picker-option" data-color="#adb5bd" style="background:#adb5bd" data-selected="${currentColor === '#adb5bd'}"></div>
-          <div class="color-picker-option" data-color="#6c757d" style="background:#6c757d" data-selected="${currentColor === '#6c757d'}"></div>
-          <div class="color-picker-option" data-color="#495057" style="background:#495057" data-selected="${currentColor === '#495057'}"></div>
-          <div class="color-picker-option" data-color="#343a40" style="background:#343a40" data-selected="${currentColor === '#343a40'}"></div>
-          <div class="color-picker-option" data-color="#212529" style="background:#212529" data-selected="${currentColor === '#212529'}"></div>
-          <div class="color-picker-option" data-color="#ff6b6b" style="background:#ff6b6b" data-selected="${currentColor === '#ff6b6b'}"></div>
-          <div class="color-picker-option" data-color="#4ecdc4" style="background:#4ecdc4" data-selected="${currentColor === '#4ecdc4'}"></div>
-          <div class="color-picker-option" data-color="#45b7d1" style="background:#45b7d1" data-selected="${currentColor === '#45b7d1'}"></div>
-          <div class="color-picker-option" data-color="#96ceb4" style="background:#96ceb4" data-selected="${currentColor === '#96ceb4'}"></div>
-          <div class="color-picker-option" data-color="#feca57" style="background:#feca57" data-selected="${currentColor === '#feca57'}"></div>
-          <div class="color-picker-option" data-color="#ff9ff3" style="background:#ff9ff3" data-selected="${currentColor === '#ff9ff57'}"></div>
-          <div class="color-picker-option" data-color="#54a0ff" style="background:#54a0ff" data-selected="${currentColor === '#54a0ff'}"></div>
-          <div class="color-picker-option" data-color="#5f27cd" style="background:#5f27cd" data-selected="${currentColor === '#5f27cd'}"></div>
-          <div class="color-picker-option" data-color="#00d2d3" style="background:#00d2d3" data-selected="${currentColor === '#00d2d3'}"></div>
-          <div class="color-picker-option" data-color="#ff9f43" style="background:#ff9f43" data-selected="${currentColor === '#ff9f43'}"></div>
-        </div>
-        ${recentColors.length > 0 ? `
+        <div class="color-picker-grid"></div>
+        ${recentColors.length ? `
           <div class="color-picker-recent">
-            <div class="color-picker-recent-title">Recent Colors</div>
-            <div class="color-picker-recent-grid">
-              ${recentColors.map(color => `
-                <div class="color-picker-option" data-color="${color}" style="background:${color}" data-selected="${currentColor === color}"></div>
-              `).join('')}
-            </div>
-          </div>
-        ` : ''}
+            <div class="color-picker-recent-title">Recent</div>
+            <div class="color-picker-recent-grid"></div>
+          </div>` : '' }
       `;
-      
-      // Position the popout
-      const rect = trigger.getBoundingClientRect();
-      popout.style.left = (rect.left - 100) + 'px';
-      popout.style.top = (rect.bottom + 5) + 'px';
-      
-      // Add click handlers
-      popout.querySelectorAll('.color-picker-option').forEach(option => {
-        option.addEventListener('click', () => {
-          const color = option.dataset.color;
-          tile.style.background = color;
-          saveRecentColor(color);
+
+      const grid = root.querySelector('.color-picker-grid');
+      palette.forEach(c=>{
+        const d = document.createElement('div');
+        d.className = 'color-picker-option';
+        d.style.background = c;
+        d.dataset.color = c;
+        d.onclick = () => {
+          tile.style.background = c;
+          saveRecentColor(c);
           scheduleSave();
-          popout.remove();
-          
-          // Update selected state
-          popout.querySelectorAll('.color-picker-option').forEach(opt => {
-            opt.dataset.selected = 'false';
-            opt.classList.remove('selected');
-          });
-          option.dataset.selected = 'true';
-          option.classList.add('selected');
-        });
+          api.close();
+        };
+        grid.appendChild(d);
       });
-      
-      // Mark current color as selected
-      const currentOption = popout.querySelector(`[data-color="${currentColor}"]`);
-      if (currentOption) {
-        currentOption.classList.add('selected');
-      }
-      
-      document.body.appendChild(popout);
-      
-      // Close when clicking outside
-      setTimeout(() => {
-        document.addEventListener('click', function closeColorPicker(e) {
-          if (!popout.contains(e.target) && !trigger.contains(e.target)) {
-            popout.remove();
-            document.removeEventListener('click', closeColorPicker);
-          }
+
+      if (recentColors.length){
+        const rg = root.querySelector('.color-picker-recent-grid');
+        recentColors.forEach(c=>{
+          const d = document.createElement('div');
+          d.className = 'color-picker-option';
+          d.style.background = c;
+          d.dataset.color = c;
+          d.onclick = () => {
+            tile.style.background = c;
+            saveRecentColor(c);
+            scheduleSave();
+            api.close();
+          };
+          rg.appendChild(d);
         });
-      }, 100);
+      }
+
+      root.querySelector('.color-picker-close').onclick = ()=> api.close();
+
+      // open near the trigger, clamp inside viewport
+      const api = openPopover(trigger, root, { prefer:'bottom', offset:10, className:'color-picker-popout' });
     }
 
     function updateCollaboratorsList(users) {
@@ -4481,161 +4538,82 @@
         </div>
       `).join('');
     }
-    
-    // Change user permission
-    async function changeUserPermission(email) {
-      if (!currentGraph) return;
-      
-      // Show permission selector for this user
-      const newPermission = currentSharePermission === 'viewer' ? 'editor' : 'viewer';
-      
-      try {
-        const response = await fetch(`/api/graphs/${currentGraph}/change-permission`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            email: email,
-            permission: newPermission
-          })
-        });
-        
-        if (response.ok) {
-          notify(`Permission changed for ${email} to ${newPermission}`, 'success');
-          loadSharedUsers();
-          markAsDirty();
-        } else {
-          const error = await response.json();
-          notify(`Failed to change permission: ${error.message}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error changing permission:', error);
-        notify('Failed to change permission', 'error');
-      }
-    }
-    
-    // Remove shared user
-    async function removeSharedUser(email) {
-      if (!currentGraph) return;
-      
-      if (!confirm(`Remove ${email} from this graph?`)) return;
-      
-      try {
-        const response = await fetch(`/api/graphs/${currentGraph}/remove-user`, {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            email: email
-          })
-        });
-        
-        if (response.ok) {
-          notify(`Removed ${email} from graph`, 'success');
-          loadSharedUsers();
-          markAsDirty();
-        } else {
-          const error = await response.json();
-          notify(`Failed to remove user: ${error.message}`, 'error');
-        }
-      } catch (error) {
-        console.error('Error removing user:', error);
-        notify('Failed to remove user', 'error');
-      }
-    }
-    
-    // Enhanced toggle share section
-    function toggleShareSection() {
-      const shareSection = document.getElementById('shareSection');
-      const toggleBtn = document.querySelector('.share-toggle');
-      
-      if (shareSection.classList.contains('show')) {
-        shareSection.classList.remove('show');
-        toggleBtn.textContent = 'Share';
-        toggleBtn.classList.remove('active');
-      } else {
-        shareSection.classList.add('show');
-        toggleBtn.textContent = 'Hide';
-        toggleBtn.classList.add('active');
-        
-        // Load shared users when opening
-        loadSharedUsers();
-      }
-    }
-    
-    // Add email input listener for real-time button updates
-    function addShareEmailListener() {
-      const shareEmail = document.getElementById('shareEmail');
-      if (shareEmail) {
-        shareEmail.addEventListener('input', updateShareButtonState);
-        shareEmail.addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') {
-            shareGraph();
-          }
-        });
-      }
+
+    let _tileToolbar = null;
+
+    function addTileClickHandler(tile){
+      tile.addEventListener('click', (e)=>{
+        // avoid focusing when editing text
+        if (e.target.classList.contains('tile-title') || e.target.classList.contains('tile-content')) return;
+
+        selectTile(tile);
+        showTileToolbar(tile, e);
+      });
     }
 
-    // Update saveGraph to handle correct data structure
-    async function saveGraph() {
-      if (!currentGraph) return;
-      
-      try {
-        // Prepare graph data
-        const graphData = {
-          tiles: tiles.map(tile => ({
-            id: tile.dataset.tileId,
-            x: parseInt(tile.dataset.baseX),
-            y: parseInt(tile.dataset.baseY),
-            title: tile.querySelector('.tile-title').value,
-            content: tile.querySelector('.tile-content').value,
-            shape: tile.dataset.shape || 'rectangle',
-            color: tile.dataset.color || '#ffffff',
-            presetType: tile.dataset.presetType || 'custom'
-          })),
-          connections: connections
-        };
-        
-        const response = await fetch(`/api/graphs/${currentGraph}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            title: document.getElementById('graphTitle').value || 'Untitled Graph',
-            data: graphData
-          })
-        });
-        
-        if (response.ok) {
-          updateSaveStatusDisplay('Saved');
-          lastSaveTime = Date.now();
-          isDirty = false;
-          
-          // Update current graph data
-          if (currentGraphData) {
-            currentGraphData.data = graphData;
-            currentGraphData.title = document.getElementById('graphTitle').value || 'Untitled Graph';
-            currentGraphData.updated_at = new Date().toISOString();
-          }
-          
-          notify('Graph saved successfully', 'success');
-        } else {
-          updateSaveStatusDisplay('Error');
-          notify('Failed to save graph', 'error');
-        }
-      } catch (error) {
-        console.error('Error saving graph:', error);
-        updateSaveStatusDisplay('Error');
-        notify('Error saving graph', 'error');
-      }
+    function showTileToolbar(tile, event){
+      hideFloatingToolbar();
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="toolbar-section">
+          <div class="toolbar-row">
+            <button class="toolbar-button" title="Color" id="tb-color">🎨</button>
+            <button class="toolbar-button" title="Delete" id="tb-del">🗑️</button>
+            <button class="toolbar-button" title="Duplicate" id="tb-dup">⎘</button>
+          </div>
+        </div>
+      `;
+
+      wrap.querySelector('#tb-color').onclick = (ev)=> showColorPicker(tile, ev.currentTarget);
+      wrap.querySelector('#tb-del').onclick   = ()=> { selectedTile = tile; deleteSelected(); };
+      wrap.querySelector('#tb-dup').onclick   = ()=> {
+        const x = (parseInt(tile.dataset.baseX)||0) + 24;
+        const y = (parseInt(tile.dataset.baseY)||0) + 24;
+        const t2 = createTile(x, y, tile.querySelector('.tile-title').value, tile.querySelector('.tile-content').value);
+        tiles.push(t2); canvas.appendChild(t2); scheduleSave(); renderCanvas(); selectTile(t2);
+      };
+
+      const pref = 'top';
+      _tileToolbar = openPopover(tile, wrap, { prefer:pref, offset:10, className:'floating-toolbar tile-toolbar' });
     }
+
+    function hideFloatingToolbar(){
+      if (_tileToolbar){ _tileToolbar.close(); _tileToolbar = null; }
+    }
+    
+    function selectTile(tile) {
+      // Remove selection from all tiles
+      tiles.forEach(t => t.classList.remove('selected'));
+      
+      // Select the clicked tile
+      tile.classList.add('selected');
+      selectedTile = tile;
+    }
+    
+    function deleteSelected() {
+      if (!selectedTile) return;
+      
+      // Remove from tiles array
+      const index = tiles.indexOf(selectedTile);
+      if (index > -1) {
+        tiles.splice(index, 1);
+      }
+      
+      // Remove from DOM
+      selectedTile.remove();
+      
+      // Clear selection
+      selectedTile = null;
+      
+      // Re-render canvas
+      renderCanvas();
+      
+      // Mark as dirty for auto-save
+      markAsDirty();
+    }
+    
+    const canvas = document.getElementById('canvas');
   </script>
 </body>
 </html>
-
