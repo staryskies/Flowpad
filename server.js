@@ -143,9 +143,29 @@ async function initDatabase() {
   }
 }
 
-initDatabase().catch(err => {
-  console.error('Failed to init DB:', err);
-});
+// Initialize database and then start server
+async function startServer() {
+  try {
+    await initDatabase();
+    console.log('🔍 Database initialization completed, starting HTTP server...');
+    
+    if (NODE_ENV !== 'production') {
+      console.log('🚀 Starting HTTP server...');
+      const PORT = process.env.PORT || 3000;
+      console.log(`🔧 Port: ${PORT}, NODE_ENV: ${NODE_ENV}`);
+      console.log('🔧 About to call app.listen...');
+      app.listen(PORT, () => {
+        console.log(`✅ Listening on http://localhost:${PORT}`);
+        console.log('✅ HTTP server startup callback executed');
+      });
+      console.log('✅ HTTP server startup code executed');
+    }
+  } catch (err) {
+    console.error('Failed to start server:', err);
+  }
+}
+
+startServer();
 
 // ---------- In-memory cache ----------
 const graphCache = new Map();
@@ -322,7 +342,7 @@ app.post('/api/auth/google', async (req, res) => {
     if (payload.aud !== GOOGLE_CLIENT_ID) return res.status(401).json({ error: 'Invalid token audience' });
 
     const { sub: googleId, email, name } = payload;
-    let { rows } = await pool.query('SELECT * FROM users WHERE id=$1', [googleId]);
+    let { rows } = await pool.query('SELECT * FROM users WHERE google_id=$1', [googleId]);
     if (rows.length === 0) {
       const ins = await pool.query(
         'INSERT INTO users (google_id, email, name) VALUES ($1,$2,$3) RETURNING *',
@@ -737,8 +757,3 @@ app.use((err, _req, res, _next) => {
 
 // ---------- Export / Local start ----------
 module.exports = app;
-
-if (NODE_ENV !== 'production') {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
-}
