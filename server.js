@@ -10,111 +10,66 @@ const fetch = require('node-fetch');
 require('dotenv').config();
 
 const app = express();
-app.set('trust proxy', 1);            // required for secure cookies behind Vercel/CDN
+app.set('trust proxy', 1);            // secure cookies behind Vercel/CDN
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('.'));         // serve index.html, graph.html, etc.
 
+// ---------- Env ----------
 const {
-  DATABASE_URL = 'postgresql://flowpad_n12z_user:0rnsR2CXHUkuYHQIb4z4Xme0Tx0BZKlb@dpg-d2gcuk0dl3ps73f6l8t0-a.oregon-postgres.render.com/flowpad_n12z',
-  GOOGLE_CLIENT_ID = '790227037830-2o2si0qtoqo4nsli5s6drrtfks98b88r.apps.googleusercontent.com',
-  JWT_SECRET = 'change-me'
+  DATABASE_URL = '',
+  GOOGLE_CLIENT_ID = '',
+  JWT_SECRET = 'change-me',
+  NODE_ENV = 'development'
 } = process.env;
 
-// ----- Database (no optional flags / no dbInitialized guards) -----
+// ---------- Database pool (Node runtime; works on Vercel, Render) ----------
 const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: { 
-    rejectUnauthorized: false,
-    // Additional SSL options for Render
-    checkServerIdentity: () => undefined,
-    servername: undefined
-  },
+  ssl: DATABASE_URL ? { rejectUnauthorized: false } : false,
   max: 5,
-  min: 1,
-  idleTimeoutMillis: 30000, // 30 seconds
-  connectionTimeoutMillis: 10000, // 10 seconds
-  acquireTimeoutMillis: 10000, // 10 seconds
-  // Retry configuration for Render
-  retryDelay: 1000,
-  maxRetries: 3,
-  // Connection validation
-  allowExitOnIdle: false,
-  // Handle connection errors gracefully
-  onConnect: (client) => {
-    console.log('🔌 New database connection established');
-    // Set connection-specific timeouts
-    client.query('SET statement_timeout = 60000'); // 1 minute
-    client.query('SET idle_in_transaction_session_timeout = 60000'); // 1 minute
-  },
-  onError: (err, client) => {
-    console.error('❌ Database connection error:', err.message);
-  }
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
-// Test database connectivity with retry logic
+pool.on('connect', (client) => {
+  client.query('SET statement_timeout = 60000').catch(() => {});
+  client.query('SET idle_in_transaction_session_timeout = 60000').catch(() => {});
+});
+
+pool.on('error', (err) => {
+  console.error('❌ Pool error:', err.message);
+});
+
+// Quick boot log (safe: no secrets)
+try {
+  if (DATABASE_URL) {
+    const u = new URL(DATABASE_URL);
+    console.log(`DB host: ${u.hostname} ssl=${!!pool.options?.ssl}`);
+  } else {
+    console.warn('⚠️ DATABASE_URL not set; DB calls will fail.');
+  }
+} catch {}
+
+// ---------- DB helpers ----------
 async function testDatabaseConnection() {
-  let retries = 3;
-  let lastError;
-  
-  while (retries > 0) {
-    try {
-      const client = await pool.connect();
-      await client.query('SELECT 1');
-      client.release();
-      console.log('✅ Database connection test successful');
-      return true;
-    } catch (error) {
-      lastError = error;
-      retries--;
-      console.error(`❌ Database connection test failed (${retries} retries left):`, error.message);
-      
-      if (retries > 0) {
-        console.log(`🔄 Retrying connection in 3 seconds...`);
-        await new Promise(resolve => setTimeout(resolve, 3000));
-      }
-    }
-  }
-  
-  console.error('❌ Database connection failed after all retries');
-  console.error('Last error:', lastError);
-  return false;
-}
-
-// In-memory cache for graphs (will be cleared on each serverless function invocation)
-const graphCache = new Map();
-
-async function initDatabase() {
-  console.log('🔄 Initializing database...');
-  
-  // Test database connectivity first
-  const connectionOk = await testDatabaseConnection();
-  if (!connectionOk) {
-    console.log('⚠️  App will run with limited database functionality');
-    return;
-  }
-  
   try {
-    // For Vercel deployment, we'll only create tables if they don't exist
-    // instead of wiping on every restart
-    await ensureDatabaseSchema();
-    
-    console.log('✅ Database initialization completed');
+    const client = await pool.connect();
+    await client.query('SELECT 1');
+    client.release();
+    console.log('✅ Database connection test successful');
+    return true;
   } catch (error) {
-    console.error('❌ Database schema initialization failed:', error.message);
-    console.log('⚠️  App will run with limited database functionality');
+    console.error('❌ Database connection test failed:', error.message);
+    return false;
   }
 }
 
 async function ensureDatabaseSchema() {
   let client;
-  
   try {
     client = await pool.connect();
-    
-    console.log('🔍 Checking database schema...');
-    
-    // Check if tables exist, create them if they don't
+
     const tablesExist = await client.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -122,11 +77,10 @@ async function ensureDatabaseSchema() {
         AND table_name = 'users'
       );
     `);
-    
+
     if (!tablesExist.rows[0].exists) {
-      console.log('🏗️  Creating database schema...');
-      
-      // Users table
+      console.log('🏗️ Creating database schema...');
+
       await client.query(`
         CREATE TABLE users (
           id SERIAL PRIMARY KEY,
@@ -136,9 +90,7 @@ async function ensureDatabaseSchema() {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      console.log('✅ Users table created');
-      
-      // Graphs table
+
       await client.query(`
         CREATE TABLE graphs (
           id SERIAL PRIMARY KEY,
@@ -149,9 +101,7 @@ async function ensureDatabaseSchema() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      console.log('✅ Graphs table created');
-      
-      // Graph shares table
+
       await client.query(`
         CREATE TABLE graph_shares (
           id SERIAL PRIMARY KEY,
@@ -163,41 +113,67 @@ async function ensureDatabaseSchema() {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      console.log('✅ Graph shares table created');
-      
-      // Create indexes for better performance
+
       await client.query('CREATE INDEX IF NOT EXISTS idx_graphs_user_id ON graphs(user_id);');
       await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_graph_id ON graph_shares(graph_id);');
       await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_email ON graph_shares(shared_with_email);');
-      console.log('✅ Performance indexes created');
-      
+
       console.log('🎉 Database schema created successfully!');
     } else {
       console.log('✅ Database schema already exists');
     }
-    
-  } catch (error) {
-    console.error('❌ Error during database schema check:', error);
-    throw error;
   } finally {
-    if (client) {
-      try {
-        client.release();
-      } catch (releaseError) {
-        console.error('❌ Error releasing client:', releaseError);
-      }
-    }
+    client?.release();
   }
 }
+
+async function initDatabase() {
+  console.log('🔄 Initializing database...');
+  const ok = await testDatabaseConnection();
+  if (!ok) {
+    console.log('⚠️ App will run with limited database functionality');
+    return;
+  }
+  try {
+    await ensureDatabaseSchema();
+    console.log('✅ Database initialization completed');
+  } catch (e) {
+    console.error('❌ Database schema initialization failed:', e.message);
+    console.log('⚠️ App will run with limited database functionality');
+  }
+}
+
 initDatabase().catch(err => {
   console.error('Failed to init DB:', err);
-  // Let the app run; API calls will throw if DB truly unreachable
 });
 
-// ----- Google OAuth -----
+// ---------- In-memory cache ----------
+const graphCache = new Map();
+
+function getCachedGraph(id) {
+  return graphCache.get(String(id));
+}
+
+async function saveCachedGraph(id) {
+  const key = String(id);
+  const cached = graphCache.get(key);
+  if (!cached) return; // nothing to save
+
+  const client = await pool.connect();
+  try {
+    await client.query(
+      'UPDATE graphs SET title=$1, data=$2, updated_at=NOW() WHERE id=$3',
+      [cached.title, JSON.stringify(cached.data), key]
+    );
+    graphCache.set(key, { ...cached, dirty: false, lastModified: new Date().toISOString() });
+  } finally {
+    client.release();
+  }
+}
+
+// ---------- OAuth / Auth ----------
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
-// ----- Helper: auth middleware -----
 async function authenticateToken(req, res, next) {
   try {
     const auth = req.headers['authorization'];
@@ -212,59 +188,28 @@ async function authenticateToken(req, res, next) {
 
     req.user = rows[0];
     next();
-  } catch (e) {
+  } catch {
     return res.status(403).json({ error: 'Invalid token' });
   }
 }
 
-// ----- Static routes -----
+// ---------- Static routes ----------
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.get('/graph', (_, res) => res.sendFile(path.join(__dirname, 'graph.html')));
 app.get('/privacy', (_, res) => res.sendFile(path.join(__dirname, 'privacy-policy.html')));
 app.get('/terms', (_, res) => res.sendFile(path.join(__dirname, 'terms-of-service.html')));
 
-// Manual database wipe endpoint (for development)
+// ---------- Admin: wipe DB (dev) ----------
 app.post('/api/admin/wipe-database', async (req, res) => {
-  try {
-    console.log('🔄 Manual database wipe requested...');
-    
-    // Wipe and recreate database
-    await wipeAndRecreateDatabase();
-    
-    // Clear any in-memory caches
-    graphCache.clear();
-    
-    console.log('✅ Manual database wipe completed');
-    res.json({ message: 'Database wiped and recreated successfully' });
-  } catch (error) {
-    console.error('❌ Error during manual database wipe:', error);
-    res.status(500).json({ error: 'Failed to wipe database' });
-  }
-});
-
-async function wipeAndRecreateDatabase() {
   let client;
-  
   try {
-    console.log('🗑️  Wiping existing database...');
-    
-    // Get a fresh connection from the pool
     client = await pool.connect();
-    
-    // Set a longer timeout for this operation
     await client.query('SET statement_timeout = 300000'); // 5 minutes
-    
-    // Drop all tables in correct order (respecting foreign keys)
     await client.query('DROP TABLE IF EXISTS graph_shares CASCADE');
     await client.query('DROP TABLE IF EXISTS graphs CASCADE');
     await client.query('DROP TABLE IF EXISTS users CASCADE');
-    
-    console.log('✅ All tables dropped successfully');
-    
-    // Recreate tables with fresh schema
-    console.log('🏗️  Creating fresh database schema...');
-    
-    // Users table
+
+    // Recreate
     await client.query(`
       CREATE TABLE users (
         id SERIAL PRIMARY KEY,
@@ -274,9 +219,6 @@ async function wipeAndRecreateDatabase() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('✅ Users table created');
-    
-    // Graphs table
     await client.query(`
       CREATE TABLE graphs (
         id SERIAL PRIMARY KEY,
@@ -287,9 +229,6 @@ async function wipeAndRecreateDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('✅ Graphs table created');
-    
-    // Graph shares table
     await client.query(`
       CREATE TABLE graph_shares (
         id SERIAL PRIMARY KEY,
@@ -301,72 +240,78 @@ async function wipeAndRecreateDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    console.log('✅ Graph shares table created');
-    
-    // Create indexes for better performance
     await client.query('CREATE INDEX IF NOT EXISTS idx_graphs_user_id ON graphs(user_id);');
     await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_graph_id ON graph_shares(graph_id);');
     await client.query('CREATE INDEX IF NOT EXISTS idx_graph_shares_email ON graph_shares(shared_with_email);');
-    console.log('✅ Performance indexes created');
-    
-    console.log('🎉 Database wipe and recreation completed!');
-    
-  } catch (error) {
-    console.error('❌ Error during database wipe/recreation:', error);
-    
-    // If there was an error, try to ensure the connection is still valid
-    if (client) {
-      try {
-        await client.query('SELECT 1');
-      } catch (connError) {
-        console.error('❌ Connection lost during operation:', connError);
-      }
-    }
-    
-    throw error;
-  } finally {
-    if (client) {
-      try {
-        client.release();
-      } catch (releaseError) {
-        console.error('❌ Error releasing client:', releaseError);
-      }
-    }
-  }
-}
 
-// Health check endpoint
+    graphCache.clear();
+
+    res.json({ message: 'Database wiped and recreated successfully' });
+  } catch (error) {
+    console.error('❌ Error during manual database wipe:', error);
+    res.status(500).json({ error: 'Failed to wipe database' });
+  } finally {
+    client?.release();
+  }
+});
+
+// ---------- Health & Checklist ----------
 app.get('/api/health', async (_, res) => {
   try {
-    // Test database connection with timeout
     const client = await pool.connect();
     const result = await Promise.race([
       client.query('SELECT 1 as test'),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Database timeout')), 5000)
-      )
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Database timeout')), 5000)),
     ]);
     client.release();
-    
-    res.json({ 
-      status: 'ok', 
-      database: 'connected', 
+
+    res.json({
+      status: 'ok',
+      database: 'connected',
       timestamp: new Date().toISOString(),
-      render: 'compatible'
+      render: 'compatible',
     });
   } catch (error) {
     console.error('Health check failed:', error.message);
-    res.json({ 
-      status: 'ok', 
-      database: 'error', 
+    res.json({
+      status: 'ok',
+      database: 'error',
       timestamp: new Date().toISOString(),
       error: error.message,
-      render: 'compatible'
+      render: 'compatible',
     });
   }
 });
 
-// ----- Auth -----
+// Returns the deployment checklist info safely (no secret values)
+app.get('/api/checklist', async (req, res) => {
+  const checklist = {
+    env: {
+      DATABASE_URL_present: !!DATABASE_URL,
+      GOOGLE_CLIENT_ID_present: !!GOOGLE_CLIENT_ID,
+      JWT_SECRET_present: !!JWT_SECRET && JWT_SECRET !== 'change-me',
+      NODE_ENV,
+    },
+    runtime: {
+      assumed_node_runtime: true, // indicate this must run in Node (not Edge)
+    },
+    database: {
+      pool_ssl_enabled: !!pool.options?.ssl,
+    },
+  };
+
+  // Augment with a quick live DB probe (non-fatal)
+  try {
+    const ok = await testDatabaseConnection();
+    checklist.database.connection_ok = ok;
+  } catch {
+    checklist.database.connection_ok = false;
+  }
+
+  res.json(checklist);
+});
+
+// ---------- Auth ----------
 app.post('/api/auth/google', async (req, res) => {
   try {
     const { idToken } = req.body;
@@ -377,7 +322,7 @@ app.post('/api/auth/google', async (req, res) => {
     if (payload.aud !== GOOGLE_CLIENT_ID) return res.status(401).json({ error: 'Invalid token audience' });
 
     const { sub: googleId, email, name } = payload;
-    let { rows } = await pool.query('SELECT * FROM users WHERE google_id=$1', [googleId]);
+    let { rows } = await pool.query('SELECT * FROM users WHERE id=$1', [googleId]);
     if (rows.length === 0) {
       const ins = await pool.query(
         'INSERT INTO users (google_id, email, name) VALUES ($1,$2,$3) RETURNING *',
@@ -388,13 +333,12 @@ app.post('/api/auth/google', async (req, res) => {
     const user = rows[0];
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
-    // same-origin cookie (Vercel): Lax + secure in prod
     res.cookie('auth_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/'
+      path: '/',
     });
 
     res.json({ token, user: { id: user.id, email: user.email, name: user.name } });
@@ -404,39 +348,36 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// ----- Graphs API -----
-// Get all graphs for a user
+// ---------- Graphs API ----------
 app.get('/api/graphs', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
-    // Get user's own graphs - only use columns that exist
+
     const ownGraphsQuery = `
       SELECT id, title, data, created_at, updated_at
-      FROM graphs 
-      WHERE user_id = $1 
+      FROM graphs
+      WHERE user_id = $1
       ORDER BY updated_at DESC
     `;
-    
-    // Get shared graphs - only use columns that exist
+
     const sharedGraphsQuery = `
       SELECT g.id, g.title, g.data, g.created_at, g.updated_at
       FROM graphs g
       INNER JOIN graph_shares gs ON g.id = gs.graph_id
-      WHERE gs.shared_with_email = $1 AND g.user_id != $1
+      WHERE gs.shared_with_email = $1 AND g.user_id <> $2
       ORDER BY g.updated_at DESC
     `;
-    
+
     const [ownGraphs, sharedGraphs] = await Promise.all([
       pool.query(ownGraphsQuery, [userId]),
-      pool.query(sharedGraphsQuery, [req.user.email]) // Use req.user.email for shared_with_email
+      pool.query(sharedGraphsQuery, [req.user.email, userId]),
     ]);
-    
+
     const graphs = [
       ...ownGraphs.rows.map(g => ({ ...g, type: 'own' })),
-      ...sharedGraphs.rows.map(g => ({ ...g, type: 'shared' }))
+      ...sharedGraphs.rows.map(g => ({ ...g, type: 'shared' })),
     ];
-    
+
     res.json(graphs);
   } catch (error) {
     console.error('Error fetching graphs:', error);
@@ -444,44 +385,36 @@ app.get('/api/graphs', authenticateToken, async (req, res) => {
   }
 });
 
-// Get a specific graph with caching
 app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const userId = req.user.id;
-    
-    // Check cache first
-    if (graphCache.has(id)) {
-      const cached = graphCache.get(id);
-      return res.json(cached);
-    }
-    
-    // Fetch from database - only use columns that exist
+
+    // cache first
+    const cached = getCachedGraph(id);
+    if (cached) return res.json(cached);
+
     const client = await pool.connect();
     const result = await client.query(
-      'SELECT id, title, data, created_at, updated_at, user_id FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $2))',
-      [id, req.user.email] // Use email for shared_with_email
+      `SELECT id, title, data, created_at, updated_at, user_id
+       FROM graphs
+       WHERE id = $1
+         AND (user_id = $2 OR id IN (
+           SELECT graph_id FROM graph_shares WHERE shared_with_email = $3
+         ))`,
+      [id, req.user.id, req.user.email]
     );
     client.release();
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Graph not found' });
     }
-    
+
     const graph = result.rows[0];
-    
-    // Parse data if it's a string
     if (typeof graph.data === 'string') {
-      try {
-        graph.data = JSON.parse(graph.data);
-      } catch (e) {
-        graph.data = {};
-      }
+      try { graph.data = JSON.parse(graph.data); } catch { graph.data = {}; }
     }
-    
-    // Cache the result
-    graphCache.set(id, graph);
-    
+
+    graphCache.set(String(id), graph);
     res.json(graph);
   } catch (error) {
     console.error('Error fetching graph:', error);
@@ -489,25 +422,21 @@ app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Create a new graph
 app.post('/api/graphs', authenticateToken, async (req, res) => {
   try {
     const { title, data } = req.body;
     const userId = req.user.id;
-    
-    // Create graph - only use columns that exist
+
     const client = await pool.connect();
     const result = await client.query(
       'INSERT INTO graphs (title, data, user_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, title, data, created_at, updated_at',
       [title, JSON.stringify(data), userId]
     );
     client.release();
-    
+
     const newGraph = result.rows[0];
-    
-    // Cache the new graph
-    graphCache.set(newGraph.id, newGraph);
-    
+    graphCache.set(String(newGraph.id), newGraph);
+
     res.status(201).json(newGraph);
   } catch (error) {
     console.error('Error creating graph:', error);
@@ -515,64 +444,55 @@ app.post('/api/graphs', authenticateToken, async (req, res) => {
   }
 });
 
-// Update a graph with caching
 app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { title, data } = req.body;
     const userId = req.user.id;
-    
-    // Check if user owns the graph or has edit access
+
     const client = await pool.connect();
-    
-    // First check ownership
-    let ownershipResult = await client.query(
+
+    const ownershipResult = await client.query(
       'SELECT user_id FROM graphs WHERE id = $1',
       [id]
     );
-    
     if (ownershipResult.rows.length === 0) {
       client.release();
       return res.status(404).json({ error: 'Graph not found' });
     }
-    
-    const graph = ownershipResult.rows[0];
-    
-    // Check if user owns the graph or has editor access
-    let canEdit = graph.user_id === userId;
-    
+
+    const ownerId = ownershipResult.rows[0].user_id;
+    let canEdit = ownerId === userId;
+
     if (!canEdit) {
-      // Check if user has editor access through sharing
       const shareResult = await client.query(
         'SELECT permission FROM graph_shares WHERE graph_id = $1 AND shared_with_email = $2',
         [id, req.user.email]
       );
-      
       canEdit = shareResult.rows.length > 0 && shareResult.rows[0].permission === 'editor';
     }
-    
+
     if (!canEdit) {
       client.release();
       return res.status(403).json({ error: 'No edit access to this graph' });
     }
-    
-    // Update the graph - only use columns that exist
+
     await client.query(
       'UPDATE graphs SET title = $1, data = $2, updated_at = NOW() WHERE id = $3',
       [title, JSON.stringify(data), id]
     );
-    
     client.release();
-    
-    // Update cache if it exists
-    if (graphCache.has(id)) {
-      const cached = graphCache.get(id);
-      cached.title = title;
-      cached.data = data;
-      cached.updated_at = new Date().toISOString();
-      graphCache.set(id, cached);
+
+    if (graphCache.has(String(id))) {
+      const cached = graphCache.get(String(id));
+      graphCache.set(String(id), {
+        ...cached,
+        title,
+        data,
+        updated_at: new Date().toISOString(),
+      });
     }
-    
+
     res.json({ message: 'Graph updated successfully' });
   } catch (error) {
     console.error('Error updating graph:', error);
@@ -580,73 +500,49 @@ app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Real-time updates endpoint with caching
 app.post('/api/graphs/:id/realtime', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { updates } = req.body;
-    const userId = req.user.id;
-    
-    // Check if user has access to this graph
+
     const client = await pool.connect();
     const accessResult = await client.query(
-      'SELECT user_id FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $2))',
-      [id, req.user.email]
+      `SELECT user_id FROM graphs
+       WHERE id = $1
+         AND (user_id = $2 OR id IN (
+           SELECT graph_id FROM graph_shares WHERE shared_with_email = $3
+         ))`,
+      [id, req.user.id, req.user.email]
     );
     client.release();
-    
+
     if (accessResult.rows.length === 0) {
       return res.status(403).json({ error: 'No access to this graph' });
     }
-    
-    // Get current cached data
-    let graphData = graphCache.get(id);
+
+    let graphData = getCachedGraph(id);
     if (!graphData) {
-      // If not in cache, fetch from database
-      const client = await pool.connect();
-      const result = await client.query(
+      const c = await pool.connect();
+      const r = await c.query(
         'SELECT id, title, data, created_at, updated_at FROM graphs WHERE id = $1',
         [id]
       );
-      client.release();
-      
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Graph not found' });
-      }
-      
-      graphData = result.rows[0];
+      c.release();
+      if (r.rows.length === 0) return res.status(404).json({ error: 'Graph not found' });
+      graphData = r.rows[0];
       if (typeof graphData.data === 'string') {
-        try {
-          graphData.data = JSON.parse(graphData.data);
-        } catch (e) {
-          graphData.data = {};
-        }
+        try { graphData.data = JSON.parse(graphData.data); } catch { graphData.data = {}; }
       }
-      
-      graphCache.set(id, graphData);
     }
-    
-    // Apply updates to cached data
-    updates.forEach(update => {
-      switch (update.type) {
-        case 'tile_create':
-        case 'tile_update':
-        case 'tile_move':
-        case 'tile_delete':
-          if (!graphData.data.tiles) graphData.data.tiles = [];
-          // Apply tile updates
-          break;
-        case 'connection_create':
-        case 'connection_delete':
-          if (!graphData.data.connections) graphData.data.connections = [];
-          // Apply connection updates
-          break;
-      }
-    });
-    
-    // Mark as dirty for auto-save
-    graphCache.set(id, { ...graphData, dirty: true });
-    
+
+    if (!graphData.data) graphData.data = {};
+    if (!Array.isArray(graphData.data.tiles)) graphData.data.tiles = [];
+    if (!Array.isArray(graphData.data.connections)) graphData.data.connections = [];
+
+    // TODO: apply your real-time update logic here
+    // For now we just mark dirty.
+    graphCache.set(String(id), { ...graphData, dirty: true, lastModified: new Date().toISOString() });
+
     res.json({ message: 'Updates applied successfully' });
   } catch (error) {
     console.error('Error applying real-time updates:', error);
@@ -654,11 +550,9 @@ app.post('/api/graphs/:id/realtime', authenticateToken, async (req, res) => {
   }
 });
 
-// Force save a specific graph
 app.post('/api/graphs/:id/save', authenticateToken, async (req, res) => {
   try {
-    const graphId = req.params.id;
-    await saveCachedGraph(graphId);
+    await saveCachedGraph(req.params.id);
     res.json({ success: true, message: 'Graph saved successfully' });
   } catch (err) {
     console.error('Error saving graph:', err);
@@ -666,21 +560,15 @@ app.post('/api/graphs/:id/save', authenticateToken, async (req, res) => {
   }
 });
 
-// Get graph cache status
 app.get('/api/graphs/:id/cache-status', authenticateToken, async (req, res) => {
   try {
-    const graphId = req.params.id;
-    const cached = getCachedGraph(graphId);
-    
-    if (!cached) {
-      return res.json({ cached: false });
-    }
-    
+    const cached = getCachedGraph(req.params.id);
+    if (!cached) return res.json({ cached: false });
     res.json({
       cached: true,
       lastModified: cached.lastModified,
-      dirty: cached.dirty,
-      dataSize: JSON.stringify(cached.data).length
+      dirty: !!cached.dirty,
+      dataSize: JSON.stringify(cached.data || {}).length,
     });
   } catch (err) {
     console.error('Error getting cache status:', err);
@@ -688,49 +576,41 @@ app.get('/api/graphs/:id/cache-status', authenticateToken, async (req, res) => {
   }
 });
 
-// Share graph with permissions
+// ---------- Sharing ----------
 app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, permission = 'viewer' } = req.body; // Default to viewer if no permission specified
+    const { email, permission = 'viewer' } = req.body;
     const userId = req.user.id;
-    
-    // Validate permission
+
     if (!['viewer', 'editor'].includes(permission)) {
       return res.status(400).json({ message: 'Invalid permission level' });
     }
-    
-    // Check if user owns the graph
+
     const graphCheck = await pool.query(
       'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
-    
     if (graphCheck.rows.length === 0) {
       return res.status(403).json({ message: 'You can only share graphs you own' });
     }
-    
-    // Check if already shared with this email
+
     const existingShare = await pool.query(
       'SELECT id FROM graph_shares WHERE graph_id = $1 AND shared_with_email = $2',
       [id, email]
     );
-    
+
     if (existingShare.rows.length > 0) {
-      // Update existing permission
       await pool.query(
         'UPDATE graph_shares SET permission = $1, updated_at = NOW() WHERE graph_id = $2 AND shared_with_email = $3',
         [permission, id, email]
       );
-      
       res.json({ message: 'Permission updated successfully' });
     } else {
-      // Create new share
       await pool.query(
         'INSERT INTO graph_shares (graph_id, shared_with_email, permission, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW())',
         [id, email, permission]
       );
-      
       res.json({ message: 'Graph shared successfully' });
     }
   } catch (error) {
@@ -739,28 +619,24 @@ app.post('/api/graphs/:id/share', authenticateToken, async (req, res) => {
   }
 });
 
-// Get shared users for a graph
 app.get('/api/graphs/:id/shared-users', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    
-    // Check if user owns the graph
+
     const graphCheck = await pool.query(
       'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
-    
     if (graphCheck.rows.length === 0) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    
-    // Get shared users
+
     const sharedUsers = await pool.query(
       'SELECT shared_with_email as email, permission, created_at FROM graph_shares WHERE graph_id = $1 ORDER BY created_at DESC',
       [id]
     );
-    
+
     res.json(sharedUsers.rows);
   } catch (error) {
     console.error('Error getting shared users:', error);
@@ -768,38 +644,33 @@ app.get('/api/graphs/:id/shared-users', authenticateToken, async (req, res) => {
   }
 });
 
-// Change user permission
 app.put('/api/graphs/:id/change-permission', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { email, permission } = req.body;
     const userId = req.user.id;
-    
-    // Validate permission
+
     if (!['viewer', 'editor'].includes(permission)) {
       return res.status(400).json({ message: 'Invalid permission level' });
     }
-    
-    // Check if user owns the graph
+
     const graphCheck = await pool.query(
       'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
-    
     if (graphCheck.rows.length === 0) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    
-    // Update permission
+
     const result = await pool.query(
       'UPDATE graph_shares SET permission = $1, updated_at = NOW() WHERE graph_id = $2 AND shared_with_email = $3',
       [permission, id, email]
     );
-    
+
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Share not found' });
     }
-    
+
     res.json({ message: 'Permission updated successfully' });
   } catch (error) {
     console.error('Error changing permission:', error);
@@ -807,33 +678,29 @@ app.put('/api/graphs/:id/change-permission', authenticateToken, async (req, res)
   }
 });
 
-// Remove shared user
 app.delete('/api/graphs/:id/remove-user', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { email } = req.body;
     const userId = req.user.id;
-    
-    // Check if user owns the graph
+
     const graphCheck = await pool.query(
       'SELECT id FROM graphs WHERE id = $1 AND user_id = $2',
       [id, userId]
     );
-    
     if (graphCheck.rows.length === 0) {
       return res.status(403).json({ message: 'Access denied' });
     }
-    
-    // Remove share
+
     const result = await pool.query(
       'DELETE FROM graph_shares WHERE graph_id = $1 AND shared_with_email = $2',
       [id, email]
     );
-    
+
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Share not found' });
     }
-    
+
     res.json({ message: 'User removed successfully' });
   } catch (error) {
     console.error('Error removing user:', error);
@@ -841,26 +708,18 @@ app.delete('/api/graphs/:id/remove-user', authenticateToken, async (req, res) =>
   }
 });
 
-// ----- AI Suggestions API -----
+// ---------- AI Suggestions ----------
 app.post('/api/ai-suggestions', authenticateToken, async (req, res) => {
   try {
     const { targetTile, existingTiles, connections } = req.body;
-    
+
     const response = await fetch('https://magicloops.dev/api/loop/b43cee3e-e9c9-49cb-a87a-4411bfab1542/run', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        targetTile,
-        existingTiles,
-        connections
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ targetTile, existingTiles, connections }),
     });
 
-    if (!response.ok) {
-      throw new Error(`Magic Loop API error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Magic Loop API error: ${response.status}`);
 
     const data = await response.json();
     res.json(data);
@@ -870,16 +729,16 @@ app.post('/api/ai-suggestions', authenticateToken, async (req, res) => {
   }
 });
 
-// ----- Errors -----
+// ---------- Errors ----------
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// ----- Export for Vercel / start locally -----
+// ---------- Export / Local start ----------
 module.exports = app;
 
-if (process.env.NODE_ENV !== 'production') {
+if (NODE_ENV !== 'production') {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => console.log(`Listening on http://localhost:${PORT}`));
 }
