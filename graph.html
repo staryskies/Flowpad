@@ -1625,79 +1625,30 @@
       clearSnapIndicators();
     }
 
-    function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle') {
+    function createTile(x = 100, y = 100, title = '', content = '', id = null, shape = 'rectangle', presetType = null) {
       const tile = document.createElement('div');
       tile.className = `tile ${shape}`;
       tile.dataset.tileId = id || 'tile_' + Date.now();
       tile.dataset.baseX = x;
       tile.dataset.baseY = y;
       tile.dataset.shape = shape;
+      tile.dataset.presetType = presetType || 'custom';
       tile.style.left = (x + canvasOffset.x) + 'px';
       tile.style.top = (y + canvasOffset.y) + 'px';
       
-      tile.innerHTML = `
-        <div class="shape-palette">
-          <div class="shape-option" data-shape="rectangle" title="Rectangle">□</div>
-          <div class="shape-option" data-shape="rounded" title="Rounded">◐</div>
-          <div class="shape-option" data-shape="circular" title="Circle">○</div>
-          <div class="shape-option" data-shape="hexagon" title="Hexagon">⬡</div>
-          <div class="shape-option" data-shape="diamond" title="Diamond">◇</div>
-          <div class="shape-option" data-shape="triangle" title="Triangle">△</div>
-        </div>
-        <div class="color-picker-trigger" style="position:absolute;top:10px;right:10px;width:20px;height:20px;border-radius:50%;background:var(--accent-primary);cursor:pointer;border:2px solid var(--border-primary);transition:all 0.3s ease;opacity:0;z-index:1000" title="Change color"></div>
-        <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
-        <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
-        <div class="connection-dot input" data-dot-type="input" title="Input connection"></div>
-        <div class="connection-dot output" data-dot-type="output" title="Output connection"></div>
-        <div class="connection-dot top" data-dot-type="top" title="Top connection"></div>
-        <div class="connection-dot bottom" data-dot-type="bottom" title="Bottom connection"></div>
-      `;
-      
-      // Set initial selected shape
-      const shapeOption = tile.querySelector(`[data-shape="${shape}"]`);
-      if (shapeOption) {
-        shapeOption.classList.add('selected');
+      // Set default color if none exists
+      if (!tile.dataset.color) {
+        tile.dataset.color = '#ffffff';
+        tile.style.backgroundColor = '#ffffff';
       }
       
-      // Add shape selection functionality
-      tile.querySelectorAll('.shape-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-          e.stopPropagation();
-          
-          // Remove selected class from all options
-          tile.querySelectorAll('.shape-option').forEach(opt => opt.classList.remove('selected'));
-          
-          // Add selected class to clicked option
-          option.classList.add('selected');
-          
-          // Update tile shape
-          const newShape = option.dataset.shape;
-          tile.className = `tile ${newShape}`;
-          tile.dataset.shape = newShape;
-          
-          // Mark as dirty
-          markAsDirty();
-          
-          // Update connections
-          renderConnections();
-        });
-      });
+      tile.innerHTML = `
+        <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
+        <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
+      `;
       
-      // Add color picker trigger functionality
-      const colorTrigger = tile.querySelector('.color-picker-trigger');
-      colorTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        showColorPicker(tile, colorTrigger);
-      });
-      
-      // Show color trigger on hover
-      tile.addEventListener('mouseenter', () => {
-        colorTrigger.style.opacity = '1';
-      });
-      
-      tile.addEventListener('mouseleave', () => {
-        colorTrigger.style.opacity = '0';
-      });
+      // Add click handler for toolbar
+      addTileClickHandler(tile);
       
       tile.querySelectorAll('textarea').forEach(t => t.addEventListener('input', scheduleSave));
       
@@ -3923,6 +3874,12 @@
       tile.style.left = (x + canvasOffset.x) + 'px';
       tile.style.top = (y + canvasOffset.y) + 'px';
       
+      // Set default color if none exists
+      if (!tile.dataset.color) {
+        tile.dataset.color = '#ffffff';
+        tile.style.backgroundColor = '#ffffff';
+      }
+      
       tile.innerHTML = `
         <textarea class="tile-title" placeholder="Title">${title || ''}</textarea>
         <textarea class="tile-content" placeholder="Content">${content || ''}</textarea>
@@ -4508,6 +4465,62 @@
             shareGraph();
           }
         });
+      }
+    }
+
+    // Update saveGraph to handle correct data structure
+    async function saveGraph() {
+      if (!currentGraph) return;
+      
+      try {
+        // Prepare graph data
+        const graphData = {
+          tiles: tiles.map(tile => ({
+            id: tile.dataset.tileId,
+            x: parseInt(tile.dataset.baseX),
+            y: parseInt(tile.dataset.baseY),
+            title: tile.querySelector('.tile-title').value,
+            content: tile.querySelector('.tile-content').value,
+            shape: tile.dataset.shape || 'rectangle',
+            color: tile.dataset.color || '#ffffff',
+            presetType: tile.dataset.presetType || 'custom'
+          })),
+          connections: connections
+        };
+        
+        const response = await fetch(`/api/graphs/${currentGraph}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: JSON.stringify({
+            title: document.getElementById('graphTitle').value || 'Untitled Graph',
+            data: graphData
+          })
+        });
+        
+        if (response.ok) {
+          updateSaveStatusDisplay('Saved');
+          lastSaveTime = Date.now();
+          isDirty = false;
+          
+          // Update current graph data
+          if (currentGraphData) {
+            currentGraphData.data = graphData;
+            currentGraphData.title = document.getElementById('graphTitle').value || 'Untitled Graph';
+            currentGraphData.updated_at = new Date().toISOString();
+          }
+          
+          notify('Graph saved successfully', 'success');
+        } else {
+          updateSaveStatusDisplay('Error');
+          notify('Failed to save graph', 'error');
+        }
+      } catch (error) {
+        console.error('Error saving graph:', error);
+        updateSaveStatusDisplay('Error');
+        notify('Error saving graph', 'error');
       }
     }
   </script>

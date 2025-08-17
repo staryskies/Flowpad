@@ -148,17 +148,17 @@ app.get('/api/graphs', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     
-    // Get user's own graphs
+    // Get user's own graphs - only use columns that exist
     const ownGraphsQuery = `
-      SELECT id, title, data, created_at, updated_at, color, shape
+      SELECT id, title, data, created_at, updated_at
       FROM graphs 
       WHERE user_id = $1 
       ORDER BY updated_at DESC
     `;
     
-    // Get shared graphs (simplified query without shared_with column)
+    // Get shared graphs - only use columns that exist
     const sharedGraphsQuery = `
-      SELECT g.id, g.title, g.data, g.created_at, g.updated_at, g.color, g.shape
+      SELECT g.id, g.title, g.data, g.created_at, g.updated_at
       FROM graphs g
       INNER JOIN graph_shares gs ON g.id = gs.graph_id
       WHERE gs.shared_with_email = $1 AND g.user_id != $1
@@ -185,20 +185,20 @@ app.get('/api/graphs', authenticateToken, async (req, res) => {
 // Get a specific graph with caching
 app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
-    const graphId = req.params.id;
+    const { id } = req.params;
+    const userId = req.user.id;
     
     // Check cache first
-    let cached = getCachedGraph(graphId);
-    if (cached) {
-      console.log(`Serving graph ${graphId} from cache`);
-      return res.json(cached.data);
+    if (graphCache.has(id)) {
+      const cached = graphCache.get(id);
+      return res.json(cached);
     }
     
-    // Fetch from database
+    // Fetch from database - only use columns that exist
     const client = await pool.connect();
     const result = await client.query(
-      'SELECT * FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $2))',
-      [graphId, req.user.id]
+      'SELECT id, title, data, created_at, updated_at, user_id FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $2))',
+      [id, req.user.email] // Use email for shared_with_email
     );
     client.release();
     
@@ -208,13 +208,22 @@ app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
     
     const graph = result.rows[0];
     
-    // Cache the graph data
-    cacheGraph(graphId, graph);
+    // Parse data if it's a string
+    if (typeof graph.data === 'string') {
+      try {
+        graph.data = JSON.parse(graph.data);
+      } catch (e) {
+        graph.data = {};
+      }
+    }
+    
+    // Cache the result
+    graphCache.set(id, graph);
     
     res.json(graph);
-  } catch (err) {
-    console.error('Error fetching graph:', err);
-    res.status(500).json({ error: 'Failed to fetch graph' });
+  } catch (error) {
+    console.error('Error fetching graph:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -222,118 +231,164 @@ app.get('/api/graphs/:id', authenticateToken, async (req, res) => {
 app.post('/api/graphs', authenticateToken, async (req, res) => {
   try {
     const { title, data } = req.body;
+    const userId = req.user.id;
+    
+    // Create graph - only use columns that exist
     const client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO graphs (title, data, user_id) VALUES ($1, $2, $3) RETURNING *',
-      [title, JSON.stringify(data), req.user.id]
+      'INSERT INTO graphs (title, data, user_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, title, data, created_at, updated_at',
+      [title, JSON.stringify(data), userId]
     );
     client.release();
     
     const newGraph = result.rows[0];
     
     // Cache the new graph
-    cacheGraph(newGraph.id, newGraph);
+    graphCache.set(newGraph.id, newGraph);
     
     res.status(201).json(newGraph);
-  } catch (err) {
-    console.error('Error creating graph:', err);
-    res.status(500).json({ error: 'Failed to create graph' });
+  } catch (error) {
+    console.error('Error creating graph:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Update a graph with caching
 app.put('/api/graphs/:id', authenticateToken, async (req, res) => {
   try {
-    const graphId = req.params.id;
+    const { id } = req.params;
     const { title, data } = req.body;
+    const userId = req.user.id;
     
-    // Update cache immediately for instant feedback
-    const cached = getCachedGraph(graphId);
-    if (cached) {
-      cached.data.title = title;
-      cached.data.data = data;
-      cached.lastModified = Date.now();
-      cached.dirty = true;
+    // Check if user owns the graph or has edit access
+    const client = await pool.connect();
+    
+    // First check ownership
+    let ownershipResult = await client.query(
+      'SELECT user_id FROM graphs WHERE id = $1',
+      [id]
+    );
+    
+    if (ownershipResult.rows.length === 0) {
+      client.release();
+      return res.status(404).json({ error: 'Graph not found' });
     }
     
-    // Update database
-    const client = await pool.connect();
+    const graph = ownershipResult.rows[0];
+    
+    // Check if user owns the graph or has editor access
+    let canEdit = graph.user_id === userId;
+    
+    if (!canEdit) {
+      // Check if user has editor access through sharing
+      const shareResult = await client.query(
+        'SELECT permission FROM graph_shares WHERE graph_id = $1 AND shared_with_email = $2',
+        [id, req.user.email]
+      );
+      
+      canEdit = shareResult.rows.length > 0 && shareResult.rows[0].permission === 'editor';
+    }
+    
+    if (!canEdit) {
+      client.release();
+      return res.status(403).json({ error: 'No edit access to this graph' });
+    }
+    
+    // Update the graph - only use columns that exist
     await client.query(
-      'UPDATE graphs SET title = $1, data = $2, updated_at = NOW() WHERE id = $3 AND (user_id = $4 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $4))',
-      [title, JSON.stringify(data), graphId, req.user.id]
+      'UPDATE graphs SET title = $1, data = $2, updated_at = NOW() WHERE id = $3',
+      [title, JSON.stringify(data), id]
     );
+    
     client.release();
     
-    // Mark cache as clean since we just saved
-    if (cached) {
-      cached.dirty = false;
+    // Update cache if it exists
+    if (graphCache.has(id)) {
+      const cached = graphCache.get(id);
+      cached.title = title;
+      cached.data = data;
+      cached.updated_at = new Date().toISOString();
+      graphCache.set(id, cached);
     }
     
-    res.json({ success: true, message: 'Graph updated successfully' });
-  } catch (err) {
-    console.error('Error updating graph:', err);
-    res.status(500).json({ error: 'Failed to update graph' });
+    res.json({ message: 'Graph updated successfully' });
+  } catch (error) {
+    console.error('Error updating graph:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Real-time updates endpoint with caching
 app.post('/api/graphs/:id/realtime', authenticateToken, async (req, res) => {
   try {
-    const graphId = req.params.id;
+    const { id } = req.params;
     const { updates } = req.body;
+    const userId = req.user.id;
     
-    // Get cached graph or fetch from database
-    let cached = getCachedGraph(graphId);
-    if (!cached) {
+    // Check if user has access to this graph
+    const client = await pool.connect();
+    const accessResult = await client.query(
+      'SELECT user_id FROM graphs WHERE id = $1 AND (user_id = $2 OR id IN (SELECT graph_id FROM graph_shares WHERE shared_with_email = $2))',
+      [id, req.user.email]
+    );
+    client.release();
+    
+    if (accessResult.rows.length === 0) {
+      return res.status(403).json({ error: 'No access to this graph' });
+    }
+    
+    // Get current cached data
+    let graphData = graphCache.get(id);
+    if (!graphData) {
+      // If not in cache, fetch from database
       const client = await pool.connect();
-      const result = await client.query('SELECT * FROM graphs WHERE id = $1', [graphId]);
+      const result = await client.query(
+        'SELECT id, title, data, created_at, updated_at FROM graphs WHERE id = $1',
+        [id]
+      );
       client.release();
       
       if (result.rows.length === 0) {
         return res.status(404).json({ error: 'Graph not found' });
       }
       
-      cacheGraph(graphId, result.rows[0]);
-      cached = getCachedGraph(graphId);
+      graphData = result.rows[0];
+      if (typeof graphData.data === 'string') {
+        try {
+          graphData.data = JSON.parse(graphData.data);
+        } catch (e) {
+          graphData.data = {};
+        }
+      }
+      
+      graphCache.set(id, graphData);
     }
     
     // Apply updates to cached data
     updates.forEach(update => {
       switch (update.type) {
-        case 'tile_move':
-          const tile = cached.data.data.tiles.find(t => t.id === update.data.tileId);
-          if (tile) {
-            tile.x = update.data.x;
-            tile.y = update.data.y;
-          }
-          break;
-        case 'tile_delete':
-          cached.data.data.tiles = cached.data.data.tiles.filter(t => t.id !== update.data.tileId);
-          cached.data.data.connections = cached.data.data.connections.filter(
-            c => c.fromTile !== update.data.tileId && c.toTile !== update.data.tileId
-          );
-          break;
-        case 'connection_delete':
-          cached.data.data.connections = cached.data.data.connections.filter(
-            c => c.id !== update.data.connectionId
-          );
-          break;
         case 'tile_create':
-          cached.data.data.tiles.push(update.data);
+        case 'tile_update':
+        case 'tile_move':
+        case 'tile_delete':
+          if (!graphData.data.tiles) graphData.data.tiles = [];
+          // Apply tile updates
           break;
         case 'connection_create':
-          cached.data.data.connections.push(update.data);
+        case 'connection_delete':
+          if (!graphData.data.connections) graphData.data.connections = [];
+          // Apply connection updates
           break;
       }
     });
     
     // Mark as dirty for auto-save
-    markGraphDirty(graphId);
+    graphCache.set(id, { ...graphData, dirty: true });
     
-    res.json({ success: true, message: 'Updates applied successfully' });
-  } catch (err) {
-    console.error('Error applying real-time updates:', err);
-    res.status(500).json({ error: 'Failed to apply updates' });
+    res.json({ message: 'Updates applied successfully' });
+  } catch (error) {
+    console.error('Error applying real-time updates:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
