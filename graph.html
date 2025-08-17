@@ -2300,9 +2300,10 @@
     }
 
     function createSmartPath(fromX, fromY, toX, toY) {
-      // Use grid-based routing with obstacle avoidance
-      const path = createGridPathWithObstacles(fromX, fromY, toX, toY);
-      return optimizeGridPath(path);
+      // Try obstacle-aware Manhattan, fall back to a smooth S-curve
+      const obstacles = findObstacles(fromX, fromY, toX, toY);
+      const manhattanPath = createManhattanPath(fromX, fromY, toX, toY, obstacles);
+      return manhattanPath || createSimpleSCurve(fromX, fromY, toX, toY);
     }
 
     function createGridPath(fromX, fromY, toX, toY) {
@@ -2894,14 +2895,10 @@
       renderConnections();
     }
 
-    function renderConnections() {
-      // Clear existing connections
-      const existingLines = document.querySelectorAll('.connection-line');
-      existingLines.forEach(line => line.remove());
-      
-      // Create SVG container if it doesn't exist
+    function renderConnections(){
+      // Ensure a single svg container exists
       let svgContainer = document.querySelector('#connections-svg');
-      if (!svgContainer) {
+      if (!svgContainer){
         svgContainer = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         svgContainer.id = 'connections-svg';
         svgContainer.style.position = 'absolute';
@@ -2909,93 +2906,95 @@
         svgContainer.style.left = '0';
         svgContainer.style.width = '100%';
         svgContainer.style.height = '100%';
-        svgContainer.style.pointerEvents = 'none';
         svgContainer.style.zIndex = '100';
-        
-        // Add arrow marker definition
+        svgContainer.style.pointerEvents = 'auto'; // allow clicks on child paths
+
+        // markers
         const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        
-        // Arrow marker
-        const arrowMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-        arrowMarker.setAttribute('id', 'arrowhead');
-        arrowMarker.setAttribute('markerWidth', '10');
-        arrowMarker.setAttribute('markerHeight', '7');
-        arrowMarker.setAttribute('refX', '9');
-        arrowMarker.setAttribute('refY', '3.5');
-        arrowMarker.setAttribute('orient', 'auto');
-        
-        const arrowPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        arrowPolygon.setAttribute('points', '0 0, 10 3.5, 0 7');
-        arrowPolygon.setAttribute('fill', '#007AFF');
-        
-        arrowMarker.appendChild(arrowPolygon);
-        defs.appendChild(arrowMarker);
-        
-        // Dot marker
-        const dotMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-        dotMarker.setAttribute('id', 'dotmarker');
-        dotMarker.setAttribute('markerWidth', '8');
-        dotMarker.setAttribute('markerHeight', '8');
-        dotMarker.setAttribute('refX', '4');
-        dotMarker.setAttribute('refY', '4');
-        dotMarker.setAttribute('orient', 'auto');
-        
-        const dotCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        dotCircle.setAttribute('cx', '4');
-        dotCircle.setAttribute('cy', '4');
-        dotCircle.setAttribute('r', '3');
-        dotCircle.setAttribute('fill', '#007AFF');
-        
-        dotMarker.appendChild(dotCircle);
-        defs.appendChild(dotMarker);
-        
-        // Diamond marker
-        const diamondMarker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
-        diamondMarker.setAttribute('id', 'diamondmarker');
-        diamondMarker.setAttribute('markerWidth', '10');
-        diamondMarker.setAttribute('markerHeight', '7');
-        diamondMarker.setAttribute('refX', '9');
-        diamondMarker.setAttribute('refY', '3.5');
-        diamondMarker.setAttribute('orient', 'auto');
-        
-        const diamondPolygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-        diamondPolygon.setAttribute('points', '5 0, 10 3.5, 5 7, 0 3.5');
-        diamondPolygon.setAttribute('fill', '#007AFF');
-        
-        diamondMarker.appendChild(diamondPolygon);
-        defs.appendChild(diamondMarker);
-        
+
+        const mk = (id, markup) => {
+          const frag = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+          Object.entries(markup.attrs).forEach(([k,v])=>frag.setAttribute(k, v));
+          frag.id = id;
+          frag.appendChild(markup.child);
+          defs.appendChild(frag);
+        };
+
+        const arrowPoly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        arrowPoly.setAttribute('points','0 0, 10 3.5, 0 7');
+        arrowPoly.setAttribute('fill','#007AFF');
+        mk('arrowhead', {attrs:{markerWidth:'10',markerHeight:'7',refX:'9',refY:'3.5',orient:'auto'}, child:arrowPoly});
+
+        const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        dot.setAttribute('cx','4'); dot.setAttribute('cy','4'); dot.setAttribute('r','3'); dot.setAttribute('fill','#007AFF');
+        mk('dotmarker', {attrs:{markerWidth:'8',markerHeight:'8',refX:'4',refY:'4',orient:'auto'}, child:dot});
+
+        const diamond = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        diamond.setAttribute('points','5 0, 10 3.5, 5 7, 0 3.5'); diamond.setAttribute('fill','#007AFF');
+        mk('diamondmarker', {attrs:{markerWidth:'10',markerHeight:'7',refX:'9',refY:'3.5',orient:'auto'}, child:diamond});
+
         svgContainer.appendChild(defs);
-        
         canvas.appendChild(svgContainer);
       }
-      
-      // Group connections by tile pairs to handle multiple connections
-      const connectionGroups = {};
-      connections.forEach(connection => {
-        const key = `${connection.fromTile}-${connection.toTile}`;
-        if (!connectionGroups[key]) {
-          connectionGroups[key] = [];
-        }
-        connectionGroups[key].push(connection);
+
+      // Clear previous paths only (leave defs intact)
+      [...svgContainer.querySelectorAll('path.connection-line')].forEach(p => p.remove());
+
+      // Group by pair to fan parallel edges
+      const groups = {};
+      connections.forEach(c => {
+        const key = `${c.fromTile}__${c.toTile}`;
+        (groups[key] ||= []).push(c);
       });
-      
-      // Render each connection group
-      Object.values(connectionGroups).forEach((group, groupIndex) => {
-        group.forEach((connection, connectionIndex) => {
-          const fromTile = tiles.find(t => t.dataset.tileId === connection.fromTile);
-          const toTile = tiles.find(t => t.dataset.tileId === connection.toTile);
-          
-          if (fromTile && toTile) {
-            const line = createConnectionLineWithSeparation(fromTile, toTile, connectionIndex);
-            svgContainer.appendChild(line);
-          }
+
+      Object.values(groups).forEach(group => {
+        group.forEach((conn, idx) => {
+          const fromTile = tiles.find(t => t.dataset.tileId === conn.fromTile);
+          const toTile   = tiles.find(t => t.dataset.tileId === conn.toTile);
+          if (!fromTile || !toTile) return;
+
+          const pathEl = createConnectionLineWithSeparation(fromTile, toTile, idx, conn);
+          if (pathEl) svgContainer.appendChild(pathEl);
         });
       });
-      
-      // Update SVG viewBox to match canvas
-      const canvasRect = canvas.getBoundingClientRect();
-      svgContainer.setAttribute('viewBox', `0 0 ${canvasRect.width} ${canvasRect.height}`);
+
+      // sync viewBox
+      const r = canvas.getBoundingClientRect();
+      svgContainer.setAttribute('viewBox', `0 0 ${r.width} ${r.height}`);
+    }
+
+    function createConnectionLineWithSeparation(fromTile, toTile, index, connObj){
+      // pick ports
+      const { fromPort, toPort } = findOptimalPort(fromTile, toTile, connObj?.fromDot, connObj?.toDot);
+      let fx = fromPort.x, fy = fromPort.y, tx = toPort.x, ty = toPort.y;
+
+      // separate parallel edges slightly
+      const dx = tx - fx, dy = ty - fy, len = Math.max(1, Math.hypot(dx,dy));
+      const perpX = -dy / len, perpY = dx / len;
+      const bump = (index ? (index-0.5) * 8 : 0);
+      fx += perpX * bump; fy += perpY * bump;
+      tx += perpX * bump; ty += perpY * bump;
+
+      const d = createSmartPath(fx, fy, tx, ty);
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('fill','none');
+      path.setAttribute('stroke', connObj?.color || 'var(--accent-primary)');
+      path.setAttribute('stroke-width','3');
+      path.setAttribute('marker-end','url(#arrowhead)');
+      path.classList.add('connection-line');
+      path.style.pointerEvents = 'stroke';
+
+      // click -> delete
+      path.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        if (confirm('Delete this connection?')) deleteConnection(connObj.id);
+      });
+      path.addEventListener('mouseenter', ()=>{ path.style.strokeWidth='4'; path.style.filter='drop-shadow(0 0 3px currentColor)'; });
+      path.addEventListener('mouseleave', ()=>{ path.style.strokeWidth='3'; path.style.filter='none'; });
+
+      return path;
     }
 
     async function shareGraph() {
@@ -3272,7 +3271,6 @@
     }
 
     function showColorPicker(tile, trigger) {
-      // content
       const recentColors = getRecentColors();
       const palette = [
         "#ffffff","#f8f9fa","#e9ecef","#dee2e6","#ced4da",
@@ -3296,41 +3294,33 @@
       `;
 
       const grid = root.querySelector('.color-picker-grid');
-      palette.forEach(c=>{
+      const push = (c, parent) => {
         const d = document.createElement('div');
         d.className = 'color-picker-option';
         d.style.background = c;
         d.dataset.color = c;
-        d.onclick = () => {
+        d.onclick = ()=>{
           tile.style.background = c;
           saveRecentColor(c);
           scheduleSave();
-          api.close(); // Auto-close after selection
+          api.close();
         };
-        grid.appendChild(d);
-      });
+        parent.appendChild(d);
+      };
 
+      palette.forEach(c => push(c, grid));
       if (recentColors.length){
         const rg = root.querySelector('.color-picker-recent-grid');
-        recentColors.forEach(c=>{
-          const d = document.createElement('div');
-          d.className = 'color-picker-option';
-          d.style.background = c;
-          d.dataset.color = c;
-          d.onclick = () => {
-            tile.style.background = c;
-            saveRecentColor(c);
-            scheduleSave();
-            api.close(); // Auto-close after selection
-          };
-          rg.appendChild(d);
-        });
+        recentColors.forEach(c => push(c, rg));
       }
-
       root.querySelector('.color-picker-close').onclick = ()=> api.close();
 
-      // open near the trigger, clamp inside viewport
-      const api = openPopover(trigger, root, { prefer:'top', offset:10, className:'color-picker-popout' });
+      const api = openPopover(trigger, root, { prefer:'bottom', offset:10, className:'color-picker-popout', autoClose:false });
+    }
+
+    // one way to open: show the same picker
+    function showRecentColorsPopup(tile, optionElement){
+      showColorPicker(tile, optionElement);
     }
 
     function updateCollaboratorsList(users) {
@@ -3626,67 +3616,7 @@
       return adjustedPath;
     }
 
-    function createConnectionLineWithSeparation(fromTile, toTile, connectionIndex = 0) {
-      // Count total connections between these tiles
-      const totalConnections = connections.filter(c => 
-        (c.fromTile === fromTile.dataset.tileId && c.toTile === toTile.dataset.tileId) ||
-        (c.fromTile === toTile.dataset.tileId && c.toTile === fromTile.dataset.tileId)
-      ).length;
-      
-      // Find optimal connection ports
-      const fromPort = findOptimalPort(fromTile, toTile, 'output');
-      const toPort = findOptimalPort(toTile, fromTile, 'input');
-      
-      const fromX = fromPort.x;
-      const fromY = fromPort.y;
-      const toX = toPort.x;
-      const toY = toPort.y;
-      
-      // Create grid-based path
-      let path = createGridPath(fromX, fromY, toX, toY);
-      
-      // Adjust for multiple connections
-      if (totalConnections > 1) {
-        path = adjustGridPathForSeparation(path, connectionIndex, totalConnections);
-      }
-      
-      // Create SVG path string
-      let pathString = `M ${path[0].x} ${path[0].y}`;
-      
-      for (let i = 1; i < path.length; i++) {
-        pathString += ` L ${path[i].x} ${path[i].y}`;
-      }
-      
-      // Create connection line element
-      const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      line.setAttribute('d', pathString);
-      line.setAttribute('stroke', '#007AFF');
-      line.setAttribute('stroke-width', '2');
-      line.setAttribute('fill', 'none');
-      line.setAttribute('marker-end', 'url(#arrowhead)');
-      line.setAttribute('class', 'connection-line');
-      line.dataset.fromTile = fromTile.dataset.tileId;
-      line.dataset.toTile = toTile.dataset.tileId;
-      
-      // Add hover effects
-      line.addEventListener('mouseenter', () => {
-        line.setAttribute('stroke-width', '3');
-        line.setAttribute('stroke', '#0056CC');
-      });
-      
-      line.addEventListener('mouseleave', () => {
-        line.setAttribute('stroke-width', '2');
-        line.setAttribute('stroke', '#007AFF');
-      });
-      
-      // Add click to delete
-      line.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteConnection(fromTile.dataset.tileId, toTile.dataset.tileId);
-      });
-      
-      return line;
-    }
+
 
     let selectedElement = null;
     let floatingToolbar = null;
@@ -4107,66 +4037,50 @@
       }
     }
 
-    // Add click event to tiles for toolbar
-    function addTileClickHandler(tile) {
-      console.log('Adding click handler to tile:', tile);
-      tile.addEventListener('click', (e)=>{
-        console.log('Tile clicked:', tile, 'Event target:', e.target);
-        // avoid focusing when editing text
-        if (e.target.classList.contains('tile-title') || e.target.classList.contains('tile-content')) {
-          console.log('Clicked on text area, ignoring');
-          return;
-        }
+    let _tileToolbar = null;
 
-        console.log('Calling selectTile and showTileToolbar');
+    function addTileClickHandler(tile){
+      tile.addEventListener('click',(e)=>{
+        // Ignore direct edits inside textareas
+        if (e.target.closest('textarea')) return;
         selectTile(tile);
         showTileToolbar(tile, e);
       });
     }
-    
-    // Add click event to connections for toolbar
-    function addConnectionClickHandler(connection) {
-      connection.addEventListener('click', (e) => {
-        e.stopPropagation();
-        
-        // Show floating toolbar
-        const bbox = connection.getBBox();
-        const svg = connection.closest('svg');
-        const pt = svg.createSVGPoint();
-        pt.x = bbox.x + bbox.width / 2;
-        pt.y = bbox.y + bbox.height / 2;
-        const ctm = svg.getScreenCTM();
-        const globalPt = pt.matrixTransform(ctm);
-        
-        showFloatingToolbar(connection, globalPt.x, globalPt.y);
-        
-        // Select connection
-        selectConnection(connection);
-      });
-    }
-    
-    // Select tile
-    function selectTile(tile) {
-      // Remove previous selection
-      document.querySelectorAll('.tile.selected').forEach(t => t.classList.remove('selected'));
-      
-      // Add selection to current tile
-      tile.classList.add('selected');
-      selectedElement = tile;
-    }
-    
-    // Select connection
-    function selectConnection(connection) {
-      // Remove previous selection
-      document.querySelectorAll('.connection-line.selected').forEach(c => c.classList.remove('selected'));
-      
-      // Add selection to current connection
-      connection.classList.add('selected');
-      selectedElement = connection;
-    }
-    
 
-    
+    function showTileToolbar(tile, event){
+      hideFloatingToolbar();
+
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `
+        <div class="toolbar-section">
+          <div class="toolbar-row">
+            <button class="toolbar-button" title="Color" id="tb-color">🎨</button>
+            <button class="toolbar-button" title="Duplicate" id="tb-dup">⎘</button>
+            <button class="toolbar-button" title="Delete" id="tb-del">🗑️</button>
+          </div>
+        </div>
+      `;
+
+      wrap.querySelector('#tb-color').onclick = (ev)=> showColorPicker(tile, ev.currentTarget);
+      wrap.querySelector('#tb-dup').onclick   = ()=>{
+        const x = (parseInt(tile.dataset.baseX)||0) + 24;
+        const y = (parseInt(tile.dataset.baseY)||0) + 24;
+        const t2 = createTile(x, y,
+          tile.querySelector('.tile-title').value,
+          tile.querySelector('.tile-content').value
+        );
+        tiles.push(t2); canvas.appendChild(t2); scheduleSave(); renderCanvas(); selectTile(t2);
+      };
+      wrap.querySelector('#tb-del').onclick   = ()=> { selectedTile = tile; deleteSelected(); };
+
+      _tileToolbar = openPopover(tile, wrap, { prefer:'top', offset:10, className:'floating-toolbar tile-toolbar', autoClose:false });
+    }
+
+    function hideFloatingToolbar(){
+      if (_tileToolbar){ _tileToolbar.close(); _tileToolbar = null; }
+    }
+
     // Get connection icon
     function getConnectionIcon(type) {
       const icons = {
@@ -4252,259 +4166,33 @@
     }
     
     // Show preset selection popup
-    function showPresetPopup(x, y) {
-      const popup = createPresetPopup();
-      
-      // Position popup
-      popup.style.left = (x + 20) + 'px';
-      popup.style.top = (y - 20) + 'px';
-      
-      // Adjust position if it goes off screen
-      const rect = popup.getBoundingClientRect();
-      if (rect.right > window.innerWidth) {
-        popup.style.left = (x - rect.width - 20) + 'px';
-      }
-      if (rect.bottom > window.innerHeight) {
-        popup.style.top = (y - rect.height - 20) + 'px';
-      }
-      
-      popup.classList.add('show');
-      
-      // Store connection target
-      popup.dataset.connectToTile = connectToTile ? connectToTile.dataset.tileId : '';
-    }
-    
-    // Create preset popup
-    function createPresetPopup() {
-      let popup = document.querySelector('.preset-popup');
-      if (!popup) {
-        popup = document.createElement('div');
-        popup.className = 'preset-popup';
-        popup.innerHTML = `
-          <div class="popup-header">
-            <div class="popup-title">Choose Tile Type</div>
-            <button class="popup-close">×</button>
-          </div>
-          <div class="preset-grid"></div>
-        `;
-        
-        // Add event listeners
-        popup.querySelector('.popup-close').addEventListener('click', hidePresetPopup);
-        
-        document.body.appendChild(popup);
-      }
-      
-      // Populate preset options
-      const grid = popup.querySelector('.preset-grid');
-      grid.innerHTML = Object.entries(PRESET_TILES).map(([key, preset]) => `
-        <div class="preset-item" data-preset="${key}">
-          <div class="preset-item-icon">${preset.icon}</div>
-          <div class="preset-item-label">${preset.name}</div>
-          <div class="preset-item-desc">${preset.description}</div>
-        </div>
-      `).join('');
-      
-      // Add click handlers
-      grid.addEventListener('click', handlePresetSelection);
-      
-      return popup;
-    }
-    
-    // Handle preset selection
-    function handlePresetSelection(e) {
-      const item = e.target.closest('.preset-item');
-      if (!item) return;
-      
-      const popup = item.closest('.preset-popup');
-      const connectToTileId = popup.dataset.connectToTile;
-      const connectToTile = connectToTileId ? tiles.find(t => t.dataset.tileId === connectToTileId) : null;
-      
-      const presetKey = item.dataset.preset;
-      const preset = PRESET_TILES[presetKey];
-      
-      if (presetKey === 'custom') {
-        showCustomTileCreator(connectToTile);
-      } else {
-        createPresetTile(preset, connectToTile);
-      }
-      
-      hidePresetPopup();
-    }
-    
-    // Create preset tile
-    function createPresetTile(preset, connectToTile = null) {
-      const x = Math.random() * 400 + 100;
-      const y = Math.random() * 300 + 100;
-      
-      const tile = createTile(x, y, preset.defaultTitle, preset.defaultContent, null, preset.shape);
-      
-      // Apply preset styling
-      tile.style.backgroundColor = preset.color;
-      tile.dataset.color = preset.color;
-      tile.dataset.presetType = preset.name.toLowerCase();
-      
-      tiles.push(tile);
-      
-      // If connecting to another tile, create a connection
-      if (connectToTile) {
-        const connection = {
-          fromTile: connectToTile.dataset.tileId,
-          toTile: tile.dataset.tileId
+    function showPresetPopup(viewportX, viewportY){
+      const el = document.createElement('div');
+      el.className = 'preset-popup';
+      const grid = document.createElement('div');
+      grid.className = 'preset-grid';
+
+      Object.entries(PRESET_TILES).forEach(([key, p])=>{
+        const item = document.createElement('div');
+        item.className = 'preset-item';
+        item.innerHTML = `
+          <div class="preset-item-icon">${p.icon}</div>
+          <div class="preset-item-label">${p.label}</div>
+          <div class="preset-item-desc">${p.desc}</div>`;
+        item.onclick = ()=>{
+          const c = canvas.getBoundingClientRect();
+          const x = viewportX - c.left - canvasOffset.x;
+          const y = viewportY - c.top  - canvasOffset.y;
+          const t = createTile(x, y, p.initial.title, p.initial.content);
+          tiles.push(t); renderCanvas(); selectTile(t); scheduleSave();
+          api.close();
         };
-        
-        connections.push(connection);
-        
-        // Mark as dirty
-        markAsDirty();
-        
-        notify(`Created ${preset.name} tile with connection`, 'success');
-      } else {
-        notify(`Created ${preset.name} tile`, 'success');
-      }
-      
-      renderCanvas();
-      renderConnections();
-      
-      // Mark as dirty
-      markAsDirty();
-      
-      return tile;
-    }
-    
-    // Show custom tile creator
-    function showCustomTileCreator(connectToTile = null) {
-      const customTile = createTile(
-        Math.random() * 400 + 100,
-        Math.random() * 300 + 100,
-        'Custom Tile',
-        'Custom content...',
-        null,
-        'rectangle',
-        'custom'
-      );
-      
-      // Apply default styling
-      customTile.style.backgroundColor = '#ffffff';
-      customTile.dataset.color = '#ffffff';
-      customTile.dataset.presetType = 'custom';
-      
-      tiles.push(customTile);
-      
-      // If connecting to another tile, create a connection
-      if (connectToTile) {
-        const connection = {
-          fromTile: connectToTile.dataset.tileId,
-          toTile: customTile.dataset.tileId
-        };
-        
-        connections.push(connection);
-        
-        // Mark as dirty
-        markAsDirty();
-        
-        notify('Created custom tile with connection', 'success');
-      } else {
-        notify('Created custom tile', 'success');
-      }
-      
-      renderCanvas();
-      renderConnections();
-      
-      // Mark as dirty
-      markAsDirty();
-    }
-    
-    // Hide preset popup
-    function hidePresetPopup() {
-      const popup = document.querySelector('.preset-popup');
-      if (popup) {
-        popup.classList.remove('show');
-      }
-    }
-    
-    // Start long press timer
-    function startLongPress(e, element) {
-      if (longPressTimer) return;
-      
-      const indicator = createLongPressIndicator();
-      const rect = element.getBoundingClientRect();
-      
-      // Position indicator near the element
-      indicator.style.left = (rect.left + rect.width / 2 - 30) + 'px';
-      indicator.style.top = (rect.top + rect.height / 2 - 30) + 'px';
-      indicator.style.display = 'block';
-      
-      longPressTimer = setTimeout(() => {
-        isLongPressing = true;
-        indicator.classList.add('show', 'pulse');
-        
-        // Show preset popup after long press
-        setTimeout(() => {
-          // If it's a tile, offer to create connected tile
-          if (element.classList.contains('tile')) {
-            showPresetPopup(rect.left + rect.width / 2, rect.top + rect.height / 2, element);
-          } else {
-            showPresetPopup(rect.left + rect.width / 2, rect.top + rect.height / 2);
-          }
-          indicator.style.display = 'none';
-        }, 300);
-        
-      }, longPressThreshold);
-    }
-    
-    // Cancel long press
-    function cancelLongPress() {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer);
-        longPressTimer = null;
-      }
-      
-      if (longPressIndicator) {
-        longPressIndicator.style.display = 'none';
-        longPressIndicator.classList.remove('show', 'pulse');
-      }
-      
-      isLongPressing = false;
-    }
-    
-    // Update toolbar positioning to hover further from tiles
-    function showFloatingToolbar(element, x, y) {
-      const toolbar = createFloatingToolbar();
-      const popup = createSecondaryPopup();
-      
-      // Position toolbar further from element
-      const offset = 30; // Increased offset
-      toolbar.style.left = (x + offset) + 'px';
-      toolbar.style.top = (y - offset) + 'px';
-      
-      // Adjust position if it goes off screen
-      const rect = toolbar.getBoundingClientRect();
-      if (rect.right > window.innerWidth) {
-        toolbar.style.left = (x - rect.width - offset) + 'px';
-      }
-      if (rect.bottom > window.innerHeight) {
-        toolbar.style.top = (y - rect.height - offset) + 'px';
-      }
-      
-      // Set toolbar type
-      if (element.classList.contains('tile')) {
-        toolbar.classList.add('tile-toolbar');
-        setupTileToolbar(toolbar, element);
-      } else if (element.classList.contains('connection-line')) {
-        toolbar.classList.add('connection-toolbar');
-        setupConnectionToolbar(toolbar, element);
-      }
-      
-      toolbar.classList.add('show');
-      selectedElement = element;
-      
-      // Auto-hide after delay
-      clearTimeout(toolbarTimeout);
-      toolbarTimeout = setTimeout(() => {
-        if (!toolbar.matches(':hover') && !popup.matches(':hover')) {
-          hideFloatingToolbar();
-        }
-      }, 3000);
+        grid.appendChild(item);
+      });
+      el.appendChild(grid);
+
+      const fakeRect = { left: viewportX-1, top: viewportY-1, width:2, height:2, bottom: viewportY+1, right: viewportX+1 };
+      const api = openPopover(fakeRect, el, { prefer:'bottom', offset:12, className:'preset-popup show', autoClose:false });
     }
 
     // Share permission system
@@ -4709,83 +4397,27 @@
       }
     }
 
-    let _tileToolbar = null;
+    function addCacheStatusButton(){ /* no-op; wire up later if needed */ }
 
-    function showTileToolbar(tile, event){
-      console.log('showTileToolbar called for tile:', tile);
-      hideFloatingToolbar();
-
-      const wrap = document.createElement('div');
-      wrap.innerHTML = `
-        <div class="toolbar-section">
-          <div class="toolbar-row">
-            <button class="toolbar-button" title="Color" id="tb-color">🎨</button>
-            <button class="toolbar-button" title="Delete" id="tb-del">🗑️</button>
-            <button class="toolbar-button" title="Duplicate" id="tb-dup">⎘</button>
-          </div>
-        </div>
-      `;
-
-      wrap.querySelector('#tb-color').onclick = (ev)=> { 
-        console.log('Color button clicked');
-        showColorPicker(tile, ev.currentTarget); 
-      };
-      wrap.querySelector('#tb-del').onclick   = ()=> { 
-        console.log('Delete button clicked');
-        selectedTile = tile; 
-        deleteSelected(); 
-      };
-      wrap.querySelector('#tb-dup').onclick   = ()=> {
-        console.log('Duplicate button clicked');
-        const x = (parseInt(tile.dataset.baseX)||0) + 24;
-        const y = (parseInt(tile.dataset.baseY)||0) + 24;
-        const t2 = createTile(x, y, tile.querySelector('.tile-title').value, tile.querySelector('.tile-content').value);
-        tiles.push(t2); 
-        canvas.appendChild(t2); 
-        scheduleSave(); 
-        renderCanvas(); 
-        selectTile(t2);
-      };
-
-      const pref = 'top';
-      console.log('Opening popover with tile:', tile);
-      _tileToolbar = openPopover(tile, wrap, { prefer:pref, offset:10, className:'floating-toolbar tile-toolbar', autoClose: false });
-      console.log('Toolbar created:', _tileToolbar);
+    function initializePermissionSelector(){
+      const options = document.querySelectorAll('.permission-option');
+      options.forEach(opt=>{
+        opt.addEventListener('click', ()=>{
+          options.forEach(o=>o.classList.remove('selected'));
+          opt.classList.add('selected');
+          const input = opt.querySelector('input[type="radio"]');
+          if (input) input.checked = true;
+        });
+      });
     }
 
-    function hideFloatingToolbar(){
-      if (_tileToolbar){ _tileToolbar.close(); _tileToolbar = null; }
-    }
-    
-    function selectTile(tile) {
-      // Remove selection from all tiles
-      tiles.forEach(t => t.classList.remove('selected'));
-      
-      // Select the clicked tile
-      tile.classList.add('selected');
-      selectedTile = tile;
-    }
-    
-    function deleteSelected() {
-      if (!selectedTile) return;
-      
-      // Remove from tiles array
-      const index = tiles.indexOf(selectedTile);
-      if (index > -1) {
-        tiles.splice(index, 1);
-      }
-      
-      // Remove from DOM
-      selectedTile.remove();
-      
-      // Clear selection
-      selectedTile = null;
-      
-      // Re-render canvas
-      renderCanvas();
-      
-      // Mark as dirty for auto-save
-      markAsDirty();
+    function updateShareButtonState(){
+      const emailEl = document.getElementById('shareEmail');
+      const btn = document.querySelector('.share-btn');
+      if (!emailEl || !btn) return;
+      const email = emailEl.value.trim();
+      const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      btn.disabled = !ok;
     }
   </script>
 </body>
