@@ -107,34 +107,211 @@
   .canvas{position:relative;width:100%;height:100%;background:#ffffff;cursor:grab}
   .canvas-content{position:absolute;left:0;top:0;transform-origin:0 0;}
 
-  .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.1s ease;overflow:hidden}
-.tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
-.tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(0, 122, 255, 0.3)}
-.tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;font-weight:400}
-.tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
-.tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
+  .tile{
+    position:absolute;
+    min-width:150px;
+    min-height:100px;
+    cursor:move;
+    user-select:none;
+    transition:all 0.1s ease;
+    overflow:visible;
+  }
 
-/* Resize outline for selected tiles - always rectangular and separate from shape */
-.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid #007AFF;border-radius:8px;pointer-events:none;background:rgba(0,122,255,0.1);clip-path:none !important;box-shadow:0 0 0 1px rgba(255,255,255,0.8)}
+  /* Shape background layer - clips to shape */
+  .tile::before{
+    content:'';
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background:var(--bg-tile);
+    border:2px solid var(--border-primary);
+    border-radius:12px;
+    box-shadow:0 8px 25px var(--shadow-primary);
+    z-index:1;
+    transition:all 0.1s ease;
+  }
 
-/* Resize handles for each edge and corner - 4 dots on each side, positioned farther from tile */
-  .tile.selected .resize-handle{position:absolute;width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
-  .tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize;background:#007AFF;border:2px solid #fff}
-  .tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize;background:#007AFF;border:2px solid #fff}
+  .tile:hover::before{
+    background:var(--bg-tile-hover);
+    box-shadow:0 12px 35px var(--shadow-secondary);
+  }
+
+  /* Content layer - always visible, auto-adjusts to stay within bounds */
+  .tile-content-wrapper{
+    position:relative;
+    z-index:2;
+    padding:20px;
+    width:100%;
+    height:100%;
+    box-sizing:border-box;
+    display:flex;
+    flex-direction:column;
+    pointer-events:none;
+  }
+
+  .tile-title,.tile-content{
+    border:none;
+    background:transparent;
+    width:100%;
+    outline:none;
+    font-family:inherit;
+    resize:none;
+    font-weight:400;
+    pointer-events:auto;
+    z-index:3;
+    position:relative;
+  }
+
+  .tile-title{
+    font-weight:400;
+    margin-bottom:12px;
+    font-size:1rem;
+    color:var(--text-tile);
+    flex-shrink:0;
+  }
+
+  .tile-content{
+    font-size:0.9rem;
+    line-height:1.5;
+    min-height:50px;
+    color:var(--text-tile);
+    font-weight:400;
+    flex:1;
+  }
+
+/* Selection outline - sharp rectangular, floating away from shape */
+.tile.selected::after{
+  content:'';
+  position:absolute;
+  top:-15px;
+  left:-15px;
+  right:-15px;
+  bottom:-15px;
+  border:2px solid #007AFF;
+  border-radius:0; /* Sharp corners, not rounded */
+  pointer-events:none;
+  background:transparent;
+  z-index:200;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.8);
+}
+
+/* Alignment lines - floating guides */
+.tile.selected .alignment-line{
+  position:absolute;
+  background:#007AFF;
+  pointer-events:none;
+  z-index:201;
+  opacity:0.8;
+}
+
+.tile.selected .alignment-line.horizontal{
+  height:1px;
+  left:-15px;
+  right:-15px;
+}
+
+.tile.selected .alignment-line.vertical{
+  width:1px;
+  top:-15px;
+  bottom:-15px;
+}
+
+.tile.selected .alignment-line.top{
+  top:-15px;
+}
+
+.tile.selected .alignment-line.bottom{
+  bottom:-15px;
+}
+
+.tile.selected .alignment-line.left{
+  left:-15px;
+}
+
+.tile.selected .alignment-line.right{
+  right:-15px;
+}
+
+.tile.selected .alignment-line.center-h{
+  top:50%;
+  transform:translateY(-50%);
+}
+
+.tile.selected .alignment-line.center-v{
+  left:50%;
+  transform:translateX(-50%);
+}
+
+/* Resize handles - white dots on alignment lines */
+.tile.selected .resize-handle{
+  position:absolute;
+  width:8px;
+  height:8px;
+  background:#fff;
+  border:1px solid #007AFF;
+  border-radius:50%;
+  cursor:pointer;
+  z-index:202;
+  box-shadow:0 1px 3px rgba(0,0,0,0.3);
+  transform:translate(-50%, -50%);
+}
+
+/* Corner handles */
+.tile.selected .resize-handle.nw{
+  top:-15px;
+  left:-15px;
+  cursor:nw-resize;
+}
+
+.tile.selected .resize-handle.ne{
+  top:-15px;
+  right:-15px;
+  cursor:ne-resize;
+  transform:translate(50%, -50%);
+}
+
+.tile.selected .resize-handle.sw{
+  bottom:-15px;
+  left:-15px;
+  cursor:sw-resize;
+  transform:translate(-50%, 50%);
+}
+
+.tile.selected .resize-handle.se{
+  bottom:-15px;
+  right:-15px;
+  cursor:se-resize;
+  transform:translate(50%, 50%);
+}
+
+/* Edge handles - center of each side */
+.tile.selected .resize-handle.n{
+  top:-15px;
+  left:50%;
+  cursor:n-resize;
+}
+
+.tile.selected .resize-handle.s{
+  bottom:-15px;
+  left:50%;
+  cursor:s-resize;
+  transform:translate(-50%, 50%);
+}
+
+.tile.selected .resize-handle.e{
+  right:-15px;
+  top:50%;
+  cursor:e-resize;
+  transform:translate(50%, -50%);
+}
+
+.tile.selected .resize-handle.w{
+  left:-15px;
+  top:50%;
+  cursor:w-resize;
+}
 
   /* quick picker hover areas */
   .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
@@ -249,12 +426,31 @@
   .shape-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
   .shape-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
 
-  .tile.rounded{border-radius:20px}
-  .tile.circular{border-radius:50%;min-width:120px;min-height:120px}
-  .tile.hexagon{clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)}
-  .tile.diamond{clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
-  .tile.triangle{clip-path:polygon(50% 0%, 0% 100%, 100% 100%)}
-  .tile.parallelogram{clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)}
+  /* Shape-specific background styling - only affects ::before pseudo-element */
+  .tile.rounded::before{border-radius:20px}
+  .tile.circular::before{border-radius:50%}
+  .tile.circular{min-width:120px;min-height:120px;aspect-ratio:1}
+  .tile.hexagon::before{clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)}
+  .tile.diamond::before{clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
+  .tile.triangle::before{clip-path:polygon(50% 0%, 0% 100%, 100% 100%)}
+  .tile.parallelogram::before{clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)}
+
+  /* Content area adjustments for different shapes */
+  .tile.circular .tile-content-wrapper{
+    padding:30px;
+    text-align:center;
+  }
+
+  .tile.diamond .tile-content-wrapper,
+  .tile.triangle .tile-content-wrapper{
+    padding:40px 30px;
+    text-align:center;
+  }
+
+  .tile.hexagon .tile-content-wrapper{
+    padding:35px 25px;
+    text-align:center;
+  }
 
   .grid-snap-line{position:absolute;background:var(--accent-primary);opacity:0.3;pointer-events:none;z-index:999;transition:opacity 0.2s ease}
   .grid-snap-line.show{opacity:0.6}
@@ -1416,17 +1612,18 @@ function createTile(x=100,y=100,title='',content='',id=null,shape='rectangle',pr
   t.dataset.shape = shape; t.dataset.presetType = preset;
   t.style.left=x+'px'; t.style.top=y+'px'; t.style.width='200px'; t.style.height='120px'; t.style.backgroundColor=color;
   t.innerHTML = `
-    <div class="shape-palette">
-      <div class="shape-option" title="Rounded" data-shape="rounded">Round</div>
-      <div class="shape-option" title="Circle" data-shape="circular">Circle</div>
-      <div class="shape-option" title="Diamond" data-shape="diamond">Diamond</div>
-      <div class="shape-option" title="Hex" data-shape="hexagon">Hex</div>
-      <div class="shape-option" title="Triangle" data-shape="triangle">Triangle</div>
-      <div class="shape-option" title="Parallelogram" data-shape="parallelogram">Para</div>
+    <div class="tile-content-wrapper">
+      <div class="shape-palette">
+        <div class="shape-option" title="Rounded" data-shape="rounded">Round</div>
+        <div class="shape-option" title="Circle" data-shape="circular">Circle</div>
+        <div class="shape-option" title="Diamond" data-shape="diamond">Diamond</div>
+        <div class="shape-option" title="Hex" data-shape="hexagon">Hex</div>
+        <div class="shape-option" title="Triangle" data-shape="triangle">Triangle</div>
+        <div class="shape-option" title="Parallelogram" data-shape="parallelogram">Para</div>
+      </div>
+      <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
+      <textarea class="tile-content" placeholder="Content">${content||''}</textarea>
     </div>
-    <!-- Color palette removed - now in toolbar -->
-    <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
-    <textarea class="tile-content" placeholder="Content">${content||''}</textarea>
     <div class="connection-dot input"  data-port="input"></div>
     <div class="connection-dot output" data-port="output"></div>
     <div class="connection-dot top"    data-port="top"></div>
@@ -3129,52 +3326,65 @@ function loadFromLocalStorage() {
 }
 
 function addResizeHandles(tile) {
-  // Remove existing handles
-  tile.querySelectorAll('.resize-handle').forEach(h => h.remove());
+  // Remove existing handles and alignment lines
+  tile.querySelectorAll('.resize-handle, .alignment-line').forEach(h => h.remove());
 
-
-  
-  // Create resize handles for each edge (4 dots on each side) and corners
-  const handles = [
-    // North edge - 4 dots
-    { class: 'n1', cursor: 'n-resize', position: '25%' },
-    { class: 'n2', cursor: 'n-resize', position: '50%' },
-    { class: 'n3', cursor: 'n-resize', position: '75%' },
-    // South edge - 4 dots
-    { class: 's1', cursor: 's-resize', position: '25%' },
-    { class: 's2', cursor: 's-resize', position: '50%' },
-    { class: 's3', cursor: 's-resize', position: '75%' },
-    // East edge - 4 dots
-    { class: 'e1', cursor: 'e-resize', position: '25%' },
-    { class: 'e2', cursor: 'e-resize', position: '50%' },
-    { class: 'e3', cursor: 'e-resize', position: '75%' },
-    // West edge - 4 dots
-    { class: 'w1', cursor: 'w-resize', position: '25%' },
-    { class: 'w2', cursor: 'w-resize', position: '50%' },
-    { class: 'w3', cursor: 'w-resize', position: '75%' },
-    // Corners
-    { class: 'nw', cursor: 'nw-resize', position: 'corner' },
-    { class: 'ne', cursor: 'ne-resize', position: 'corner' },
-    { class: 'sw', cursor: 'sw-resize', position: 'corner' },
-    { class: 'se', cursor: 'se-resize', position: 'corner' }
+  // Create alignment lines first (they go behind handles)
+  const alignmentLines = [
+    { class: 'alignment-line horizontal top' },
+    { class: 'alignment-line horizontal bottom' },
+    { class: 'alignment-line horizontal center-h' },
+    { class: 'alignment-line vertical left' },
+    { class: 'alignment-line vertical right' },
+    { class: 'alignment-line vertical center-v' }
   ];
-  
+
+  alignmentLines.forEach(line => {
+    const div = document.createElement('div');
+    div.className = line.class;
+    tile.appendChild(div);
+  });
+
+  // Create resize handles - simplified to 8 handles (4 corners + 4 edges)
+  const handles = [
+    // Corner handles
+    { class: 'nw', cursor: 'nw-resize' },
+    { class: 'ne', cursor: 'ne-resize' },
+    { class: 'sw', cursor: 'sw-resize' },
+    { class: 'se', cursor: 'se-resize' },
+    // Edge handles (center of each side)
+    { class: 'n', cursor: 'n-resize' },
+    { class: 's', cursor: 's-resize' },
+    { class: 'e', cursor: 'e-resize' },
+    { class: 'w', cursor: 'w-resize' }
+  ];
+
   handles.forEach(handle => {
     const div = document.createElement('div');
     div.className = `resize-handle ${handle.class}`;
     div.style.cursor = handle.cursor;
     div.dataset.handle = handle.class;
-    
+
     // Add event listeners for resizing
     div.addEventListener('mousedown', (e) => {
       e.stopPropagation();
       startResizing(tile, handle.class, e);
     });
-    
+
     tile.appendChild(div);
   });
 
+  // Update alignment lines in real-time
+  updateAlignmentLines(tile);
+}
 
+function updateAlignmentLines(tile) {
+  // This function will be called during resize to update alignment line positions
+  // For now, the CSS handles the positioning, but we can add dynamic updates here
+  requestAnimationFrame(() => {
+    // Force a repaint to ensure alignment lines are positioned correctly
+    tile.style.transform = tile.style.transform;
+  });
 }
 
 function startResizing(tile, handleType, e) {
@@ -3198,26 +3408,26 @@ function startResizing(tile, handleType, e) {
     let newLeft = startLeft;
     let newTop = startTop;
     
-    // Handle different resize directions
+    // Handle different resize directions with snap-to-grid
+    let snapX = newLeft, snapY = newTop;
+
     switch (handleType) {
-      // North edge handles
-      case 'n1': case 'n2': case 'n3':
+      // Edge handles
+      case 'n': // North edge
         newHeight = Math.max(100, startHeight - deltaY);
         newTop = startTop + (startHeight - newHeight);
         break;
-      // South edge handles
-      case 's1': case 's2': case 's3':
+      case 's': // South edge
         newHeight = Math.max(100, startHeight + deltaY);
         break;
-      // East edge handles
-      case 'e1': case 'e2': case 'e3':
+      case 'e': // East edge
         newWidth = Math.max(150, startWidth + deltaX);
         break;
-      // West edge handles
-      case 'w1': case 'w2': case 'w3':
+      case 'w': // West edge
         newWidth = Math.max(150, startWidth - deltaX);
         newLeft = startLeft + (startWidth - newWidth);
         break;
+      // Corner handles
       case 'nw': // Northwest corner
         newWidth = Math.max(150, startWidth - deltaX);
         newHeight = Math.max(100, startHeight - deltaY);
@@ -3239,21 +3449,31 @@ function startResizing(tile, handleType, e) {
         newHeight = Math.max(100, startHeight + deltaY);
         break;
     }
+
+    // Apply snap-to-grid if enabled
+    if (snapToGrid) {
+      const snap = getSnapPosition(newLeft, newTop);
+      newLeft = snap.x;
+      newTop = snap.y;
+    }
     
     // Apply new dimensions
     tile.style.width = newWidth + 'px';
     tile.style.height = newHeight + 'px';
     tile.style.left = newLeft + 'px';
     tile.style.top = newTop + 'px';
-    
+
     // Update tile data
     tile.dataset.baseX = newLeft;
     tile.dataset.baseY = newTop;
-    
+
+    // Update alignment lines in real-time
+    updateAlignmentLines(tile);
+
     // Mark as dirty and schedule save
     markAsDirty();
     scheduleSave();
-    
+
     // Re-render connections
     renderConnections();
   }
