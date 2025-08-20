@@ -5,24 +5,13 @@ const cookieParser = require('cookie-parser');
 const { Pool } = require('pg');
 const { OAuth2Client } = require('google-auth-library');
 const jwt = require('jsonwebtoken');
-const cors = require('cors');
+const fetch = require('node-fetch');
 
 require('dotenv').config();
 
 const app = express();
 app.set('trust proxy', 1);            // secure cookies behind Vercel/CDN
-
-// CORS configuration
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? ['https://your-domain.com', 'https://your-domain.vercel.app']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-}));
-
-app.use(express.json({ limit: '10mb' }));  // Increased limit for large graphs
+app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('.'));         // serve index.html, graph.html, etc.
 
@@ -390,43 +379,6 @@ app.post('/api/auth/google', async (req, res) => {
   }
 });
 
-// ---------- User Profile API ----------
-app.get('/api/user/profile', authenticateToken, async (req, res) => {
-  try {
-    const user = req.user;
-    res.json({
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      created_at: user.created_at
-    });
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    res.status(500).json({ error: 'Failed to fetch user profile' });
-  }
-});
-
-app.put('/api/user/profile', authenticateToken, async (req, res) => {
-  try {
-    const { name } = req.body;
-    const userId = req.user.id;
-
-    if (!name || name.trim().length === 0) {
-      return res.status(400).json({ error: 'Name is required' });
-    }
-
-    await pool.query(
-      'UPDATE users SET name = $1 WHERE id = $2',
-      [name.trim(), userId]
-    );
-
-    res.json({ message: 'Profile updated successfully' });
-  } catch (error) {
-    console.error('Error updating user profile:', error);
-    res.status(500).json({ error: 'Failed to update profile' });
-  }
-});
-
 // ---------- Graphs API ----------
 app.get('/api/graphs', authenticateToken, async (req, res) => {
   try {
@@ -560,29 +512,14 @@ app.post('/api/graphs', authenticateToken, async (req, res) => {
     const { title, data } = req.body;
     const userId = req.user.id;
 
-    // Validation
-    if (!title || title.trim().length === 0) {
-      return res.status(400).json({ error: 'Title is required' });
-    }
-
-    if (title.length > 255) {
-      return res.status(400).json({ error: 'Title must be less than 255 characters' });
-    }
-
-    // Ensure data has the expected structure
-    const graphData = data || { tiles: [], connections: [] };
-    if (!graphData.tiles) graphData.tiles = [];
-    if (!graphData.connections) graphData.connections = [];
-
     const client = await pool.connect();
     const result = await client.query(
-      'INSERT INTO graphs (title, data, user_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, title, data, created_at, updated_at, user_id',
-      [title.trim(), JSON.stringify(graphData), userId]
+      'INSERT INTO graphs (title, data, user_id, created_at, updated_at) VALUES ($1, $2, $3, NOW(), NOW()) RETURNING id, title, data, created_at, updated_at',
+      [title, JSON.stringify(data), userId]
     );
     client.release();
 
     const newGraph = result.rows[0];
-    newGraph.data = graphData; // Ensure it's parsed
     graphCache.set(String(newGraph.id), newGraph);
 
     res.status(201).json(newGraph);
@@ -721,61 +658,6 @@ app.get('/api/graphs/:id/cache-status', authenticateToken, async (req, res) => {
   } catch (err) {
     console.error('Error getting cache status:', err);
     res.status(500).json({ error: 'Failed to get cache status' });
-  }
-});
-
-// ---------- Graph Statistics ----------
-app.get('/api/graphs/:id/stats', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // Check access
-    const accessResult = await pool.query(
-      `SELECT user_id FROM graphs
-       WHERE id = $1
-         AND (user_id = $2 OR id IN (
-           SELECT graph_id FROM graph_shares WHERE shared_with_email = $3
-         ))`,
-      [id, req.user.id, req.user.email]
-    );
-
-    if (accessResult.rows.length === 0) {
-      return res.status(403).json({ error: 'No access to this graph' });
-    }
-
-    // Get graph data
-    let graphData = getCachedGraph(id);
-    if (!graphData) {
-      const result = await pool.query(
-        'SELECT data FROM graphs WHERE id = $1',
-        [id]
-      );
-      if (result.rows.length === 0) {
-        return res.status(404).json({ error: 'Graph not found' });
-      }
-      graphData = result.rows[0];
-      if (typeof graphData.data === 'string') {
-        try { graphData.data = JSON.parse(graphData.data); } catch { graphData.data = {}; }
-      }
-    }
-
-    const data = graphData.data || {};
-    const tiles = data.tiles || [];
-    const connections = data.connections || [];
-
-    const stats = {
-      tile_count: tiles.length,
-      connection_count: connections.length,
-      total_characters: tiles.reduce((sum, tile) =>
-        sum + (tile.title || '').length + (tile.content || '').length, 0),
-      last_updated: graphData.updated_at || graphData.lastModified,
-      data_size_bytes: JSON.stringify(data).length
-    };
-
-    res.json(stats);
-  } catch (error) {
-    console.error('Error getting graph stats:', error);
-    res.status(500).json({ error: 'Failed to get graph statistics' });
   }
 });
 

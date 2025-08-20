@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Flowpad - Graph Editor</title>
+<title>Flowpad - Dashboard</title>
 <style>
   :root {
     --bg-primary: #1a1a1a;
@@ -51,697 +51,446 @@
     --inbox-accepted: #34C759;
     --inbox-rejected: #FF3B30;
   }
-
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: var(--bg-tertiary);
-    backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--border-primary);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 1000;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 20px var(--shadow-primary);
-  }
-
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 400;
-    background: linear-gradient(45deg, var(--text-primary), var(--text-secondary));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .user-info {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-  }
-
-  .theme-toggle, .signout-btn {
-    background: var(--border-primary);
-    color: var(--text-primary);
-    border: none;
-    padding: 8px 16px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px var(--shadow-primary);
-  }
-
-  .theme-toggle:hover, .signout-btn:hover {
-    background: var(--border-secondary);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-  }
-
-
-  .sidebar {
-    position: fixed;
-    left: 0;
-    top: 60px;
-    bottom: 0;
-    width: 300px;
-    background: var(--bg-sidebar);
-    backdrop-filter: blur(20px);
-    border-right: 1px solid var(--border-primary);
-    overflow-y: auto;
-    transition: all 0.3s ease;
-    box-shadow: 4px 0 20px var(--shadow-primary);
-  }
-
-  .sidebar-content {
-    padding: 20px;
-  }
-
-  .new-graph-btn {
-    background: var(--accent-primary);
-    color: #fff;
-    border: none;
-    padding: 12px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    width: 100%;
-    font-size: 1rem;
-    margin-bottom: 20px;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px var(--shadow-primary);
-  }
-
-  .new-graph-btn:hover {
-    background: var(--accent-secondary);
-    box-shadow: 0 6px 16px var(--shadow-secondary);
-  }
-
-  .folder-section {
-    margin-bottom: 25px;
-    border: 1px solid var(--border-secondary);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 8px var(--shadow-primary);
-  }
-
-  .folder-header {
-    background: var(--bg-secondary);
-    padding: 12px 15px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    border-bottom: 1px solid var(--border-secondary);
-    transition: all 0.3s ease;
-  }
-
-  .folder-header:hover {
-    background: var(--border-primary);
-  }
-
-  .folder-header.active {
-    background: var(--accent-primary);
-    color: #fff;
-  }
-
-  .folder-content {
-    padding: 10px;
-    background: var(--bg-tertiary);
-    display: none;
-  }
-
-  .folder-content.expanded {
-    display: block;
-  }
-
-  .graph-item {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px var(--shadow-primary);
-  }
-
-  .graph-item:hover {
-    background: var(--border-primary);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-  }
-
-  .graph-item.active {
-    background: var(--accent-primary);
-    color: #fff;
-    border-color: var(--accent-primary);
-  }
-
-  .canvas-container {
-    position: fixed;
-    left: 300px;
-    top: 60px;
-    right: 0;
-    bottom: 0;
-    overflow: hidden;
-  }
-
-  .canvas {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    background: var(--bg-primary);
-    cursor: grab;
-  }
-
-  .canvas-content {
-    position: absolute;
-    left: 0;
-    top: 0;
-    transform-origin: 0 0;
-  }
-
-
-  .tile {
-    position: absolute;
-    background: var(--bg-tile);
-    color: var(--text-tile);
-    border: 2px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 20px;
-    min-width: 150px;
-    min-height: 100px;
-    cursor: move;
-    user-select: none;
-    box-shadow: 0 8px 25px var(--shadow-primary);
-    transition: all 0.1s ease;
-    overflow: hidden;
-  }
-
-  .tile:hover {
-    background: var(--bg-tile-hover);
-    box-shadow: 0 12px 35px var(--shadow-secondary);
-  }
-
-  .tile.selected {
-    border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
-  }
-
-  .tile-title, .tile-content {
-    border: none;
-    background: transparent;
-    width: 100%;
-    outline: none;
-    font-family: inherit;
-    resize: none;
-    font-weight: 400;
-  }
-
-  .tile-title {
-    font-weight: 400;
-    margin-bottom: 12px;
-    font-size: 1rem;
-    color: var(--text-tile);
-  }
-
-  .tile-content {
-    font-size: 0.9rem;
-    line-height: 1.5;
-    min-height: 50px;
-    color: var(--text-tile);
-    font-weight: 400;
-  }
-
-  .connection {
-    position: absolute;
-    pointer-events: none;
-    z-index: 5;
-  }
-
-  .connection-line {
-    stroke: var(--accent-primary);
-    stroke-width: 3;
-    fill: none;
-    filter: drop-shadow(0 2px 4px var(--shadow-primary));
-  }
-
-  .connection-line:hover {
-    stroke: var(--accent-secondary);
-    stroke-width: 4;
-  }
-
-  .connection-line.selected {
-    stroke-width: 5;
-    filter: drop-shadow(0 0 8px currentColor);
-  }
-
-
-  .toolbar {
-    position: fixed;
-    top: 70px;
-    right: 20px;
-    background: var(--bg-tertiary);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 12px;
-    z-index: 1000;
-    min-width: 230px;
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 25px var(--shadow-primary);
-  }
-
-  .tool-label {
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    margin-bottom: 8px;
-    text-align: center;
-    font-weight: 400;
-  }
-
-  .tool-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .tool-btn {
-    background: var(--border-primary);
-    color: var(--text-primary);
-    border: none;
-    padding: 8px;
-    border-radius: 6px;
-    cursor: pointer;
-    width: 40px;
-    height: 40px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 6px var(--shadow-primary);
-  }
-
-  .tool-btn:hover {
-    background: var(--border-secondary);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-  }
-
-  .tool-btn.active {
-    background: var(--accent-primary);
-    color: #fff;
-  }
-
-  .notification {
-    position: fixed;
-    top: 80px;
-    right: 20px;
-    background: var(--accent-primary);
-    color: #fff;
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 8px 25px var(--shadow-primary);
-    z-index: 10000;
-    transform: translateX(400px);
-    transition: 0.3s transform;
-    max-width: 300px;
-  }
-
-  .notification.show {
-    transform: translateX(0);
-  }
-
-  .notification.error {
-    background: #f44336;
-  }
-
-  .notification.warn {
-    background: #FF9500;
-  }
-
-  .modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(5px);
-    z-index: 10000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .modal-overlay.show {
-    display: flex;
-  }
-
-  .modal {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 12px;
-    padding: 30px;
-    min-width: 400px;
-    max-width: 600px;
-    box-shadow: 0 20px 40px var(--shadow-primary);
-  }
-
-  .modal-title {
-    font-size: 1.3rem;
-    font-weight: 400;
-    margin-bottom: 20px;
-    color: var(--text-primary);
-  }
-
-  .modal-input {
-    width: 100%;
-    padding: 15px;
-    border: 1px solid var(--border-secondary);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
-    font-size: 1rem;
-    margin-bottom: 20px;
-    outline: none;
-    transition: border-color 0.3s ease;
-    font-weight: 400;
-  }
-
-  .modal-input:focus {
-    border-color: var(--accent-primary);
-  }
-
-  .modal-buttons {
-    display: flex;
-    gap: 10px;
-    justify-content: flex-end;
-  }
-
-  .modal-btn {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 1rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px var(--shadow-primary);
-  }
-
-  .modal-btn.primary {
-    background: var(--accent-primary);
-    color: #fff;
-  }
-
-  .modal-btn.primary:hover {
-    background: var(--accent-secondary);
-    box-shadow: 0 6px 16px var(--shadow-secondary);
-  }
-
-  .modal-btn.secondary {
-    background: var(--border-primary);
-    color: var(--text-primary);
-  }
-
-  .modal-btn.secondary:hover {
-    background: var(--border-secondary);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-  }
-
-  /* Enhanced features CSS */
-  .grid-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .grid-overlay.show {
-    opacity: 0.1;
-  }
-
-  .grid-line {
-    position: absolute;
-    background: var(--accent-primary);
-  }
-
-  .grid-line.vertical {
-    width: 1px;
-    height: 100%;
-  }
-
-  .grid-line.horizontal {
-    height: 1px;
-    width: 100%;
-  }
-
-  .color-picker-popout {
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 10px 25px var(--shadow-primary);
-    backdrop-filter: blur(20px);
-    min-width: 200px;
-  }
-
-  .color-picker-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-secondary);
-  }
-
-  .color-picker-title {
-    font-weight: 500;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-  }
-
-  .color-picker-close {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 16px;
-    padding: 2px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-  }
-
-  .color-picker-close:hover {
-    color: var(--text-primary);
-    background: var(--border-primary);
-  }
-
-  .color-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 8px;
-  }
-
-  .color-picker-option {
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    border: 2px solid var(--border-primary);
-    cursor: pointer;
-    transition: all 0.3s ease;
-  }
-
-  .color-picker-option:hover {
-    transform: scale(1.1);
-    border-color: var(--accent-primary);
-  }
-
-  .ai-suggestion {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 8px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px var(--shadow-primary);
-    font-weight: 400;
-  }
-
-  .ai-suggestion:hover {
-    background: var(--border-primary);
-    box-shadow: 0 4px 12px var(--shadow-secondary);
-  }
-
-  .inbox-item {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 8px;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 6px var(--shadow-primary);
-  }
-
-  .inbox-item.pending {
-    border-left: 4px solid var(--inbox-pending);
-  }
-
-  .inbox-title {
-    font-weight: 400;
-    margin-bottom: 5px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-  }
-
-  .inbox-meta {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-bottom: 10px;
-  }
-
-  .inbox-actions {
-    display: flex;
-    gap: 8px;
-  }
-
-  .inbox-btn {
-    flex: 1;
-    padding: 6px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px var(--shadow-primary);
-  }
-
-  .inbox-btn.accept {
-    background: var(--inbox-accepted);
-    color: #fff;
-  }
-
-  .inbox-btn.accept:hover {
-    box-shadow: 0 4px 8px var(--shadow-secondary);
-  }
-
-  .inbox-btn.reject {
-    background: var(--inbox-rejected);
-    color: #fff;
-  }
-
-  .inbox-btn.reject:hover {
-    box-shadow: 0 4px 8px var(--shadow-secondary);
-  }
-
-  .shared-user-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 12px;
-    background: var(--bg-primary);
-    border: 1px solid var(--border-primary);
-    border-radius: 6px;
-    margin-bottom: 8px;
-  }
-
-  .shared-user-info {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .shared-user-email {
-    font-size: 14px;
-    color: var(--text-primary);
-    font-weight: 500;
-  }
-
-  .shared-user-permission {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-
-  .shared-user-actions {
-    display: flex;
-    gap: 4px;
-  }
-
-  .change-permission-btn, .remove-user-btn {
-    background: var(--accent-primary);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.3s ease;
-  }
-
-  .remove-user-btn {
-    background: var(--inbox-rejected);
-  }
-
-  .change-permission-btn:hover, .remove-user-btn:hover {
-    background: var(--accent-secondary);
-  }
-
-  .loading {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid currentColor;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-  }
-
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;background:#ffffff;color:var(--text-primary);overflow:hidden;transition:all 0.3s ease}
+  .header{position:fixed;inset:0 0 auto 0;height:60px;background:var(--bg-tertiary);backdrop-filter:blur(20px);
+    border-bottom:1px solid var(--border-primary);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:1000;
+    transition:all 0.3s ease;box-shadow:0 4px 20px var(--shadow-primary)}
+  .logo{font-size:1.5rem;font-weight:400;background:linear-gradient(45deg,var(--text-primary),var(--text-secondary));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .user-info{display:flex;align-items:center;gap:15px}
+  .signout-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .signout-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+  .theme-toggle{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 12px;border-radius:6px;cursor:pointer;margin-right:10px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .theme-toggle:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+
+  .sidebar{position:fixed;left:0;top:60px;bottom:0;width:300px;background:var(--bg-sidebar);backdrop-filter:blur(20px);border-right:1px solid var(--border-primary);overflow-y:auto;transition:all 0.3s ease;box-shadow:4px 0 20px var(--shadow-primary)}
+  .sidebar-content{padding:20px}
+  .section-title{font-size:1.1rem;font-weight:400;margin-bottom:15px;color:var(--text-primary);text-shadow:0 1px 2px var(--shadow-primary)}
+  .new-graph-btn{background:var(--accent-primary);color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;width:100%;font-size:1rem;margin-bottom:20px;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
+  .new-graph-btn:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
+
+  .folder-section{margin-bottom:25px;border:1px solid var(--border-secondary);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px var(--shadow-primary)}
+  .folder-header{background:var(--bg-secondary);padding:12px 15px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border-secondary);transition:all 0.3s ease}
+  .folder-header:hover{background:var(--border-primary)}
+  .folder-header.active{background:var(--accent-primary);color:#fff}
+  .folder-header.drag-over{background:var(--accent-primary);color:#fff;transform:scale(1.02)}
+  .graph-item.dragging{opacity:0.5;transform:scale(0.95)}
+  .folder-icon{margin-right:8px;font-size:1.1rem}
+  .folder-arrow{transition:transform 0.3s ease}
+  .folder-arrow.expanded{transform:rotate(90deg)}
+  .folder-content{padding:10px;background:var(--bg-tertiary);display:none}
+  .folder-content.expanded{display:block}
+
+  .graph-item{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:12px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);position:relative}
+  .graph-item:hover{background:var(--border-primary);box-shadow:0 4px 12px var(--shadow-secondary);transform:translateX(5px)}
+  .graph-item.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+  .graph-title{font-weight:400;margin-bottom:5px;color:inherit;font-size:0.95rem}
+  .graph-meta{font-size:.75rem;color:inherit;opacity:0.8}
+  .graph-delete{position:absolute;top:8px;right:8px;background:rgba(255,0,0,0.8);color:#fff;border:none;border-radius:4px;width:20px;height:20px;cursor:pointer;font-size:12px;opacity:0;transition:opacity 0.3s ease}
+  .graph-item:hover .graph-delete{opacity:1}
+  .graph-delete:hover{background:rgba(255,0,0,1)}
+
+  .inbox-item{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:12px;margin-bottom:8px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);position:relative}
+  .inbox-item.pending{border-left:4px solid var(--inbox-pending)}
+  .inbox-item.accepted{border-left:4px solid var(--inbox-accepted)}
+  .inbox-item.rejected{border-left:4px solid var(--inbox-rejected)}
+  .inbox-title{font-weight:400;margin-bottom:5px;color:var(--text-primary);font-size:0.95rem}
+  .inbox-meta{font-size:.75rem;color:var(--text-secondary);margin-bottom:10px}
+  .inbox-actions{display:flex;gap:8px}
+  .inbox-btn{flex:1;padding:6px 12px;border:none;border-radius:4px;cursor:pointer;font-size:0.8rem;transition:all 0.3s ease;box-shadow:0 2px 4px var(--shadow-primary)}
+  .inbox-btn.accept{background:var(--inbox-accepted);color:#fff}
+  .inbox-btn.accept:hover{box-shadow:0 4px 8px var(--shadow-secondary)}
+  .inbox-btn.reject{background:var(--inbox-rejected);color:#fff}
+  .inbox-btn.reject:hover{box-shadow:0 4px 8px var(--shadow-secondary)}
+
+  .canvas-container{position:fixed;left:300px;top:60px;right:0;bottom:0;overflow:hidden}
+  .canvas{position:relative;width:100%;height:100%;background:#ffffff;cursor:grab}
+  .canvas-content{position:absolute;left:0;top:0;transform-origin:0 0;}
+
+  .tile{position:absolute;background:var(--bg-tile);color:var(--text-tile);border:2px solid var(--border-primary);border-radius:12px;padding:20px;min-width:150px;min-height:100px;cursor:move;user-select:none;box-shadow:0 8px 25px var(--shadow-primary);transition:all 0.1s ease;overflow:hidden}
+.tile:hover{background:var(--bg-tile-hover);box-shadow:0 12px 35px var(--shadow-secondary)}
+.tile.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px rgba(0, 122, 255, 0.3)}
+.tile-title,.tile-content{border:none;background:transparent;width:100%;outline:none;font-family:inherit;resize:none;font-weight:400}
+.tile-title{font-weight:400;margin-bottom:12px;font-size:1rem;color:var(--text-tile)}
+.tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
+
+/* Resize outline for selected tiles - always rectangular and separate from shape */
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid #007AFF;border-radius:8px;pointer-events:none;z-index:1000;background:rgba(0,122,255,0.1);clip-path:none !important;box-shadow:0 0 0 1px rgba(255,255,255,0.8)}
+
+/* Resize handles for each edge and corner - 4 dots on each side, positioned farther from tile */
+  .tile.selected .resize-handle{position:absolute;width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:1001;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+  .tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+
+  /* quick picker hover areas */
+  .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
+  .tile:hover .shape-palette{opacity:1}
+  .shape-option{width:24px;height:24px;border:2px solid var(--border-primary);border-radius:4px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)}
+  .shape-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
+
+  /* Color palette removed from tiles - now in tile menu */
+
+  .connection-dot{position:absolute;width:20px;height:20px;background:var(--accent-primary);border:3px solid #fff;border-radius:50%;cursor:crosshair;z-index:10;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .connection-dot:hover{transform:scale(1.2);background:var(--accent-secondary)}
+  .connection-dot.input{left:-10px;top:50%;transform:translateY(-50%)}
+  .connection-dot.output{right:-10px;top:50%;transform:translateY(-50%)}
+  .connection-dot.top{top:-10px;left:50%;transform:translateX(-50%)}
+  .connection-dot.bottom{bottom:-10px;left:50%;transform:translateX(-50%)}
+
+  .connection{position:absolute;pointer-events:none;z-index:5}
+  .connection-line{stroke:var(--accent-primary);stroke-width:3;fill:none;marker-end:url(#arrowhead);filter:drop-shadow(0 2px 4px var(--shadow-primary))}
+  .connection-line:hover{stroke:var(--accent-secondary);stroke-width:4}
+  .connection-line.selected{stroke-width:5;filter:drop-shadow(0 0 8px currentColor)}
+
+  .toolbar{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:12px;z-index:1000;min-width:230px;transition:all 0.3s ease;box-shadow:0 8px 25px var(--shadow-primary)}
+  .tool-label{color:var(--text-secondary);font-size:.8rem;margin-bottom:8px;text-align:center;font-weight:400}
+  .tool-row{display:flex;flex-wrap:wrap;gap:6px}
+  .tool-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px;border-radius:6px;cursor:pointer;width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;font-size:.95rem;transition:all 0.2s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .tool-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+  .tool-btn.active{background:var(--accent-primary);color:#fff}
+  .tool-btn.cache-status-btn{background:var(--accent-primary);color:#fff}
+  .tool-btn.force-save-btn{background:var(--inbox-pending);color:#fff}
+  .tool-btn.share-btn{background:var(--inbox-accepted);color:#fff;font-size:0.8rem}
+  .tool-btn.new-graph-btn{background:var(--accent-primary);color:#fff;font-weight:bold}
+  .tool-btn.snap-grid-btn.active,.tool-btn.snap-tiles-btn.active{background:var(--accent-primary);color:#fff}
+  .tool-btn.snap-tiles-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
+
+  .ai-panel{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:20px;z-index:1000;width:300px;display:none;transition:all 0.3s ease;box-shadow:0 8px 25px var(--shadow-primary)}
+  .ai-panel.show{display:block}
+  .ai-title{font-size:1.1rem;font-weight:400;margin-bottom:15px;color:var(--text-primary)}
+  .ai-input{width:100%;padding:10px;border:1px solid var(--border-secondary);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:15px;resize:vertical;min-height:80px;font-weight:400}
+  .ai-btn{background:var(--accent-primary);color:#fff;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
+  .ai-btn:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
+  .ai-btn:disabled{background:var(--border-secondary);cursor:not-allowed;box-shadow:none}
+  .ai-suggestions{margin-top:15px;max-height:200px;overflow-y:auto}
+  .ai-suggestion{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);font-weight:400}
+  .ai-suggestion:hover{background:var(--border-primary);box-shadow:0 4px 12px var(--shadow-secondary)}
+
+  .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 8px 25px var(--shadow-primary);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
+  .notification.show{transform:translateX(0)}
+  .notification.error{background:#f44336}
+  .notification.warn{background:#FF9500}
+  .notification .small{opacity:.9;font-size:.85em}
+
+  .connection-mode{position:fixed;top:70px;right:20px;background:var(--bg-tertiary);backdrop-filter:blur(20px);border:1px solid var(--border-primary);border-radius:12px;padding:15px;z-index:1000;margin-bottom:10px;box-shadow:0 8px 25px var(--shadow-primary)}
+  .connection-mode-btn{background:var(--border-primary);color:var(--text-primary);border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin:2px;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .connection-mode-btn:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+  .connection-mode-btn.active{background:var(--accent-primary);color:#fff}
+
+  .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
+  @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+  .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:10000;display:none;align-items:center;justify-content:center}
+  .modal-overlay.show{display:flex}
+  .modal{background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:12px;padding:30px;min-width:400px;max-width:600px;box-shadow:0 20px 40px var(--shadow-primary)}
+  .modal-title{font-size:1.3rem;font-weight:400;margin-bottom:20px;color:var(--text-primary)}
+  .modal-input{width:100%;padding:15px;border:1px solid var(--border-secondary);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:1rem;margin-bottom:20px;outline:none;transition:border-color 0.3s ease;font-weight:400}
+  .modal-input:focus{border-color:var(--accent-primary)}
+  .modal-buttons{display:flex;gap:10px;justify-content:flex-end}
+  .modal-btn{padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;transition:all 0.3s ease;box-shadow:0 4px 12px var(--shadow-primary)}
+  .modal-btn.primary{background:var(--accent-primary);color:#fff}
+  .modal-btn.primary:hover{background:var(--accent-secondary);box-shadow:0 6px 16px var(--shadow-secondary)}
+  .modal-btn.secondary{background:var(--border-primary);color:var(--text-primary)}
+  .modal-btn.secondary:hover{background:var(--border-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+
+  .recent-colors-popup{position:absolute;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:10px;box-shadow:0 10px 25px var(--shadow-primary);z-index:1000;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;min-width:200px}
+  .recent-colors-popup .color-option{width:25px;height:25px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:all 0.2s ease}
+  .recent-colors-popup .color-option:hover{border-color:var(--accent-primary);transform:scale(1.1)}
+
+  .share-section{display:none;margin-top:20px;padding:15px;background:var(--bg-secondary);border-radius:8px;border:1px solid var(--border-secondary);box-shadow:0 2px 8px var(--shadow-primary)}
+  .share-section.show{display:block}
+  .share-toggle{background:var(--accent-primary);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:0.9rem;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .share-toggle:hover{background:var(--accent-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+  .share-toggle.off{background:var(--border-primary);color:var(--text-primary)}
+  .share-toggle.off:hover{background:var(--border-secondary)}
+  .share-email{width:100%;padding:8px;border-radius:6px;border:1px solid var(--border-secondary);background:var(--bg-tertiary);color:var(--text-primary);margin-top:10px;font-weight:400}
+  .share-btn{margin-top:8px;background:var(--accent-primary);color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary)}
+  .share-btn:hover{background:var(--accent-secondary);box-shadow:0 4px 12px var(--shadow-secondary)}
+
+  .tile-updating{transition:all 0.1s ease-out}
+  .connection-updating{transition:all 0.1s ease-out}
+
+  .tab-container{display:flex;background:var(--bg-secondary);border-bottom:1px solid var(--border-primary);overflow-x:auto;padding:0 20px}
+  .tab{background:var(--tab-inactive);color:var(--text-secondary);border:none;padding:12px 20px;cursor:pointer;transition:all 0.3s ease;border-radius:8px 8px 0 0;margin-right:2px;font-weight:400;position:relative;min-width:120px;text-align:center}
+  .tab:hover{background:var(--tab-hover);color:var(--text-primary)}
+  .tab.active{background:var(--tab-active);color:#fff}
+  .tab-close{position:absolute;top:8px;right:8px;background:rgba(255,255,255,0.2);color:inherit;border:none;border-radius:50%;width:16px;height:16px;cursor:pointer;font-size:10px;opacity:0;transition:opacity 0.3s ease}
+  .tab:hover .tab-close{opacity:1}
+  .tab-close:hover{background:rgba(255,255,255,0.3)}
+
+  .auto-save-indicator{position:fixed;bottom:20px;left:320px;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:8px 12px;box-shadow:0 4px 12px var(--shadow-primary);z-index:1000;font-size:0.8rem;color:var(--text-secondary);transition:all 0.3s ease;opacity:0;transform:translateY(20px)}
+  .auto-save-indicator.show{opacity:1;transform:translateY(0)}
+  .auto-save-indicator.saving{color:var(--inbox-pending)}
+  .auto-save-indicator.saved{color:var(--inbox-accepted)}
+  .auto-save-indicator.error{color:var(--inbox-rejected)}
+
+  .snap-indicator{position:absolute;width:2px;height:2px;background:var(--accent-primary);border-radius:50%;pointer-events:none;z-index:1000;opacity:0;transition:opacity 0.2s ease}
+  .snap-indicator.show{opacity:1}
+  .snap-indicator.grid{background:var(--accent-primary)}
+  .snap-indicator.tile{background:var(--inbox-accepted)}
+
+  .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
+  .tile:hover .shape-palette{opacity:1}
+  .shape-option{width:24px;height:24px;border:2px solid var(--border-primary);border-radius:4px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-secondary);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-secondary)}
+  .shape-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
+  .shape-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+
+  .tile.rounded{border-radius:20px}
+  .tile.circular{border-radius:50%;min-width:120px;min-height:120px}
+  .tile.hexagon{clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)}
+  .tile.diamond{clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
+  .tile.triangle{clip-path:polygon(50% 0%, 0% 100%, 100% 100%)}
+  .tile.parallelogram{clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)}
+
+  .grid-snap-line{position:absolute;background:var(--accent-primary);opacity:0.3;pointer-events:none;z-index:999;transition:opacity 0.2s ease}
+  .grid-snap-line.show{opacity:0.6}
+  .grid-snap-line.vertical{width:1px}
+  .grid-snap-line.horizontal{height:1px}
+
+  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0.15;transition:opacity 0.3s ease}
+.grid-overlay.show{opacity:0.4}
+.grid-line{position:absolute;background:var(--accent-primary);opacity:0.6;box-shadow:0 0 1px rgba(0,0,0,0.1)}
+  .grid-line.vertical{width:1px;height:100%}
+  .grid-line.horizontal{height:1px;width:100%}
+
+  .tool-btn.grid-toggle-btn{background:var(--accent-primary);color:#fff}
+  .tool-btn.grid-toggle-btn:hover{background:var(--accent-secondary)}
+  .tool-btn.grid-toggle-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
+
+  .floating-toolbar{position:fixed;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:8px;display:none;z-index:99999;pointer-events:auto;min-width:200px;transform:translateY(-50%)}
+  .floating-toolbar.show{display:block}
+  .floating-toolbar.tile-toolbar{min-width:180px;transform:translateY(-50%)}
+  .floating-toolbar.connection-toolbar{min-width:160px;transform:translateY(-50%)}
+
+  .toolbar-section{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+  .toolbar-section:last-child{margin-bottom:0}
+  .toolbar-section-title{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:500}
+
+  .toolbar-row{display:flex;gap:4px;align-items:center}
+  .toolbar-button{width:32px;height:32px;border:1px solid var(--border-primary);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:all 0.2s ease}
+  .toolbar-button:hover{background:var(--bg-tertiary);border-color:var(--accent-primary)}
+  .toolbar-button.active{background:var(--accent-primary);color:#fff;border-color:var(--accent-primary)}
+  .toolbar-button.small{width:28px;height:28px;font-size:12px}
+
+  /* Color options in toolbar */
+  .color-options{display:flex;flex-wrap:wrap;gap:4px}
+  .toolbar .color-option{width:20px;height:20px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.2s ease}
+  .toolbar .color-option:hover{transform:scale(1.2);border-color:var(--accent-primary)}
+  .toolbar .color-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 2px var(--accent-primary)}
+
+  /* Dropdown styles */
+  .toolbar-dropdown{position:relative}
+  .toolbar-dropdown-btn{width:100%;padding:8px 12px;border:1px solid var(--border-primary);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);cursor:pointer;text-align:left;font-size:14px}
+  .toolbar-dropdown-btn:hover{background:var(--bg-tertiary);border-color:var(--accent-primary)}
+  .toolbar-dropdown-content{position:absolute;top:100%;left:0;right:0;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:6px;box-shadow:0 4px 12px var(--shadow-primary);z-index:1001;display:none;max-height:200px;overflow-y:auto}
+  .toolbar-dropdown-content.show{display:block}
+  .dropdown-item{padding:8px 12px;cursor:pointer;transition:all 0.2s ease;border-bottom:1px solid var(--border-secondary)}
+  .dropdown-item:last-child{border-bottom:none}
+  .dropdown-item:hover{background:var(--bg-secondary)}
+  .dropdown-item.active{background:var(--accent-primary);color:#fff}
+
+  .toolbar-color-picker{width:32px;height:32px;border:1px solid var(--border-primary);border-radius:6px;cursor:pointer;position:relative;overflow:hidden}
+  .toolbar-color-picker::before{content:'';position:absolute;top:2px;left:2px;right:2px;bottom:2px;background:var(--tile-color, #ffffff);border-radius:4px}
+
+  .secondary-popup{position:absolute;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:12px;display:none;z-index:1001;pointer-events:auto;min-width:240px}
+  .secondary-popup.show{display:block}
+
+  .popup-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border-primary)}
+  .popup-title{font-size:14px;font-weight:500;color:var(--text-primary)}
+  .popup-close{width:24px;height:24px;border:none;background:none;color:var(--text-secondary);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:4px;transition:all 0.2s ease}
+  .popup-close:hover{background:var(--bg-tertiary);color:var(--text-primary)}
+
+  .popup-content{display:grid;grid-template-columns:repeat(auto-fit, minmax(40px, 1fr));gap:8px}
+  .popup-option{width:40px;height:40px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.2s ease;display:flex;align-items:center;justify-content:center;font-size:16px;background:var(--bg-primary)}
+  .popup-option:hover{transform:scale(1.05);border-color:var(--accent-primary)}
+  .popup-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+
+  .line-style-solid{stroke-dasharray: none}
+  .line-style-dashed{stroke-dasharray: 5,5}
+  .line-style-dotted{stroke-dasharray: 2,2}
+  .line-style-dash-dot{stroke-dasharray: 10,2,2,2}
+
+  .connection-type-arrow{marker-end: url(#arrowhead)}
+  .connection-type-line{marker-end: none}
+  .connection-type-dot{marker-end: url(#dotmarker)}
+  .connection-type-diamond{marker-end: url(#diamondmarker)}
+
+  .tile .color-picker-trigger{display:none}
+  .tile .shape-palette{display:none}
+  .tile .connection-dot{display:none}
+
+  .preset-tile{position:relative;cursor:pointer;transition:all 0.3s ease}
+  .preset-tile:hover{transform:scale(1.05)}
+  .preset-tile.selected{transform:scale(1.1);box-shadow:0 0 20px var(--accent-primary)}
+
+  .preset-tile.title{background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:#fff;border-radius:12px}
+  .preset-tile.notes{background:linear-gradient(135deg, #f093fb 0%, #f5576c 100%);color:#fff;border-radius:12px}
+  .preset-tile.component{background:linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);color:#fff;border-radius:12px}
+  .preset-tile.custom{background:linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);color:#fff;border-radius:12px}
+  .preset-tile-icon{font-size:24px;margin-bottom:8px}
+  .preset-tile-label{font-size:12px;font-weight:500;text-align:center}
+
+  .tool-btn.preset-btn { background: var(--accent-primary); color: #fff; transition: all 0.3s ease; }
+  .tool-btn.preset-btn:hover { transform: scale(1.1); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+  .share-permission-selector{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+  .permission-option{display:flex;align-items:center;gap:6px;padding:8px 12px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-primary)}
+  .permission-option:hover{border-color:var(--accent-primary);background:var(--bg-tertiary)}
+  .permission-option.selected{border-color:var(--accent-primary);background:var(--accent-primary);color:#fff}
+  .permission-option input[type="radio"]{display:none}
+  .permission-icon{font-size:16px}
+  .permission-label{font-size:14px;font-weight:500}
+  .permission-description{font-size:11px;color:var(--text-secondary);margin-top:2px}
+
+  .share-section{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;padding:16px;margin-top:16px;display:none}
+  .share-section.show{display:block}
+  .share-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .share-title{font-size:16px;font-weight:500;color:var(--text-primary)}
+  .share-toggle{background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;transition:all 0.3s ease}
+  .share-toggle:hover{background:var(--accent-secondary)}
+  .share-toggle.active{background:var(--inbox-pending)}
+
+  .share-email-section{display:flex;gap:8px;margin-bottom:12px}
+  .share-email{flex:1;padding:8px 12px;border:1px solid var(--border-primary);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);font-size:14px}
+  .share-email:focus{outline:none;border-color:var(--accent-primary)}
+  .share-btn{background:var(--accent-primary);color:#fff;border:none;border-radius:6px;padding:8px 16px;cursor:pointer;font-size:14px;transition:all 0.3s ease}
+  .share-btn:hover{background:var(--accent-secondary)}
+  .share-btn:disabled{background:var(--border-primary);color:var(--text-secondary);cursor:not-allowed}
+
+  /* Share Form Styles */
+  .share-form{margin-bottom:20px}
+  .form-group{margin-bottom:15px}
+  .form-group label{display:block;margin-bottom:5px;color:var(--text-primary);font-weight:500}
+  .permission-options{display:flex;flex-direction:column;gap:8px}
+  .permission-option{display:flex;align-items:center;gap:8px;padding:8px 12px;border:2px solid var(--border-primary);border-radius:6px;cursor:pointer;transition:all 0.3s ease;background:var(--bg-primary)}
+  .permission-option:hover{border-color:var(--accent-primary);background:var(--bg-tertiary)}
+  .permission-option input[type="radio"]{margin:0}
+  .permission-option input[type="radio"]:checked + .permission-label{color:var(--accent-primary);font-weight:500}
+  .permission-label{font-size:14px;font-weight:400}
+
+  .shared-users-list{margin-top:16px}
+  .shared-user-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border-primary);border-radius:6px;margin-bottom:8px}
+  .shared-user-info{display:flex;flex-direction:column}
+  .shared-user-email{font-size:14px;color:var(--text-primary);font-weight:500}
+  .shared-user-permission{font-size:12px;color:var(--text-secondary)}
+  .shared-user-actions{display:flex;gap:4px}
+  .remove-user-btn{background:var(--inbox-rejected);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+  .remove-user-btn:hover{background:var(--accent-secondary)}
+  .change-permission-btn{background:var(--accent-primary);color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:12px;transition:all 0.3s ease}
+  .change-permission-btn:hover{background:var(--accent-secondary)}
+
+  .modal.danger .modal-title { color: #dc3545; }
+  .modal.danger .modal-btn.danger { background: #dc3545; color: white; border-color: #dc3545; }
+  .modal.danger .modal-btn.danger:hover { background: #c82333; border-color: #bd2130; }
+  .warning-text { color: #dc3545; font-weight: 500; margin-top: 8px; }
+
+  #connections-svg{ z-index:5 }
+.tile{ z-index:20 }
+
+  .modal-overlay{ z-index:120000 }
+  .notification{ z-index:130000 }
+
+  .canvas-container{ z-index:1 }
+  .canvas{ z-index:1 }
+  .tab-container{ z-index:2 }
+
+  .popover{ position:fixed; z-index:99999; background:var(--bg-tertiary);
+    border:1px solid var(--border-primary); border-radius:10px; box-shadow:0 12px 30px var(--shadow-primary);
+    padding:10px; pointer-events:auto; backdrop-filter:blur(20px); min-width:200px; max-width:90vw; max-height:90vh; overflow:auto }
+  .color-picker-popout { z-index: 99999 !important; position: fixed !important; }
+  .floating-toolbar { z-index: 99999 !important; position: fixed !important; }
+  .modal, .modal-overlay, .notification { z-index: 99999 !important; position: fixed !important; }
+  .color-picker-grid, .color-picker-recent-grid { z-index: 99999 !important; }
+  .popup-option, .popup-content { z-index: 99999 !important; }
+  .popover * { z-index: inherit !important; }
+  .color-picker-option { z-index: 99999 !important; position: relative !important; }
+
+  /* Preset Tile Selector */
+  .preset-tiles-grid{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px;
+  }
+  .preset-tile{
+    border:1px solid var(--border-primary); border-radius:6px; padding:10px; cursor:pointer; transition:.15s transform;
+  }
+  .preset-tile:hover{ transform:translateY(-2px); }
+  .preset-tile .preset-tile-icon{
+    font-size:24px; margin-bottom:6px; color:var(--text-secondary);
+  }
+  .preset-tile .preset-tile-label{
+    font-size:12px; color:var(--text-primary);
+  }
+
+  /* Cache Status Modal */
+  .cache-status-item{
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;
+  }
+  .cache-label{ font-size:.8rem; color:var(--text-secondary); }
+  .cache-status{ font-size:.8rem; color:var(--text-primary); }
+
+  /* Collaborators List */
+  .collaborators-list{position:fixed;bottom:20px;right:20px;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:12px;box-shadow:0 8px 25px var(--shadow-primary);z-index:1000;min-width:180px;backdrop-filter:blur(20px);display:none}
+  .collaborators-list.show{display:block}
+  .collaborators-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border-secondary)}
+  .collaborators-title{font-size:0.8rem;font-weight:500;color:var(--text-primary)}
+  .collaborators-count{background:var(--accent-primary);color:#fff;border-radius:10px;padding:2px 8px;font-size:0.7rem;font-weight:500}
+  .collaborator-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-secondary);font-size:0.8rem}
+  .collaborator-item:last-child{border-bottom:none}
+  .collaborator-avatar{width:24px;height:24px;border-radius:50%;background:var(--accent-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:500}
+  .collaborator-name{color:var(--text-primary);flex:1}
+  .collaborator-status{width:8px;height:8px;border-radius:50%;background:var(--inbox-accepted)}
+  .collaborator-status.away{background:var(--inbox-pending)}
+  .collaborator-status.offline{background:var(--inbox-rejected)}
+
+  /* Connection Dots */
+
+  /* Color Picker Popout */
+  .color-picker-popout{position:absolute;background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:8px;padding:15px;box-shadow:0 10px 25px var(--shadow-primary);z-index:1001;display:none;min-width:200px;backdrop-filter:blur(20px)}
+  .color-picker-popout.show{display:block}
+  .color-picker-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--border-secondary)}
+  .color-picker-title{font-weight:500;color:var(--text-primary);font-size:0.9rem}
+  .color-picker-close{background:none;border:none;color:var(--text-secondary);cursor:pointer;font-size:16px;padding:2px;border-radius:4px;transition:all 0.3s ease}
+  .color-picker-close:hover{color:var(--text-primary);background:var(--border-primary)}
+  .color-picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:15px}
+  .color-picker-option{width:30px;height:30px;border-radius:50%;border:2px solid var(--border-primary);cursor:pointer;transition:all 0.3s ease;position:relative}
+  .color-picker-option:hover{transform:scale(1.1);border-color:var(--accent-primary)}
+  .color-picker-option.selected{border-color:var(--accent-primary);box-shadow:0 0 0 3px var(--accent-primary)}
+  .color-picker-option.selected::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:12px;font-weight:bold;text-shadow:0 1px 2px rgba(0,0,0,0.5)}
 </style>
 </head>
 <body>
-  <!-- Header -->
   <div class="header">
     <div class="logo">Flowpad</div>
     <div class="user-info">
-      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
-        <span id="theme-icon">🌙</span>
-      </button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><span id="theme-icon">Moon</span></button>
       <span id="userName">User</span>
       <button class="signout-btn" onclick="signOut()">Sign Out</button>
     </div>
   </div>
 
-  <!-- Sidebar -->
   <div class="sidebar">
     <div class="sidebar-content">
-      <button class="new-graph-btn" onclick="createNewGraph()">+ New Graph</button>
+      <!-- Graph creation moved to toolbar to prevent duplicates -->
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('myGraphs')">
-          <span>📁 My Graphs</span>
+        <div class="folder-header" onclick="toggleFolder('myGraphs')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'myGraphs')" 
+             ondragleave="handleDragLeave(event)">
+          <span><span class="folder-icon">Folder</span>My Graphs</span>
           <span class="folder-arrow">▶</span>
         </div>
         <div class="folder-content expanded" id="myGraphs">
@@ -750,48 +499,120 @@
       </div>
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('sharedGraphs')">
-          <span>👥 Shared With Me</span>
+        <div class="folder-header" onclick="toggleFolder('sharedGraphs')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'sharedGraphs')" 
+             ondragleave="handleDragLeave(event)">
+          <span><span class="folder-icon">Group</span>Shared With Me</span>
           <span class="folder-arrow">▶</span>
         </div>
         <div class="folder-content" id="sharedGraphs">
           <div id="sharedGraphsContent"></div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Canvas -->
-  <div class="canvas-container">
-    <div class="canvas" id="canvas">
-      <div class="canvas-content" id="canvasContent">
-        <!-- SVG for connections -->
-        <svg id="connections-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5;">
-          <defs>
-            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-              <polygon points="0 0, 10 3.5, 0 7" fill="var(--accent-primary)" />
-            </marker>
-          </defs>
-        </svg>
-        <!-- Tiles will be added here dynamically -->
+      <div class="folder-section">
+        <div class="folder-header" onclick="toggleFolder('inbox')" 
+             ondragover="handleDragOver(event)" 
+             ondrop="handleDrop(event, 'inbox')" 
+             ondragleave="handleDragLeave(event)">
+          <span><span class="folder-icon">Inbox</span>Inbox</span>
+          <span class="folder-arrow">▶</span>
+        </div>
+        <div class="folder-content" id="inbox">
+          <div id="inboxContent"></div>
+        </div>
+      </div>
+
+      <div class="share-section" id="shareSection" style="display:none;">
+        <div class="share-header">
+          <div class="share-title">Share Graph</div>
+          <button class="share-toggle" onclick="toggleShareSection()">Hide</button>
+        </div>
+
+        <div class="share-permission-selector">
+          <label class="permission-option selected" data-permission="viewer">
+            <input type="radio" name="permission" value="viewer" checked>
+            <div class="permission-icon">View</div>
+            <div class="permission-info">
+              <div class="permission-label">Viewer</div>
+              <div class="permission-description">Can view only</div>
+            </div>
+          </label>
+          <label class="permission-option" data-permission="editor">
+            <input type="radio" name="permission" value="editor">
+            <div class="permission-icon">Edit</div>
+            <div class="permission-info">
+              <div class="permission-label">Editor</div>
+              <div class="permission-description">View & edit</div>
+            </div>
+          </label>
+        </div>
+
+        <div class="share-email-section">
+          <input type="email" class="share-email" id="shareEmail" placeholder="Enter email address" />
+          <button class="share-btn" onclick="shareGraph()">Share</button>
+        </div>
+
+        <div class="shared-users-list" id="sharedUsersList"></div>
       </div>
     </div>
   </div>
 
-  <!-- Toolbar -->
+  <div class="canvas-container">
+    <div class="tab-container" id="tabContainer"></div>
+    <div class="canvas" id="canvas">
+      <div class="canvas-content" id="canvasContent"></div>
+    </div>
+  </div>
+
+  <!-- Connection mode toggle -->
+  <div class="connection-mode" id="connectionMode">
+    <div style="color:var(--text-secondary);font-size:0.8rem;margin-bottom:8px;text-align:center;">Connection Mode</div>
+    <button class="connection-mode-btn active" onclick="toggleConnectMode(true)" id="modeConnect">Connect</button>
+    <button class="connection-mode-btn" onclick="toggleConnectMode(false)" id="modeNone">Select</button>
+  </div>
+
+  <!-- Main toolbar -->
   <div class="toolbar" id="toolbar">
     <div class="tool-label">Tools</div>
-    <div class="tool-row">
-      <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
-      <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">🗑</button>
-      <button class="tool-btn" onclick="centerCanvas()" title="Center Canvas">🏠</button>
-    </div>
+    <button class="tool-btn" onclick="addTile()" title="Add Tile">+</button>
+    <button class="tool-btn" onclick="createTextRectangle()" title="Add Text Rectangle">T</button>
+    <button class="tool-btn" onclick="deleteSelected()" title="Delete Selected">DEL</button>
+    <button class="tool-btn" onclick="centerCanvas()" title="Center Canvas">⌂</button>
+    <button class="tool-btn" onclick="toggleAIPanel()" title="AI Suggestions">AI</button>
+    <button class="tool-btn grid-toggle-btn" onclick="toggleGrid()" title="Show Grid (OFF)">▦</button>
+    <button class="tool-btn preset-btn" onclick="showPresetTileSelector()" title="Preset Tiles">📋</button>
+    <button class="tool-btn snap-grid-btn" onclick="toggleSnapToGrid()" title="Snap to Grid (ON)">⊞</button>
+    <button class="tool-btn snap-tiles-btn" onclick="toggleSnapToTiles()" title="Snap to Tiles (ON)">⊟</button>
+    <button class="tool-btn share-btn" onclick="openShareGraphModal()" title="Share Graph">Share</button>
+    <button class="tool-btn new-graph-btn" onclick="createNewGraph()" title="New Graph">+</button>
+  </div>
+
+  <!-- AI panel -->
+  <div class="ai-panel" id="aiPanel">
+    <div class="ai-title">AI Suggestions</div>
+    <textarea class="ai-input" id="aiInput" placeholder="Describe what you want to add or connect..."></textarea>
+    <button class="ai-btn" onclick="getAISuggestions()" id="aiBtn"><span id="aiBtnText">Get Suggestions</span></button>
+    <div class="ai-suggestions" id="aiSuggestions"></div>
   </div>
 
   <!-- Notifications -->
   <div id="notification" class="notification"></div>
 
-  <!-- New Graph Modal -->
+  <!-- Collaborators -->
+  <div class="collaborators-list" id="collaboratorsList">
+    <div class="collaborators-header">
+      <span class="collaborators-title">Collaborators</span>
+      <span class="collaborators-count" id="collaboratorsCount">0</span>
+    </div>
+    <div id="collaboratorsContent"></div>
+  </div>
+
+  <!-- Autosave indicator -->
+  <div class="auto-save-indicator" id="autoSaveIndicator"><span id="autoSaveText">Ready</span></div>
+
+  <!-- New graph modal -->
   <div class="modal-overlay" id="newGraphModal">
     <div class="modal">
       <div class="modal-title">Create New Graph</div>
@@ -803,1519 +624,197 @@
     </div>
   </div>
 
+  <!-- Preset Tile Selector -->
+  <div class="modal-overlay" id="presetTileModal">
+    <div class="modal">
+      <div class="modal-title">Choose Preset Tile</div>
+      <div class="preset-tiles-grid">
+        <div class="preset-tile title" onclick="createPresetTile('title')">
+          <div class="preset-tile-icon">Title</div>
+          <div class="preset-tile-label">Title</div>
+        </div>
+        <div class="preset-tile notes" onclick="createPresetTile('notes')">
+          <div class="preset-tile-icon">Notes</div>
+          <div class="preset-tile-label">Notes</div>
+        </div>
+        <div class="preset-tile component" onclick="createPresetTile('component')">
+          <div class="preset-tile-icon">Component</div>
+          <div class="preset-tile-label">Component</div>
+        </div>
+        <div class="preset-tile custom" onclick="createPresetTile('custom')">
+          <div class="preset-tile-icon">Custom</div>
+          <div class="preset-tile-label">Custom</div>
+        </div>
+      </div>
+      <!-- Cancel button removed for cleaner UX -->
+    </div>
+  </div>
 
+  <!-- Cache Status Modal -->
+  <div class="modal-overlay" id="cacheStatusModal">
+    <div class="modal">
+      <div class="modal-title">Cache & Sync Status</div>
+      <div id="cacheStatusContent">
+        <div class="cache-status-item">
+          <span class="cache-label">Last Save:</span>
+          <span id="lastSaveTime">Never</span>
+        </div>
+        <div class="cache-status-item">
+          <span class="cache-label">Auto-save:</span>
+          <span id="autoSaveStatus">Enabled</span>
+        </div>
+        <div class="cache-status-item">
+          <span class="cache-label">Pending Updates:</span>
+          <span id="pendingUpdatesCount">0</span>
+        </div>
+        <div class="cache-status-item">
+          <span class="cache-label">Connection:</span>
+          <span id="connectionStatus">Online</span>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" onclick="closeCacheStatusModal()">Close</button>
+        <button class="modal-btn primary" onclick="forceSave()">Force Save Now</button>
+      </div>
+    </div>
+  </div>
 
-<!-- Essential JavaScript for core graph functionality -->
+  <!-- Share Graph Modal -->
+  <div class="modal-overlay" id="shareGraphModal">
+    <div class="modal">
+      <div class="modal-title">Share Graph</div>
+      <div class="share-form">
+        <div class="form-group">
+          <label for="shareEmail">Email Address:</label>
+          <input type="email" id="shareEmail" class="modal-input" placeholder="Enter email address..." required>
+        </div>
+        <div class="form-group">
+          <label>Permission Level:</label>
+          <div class="permission-options">
+            <label class="permission-option">
+              <input type="radio" name="permission" value="view" checked>
+              <span class="permission-label">View Only</span>
+            </label>
+            <label class="permission-option">
+              <input type="radio" name="permission" value="edit">
+              <span class="permission-label">Can Edit</span>
+            </label>
+            <label class="permission-option">
+              <input type="radio" name="permission" value="admin">
+              <span class="permission-label">Admin</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal-buttons">
+        <button class="modal-btn secondary" onclick="closeShareGraphModal()">Cancel</button>
+        <button class="modal-btn primary" onclick="shareGraph()">Share</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toolbar for Tiles -->
+  <div class="floating-toolbar tile-toolbar" id="tileToolbar">
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Tile</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="duplicateTile()" title="Duplicate">Copy</button>
+        <button class="toolbar-button" onclick="bringToFront()" title="Bring to Front">Up</button>
+        <button class="toolbar-button" onclick="sendToBack()" title="Send to Back">Down</button>
+        <button class="toolbar-button" onclick="deleteSelected()" title="Delete">Delete</button>
+      </div>
+    </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Shape</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="changeTileShape('rectangle')" title="Rectangle">Rect</button>
+        <button class="toolbar-button" onclick="changeTileShape('rounded')" title="Rounded">Round</button>
+        <button class="toolbar-button" onclick="changeTileShape('circular')" title="Circle">Circle</button>
+        <button class="toolbar-button" onclick="changeTileShape('hexagon')" title="Hexagon">Hex</button>
+      </div>
+    </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Color</div>
+      <div class="toolbar-row">
+        <div class="toolbar-color-picker" onclick="showColorPicker()" title="Change Color"></div>
+        <button class="toolbar-button" onclick="resetTileColor()" title="Reset Color">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Toolbar for Connections -->
+  <div class="floating-toolbar connection-toolbar" id="connectionToolbar">
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Connection</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="deleteSelectedConnection()" title="Delete">Delete</button>
+        <button class="toolbar-button" onclick="changeConnectionColor()" title="Color">Color</button>
+      </div>
+    </div>
+    <div class="toolbar-section">
+      <div class="toolbar-section-title">Style</div>
+      <div class="toolbar-row">
+        <button class="toolbar-button" onclick="changeLineStyle('solid')" title="Solid">━</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dashed')" title="Dashed">┅</button>
+        <button class="toolbar-button" onclick="changeLineStyle('dotted')" title="Dotted">┄</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Context menu -->
+  <div class="ctx" id="ctxMenu">
+    <ul>
+      <li onclick="ctxAction('edit')">Edit</li>
+      <li onclick="ctxAction('color')">Color...</li>
+      <li onclick="ctxAction('shape')">Shape...</li>
+      <li onclick="ctxAction('duplicate')">Duplicate</li>
+      <li onclick="ctxAction('delete')">Delete</li>
+    </ul>
+  </div>
+
+  <!-- SVG markers -->
+  <svg style="position:absolute;width:0;height:0;pointer-events:none">
+    <defs>
+      <marker id="arrowhead" markerWidth="12" markerHeight="8" refX="10" refY="4" orient="auto">
+        <polygon points="0 0, 12 4, 0 8" fill="var(--accent-primary)"></polygon>
+      </marker>
+      <marker id="dotmarker" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+        <circle cx="4" cy="4" r="3" fill="var(--accent-primary)"></circle>
+      </marker>
+      <marker id="diamondmarker" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+        <polygon points="5 0, 10 3.5, 5 7, 0 3.5" fill="var(--accent-primary)"></polygon>
+      </marker>
+    </defs>
+  </svg>
+
+  <!-- Hidden file input for import -->
+  <input type="file" id="importFile" accept=".json" style="display: none;">
+
 <script>
-// Core state variables
-let currentGraph = null;
-let tiles = [];
-let connections = [];
+/* =========================
+   Core state
+========================= */
+let currentUser = null, currentGraph = null;
+let tiles = [], connections = [];
 let selectedTile = null;
-let isDragging = false;
-let dragOffset = { x: 0, y: 0 };
-let canvasOffset = { x: 0, y: 0 };
-let zoom = 1;
-
-// DOM elements
+let selectedConnection = null;
+let isDragging = false, dragOffsetWorld = {x:0,y:0};
+let isPanning = false, panStart = {x:0,y:0};
+let canvasOffset = {x:0,y:0};
+let zoom = 1; // world -> screen scale
+let openTabs = [], activeTabId = null;
+let pendingUpdates = [];
+let isDirty = false, lastSaveTime = 0, autoSaveTimer = null;
+let snapToGrid = true, snapToTiles = true, gridSize = 20, showGrid = false;
+let snapIndicators = [], snapLines = [];
+let isConnecting = false, connectionStart = null;
+let historyStack = [], futureStack = [];
 const canvas = document.getElementById('canvas');
 const canvasContent = document.getElementById('canvasContent');
-
-// Initialize the application
-document.addEventListener('DOMContentLoaded', init);
-
-async function init() {
-  try {
-    await checkAuth();
-    await loadGraphs();
-    setupCanvas();
-    setupTheme();
-    initializeEnhancedFeatures();
-    notify('Flowpad loaded successfully!', 'success');
-  } catch (error) {
-    console.error('Initialization error:', error);
-    notify('Failed to initialize Flowpad', 'error');
-  }
-}
-
-// Authentication functions
-async function checkAuth() {
-  const token = localStorage.getItem('flowpad_token');
-  if (!token) {
-    window.location.href = '/';
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/graphs', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!response.ok) {
-      throw new Error('Authentication failed');
-    }
-  } catch (error) {
-    localStorage.removeItem('flowpad_token');
-    window.location.href = '/';
-  }
-}
-
-function signOut() {
-  localStorage.clear();
-  window.location.href = '/';
-}
-
-// Theme management
-function setupTheme() {
-  const saved = localStorage.getItem('flowpad_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', saved);
-  updateThemeIcon(saved);
-}
-
-function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const next = current === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('flowpad_theme', next);
-  updateThemeIcon(next);
-}
-
-function updateThemeIcon(theme) {
-  document.getElementById('theme-icon').textContent = theme === 'dark' ? '🌙' : '☀️';
-}
-
-// Canvas setup and interaction
-function setupCanvas() {
-  canvas.addEventListener('mousedown', onMouseDown);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mouseup', onMouseUp);
-  canvas.addEventListener('click', onCanvasClick);
-}
-
-function onMouseDown(e) {
-  const tile = e.target.closest('.tile');
-  if (tile) {
-    startDragging(e, tile);
-  }
-}
-
-function onMouseMove(e) {
-  if (isDragging && selectedTile) {
-    updateDragging(e);
-  }
-}
-
-function onMouseUp(e) {
-  if (isDragging) {
-    finishDragging();
-  }
-}
-
-function onCanvasClick(e) {
-  if (!e.target.closest('.tile')) {
-    clearSelection();
-  }
-}
-
-// Tile management
-function addTile() {
-  const x = Math.random() * 400 + 100;
-  const y = Math.random() * 300 + 100;
-  const tile = createTile(x, y, 'New Tile', 'Enter content here...');
-  tiles.push(tile);
-  renderCanvas();
-  selectTile(tile);
-  scheduleSave();
-}
-
-function createTile(x, y, title = '', content = '', id = null) {
-  const tile = document.createElement('div');
-  tile.className = 'tile';
-  tile.dataset.tileId = id || generateId();
-  tile.dataset.x = x;
-  tile.dataset.y = y;
-  tile.style.left = x + 'px';
-  tile.style.top = y + 'px';
-
-  tile.innerHTML = `
-    <textarea class="tile-title" placeholder="Title">${title}</textarea>
-    <textarea class="tile-content" placeholder="Content">${content}</textarea>
-  `;
-
-  // Add event listeners
-  tile.addEventListener('click', () => selectTile(tile));
-  tile.querySelectorAll('textarea').forEach(textarea => {
-    textarea.addEventListener('input', scheduleSave);
-  });
-
-  return tile;
-}
-
-function selectTile(tile) {
-  clearSelection();
-  tile.classList.add('selected');
-  selectedTile = tile;
-}
-
-function clearSelection() {
-  tiles.forEach(tile => tile.classList.remove('selected'));
-  selectedTile = null;
-}
-
-function deleteSelected() {
-  if (selectedTile) {
-    const index = tiles.indexOf(selectedTile);
-    if (index > -1) {
-      tiles.splice(index, 1);
-      selectedTile.remove();
-      selectedTile = null;
-      renderCanvas();
-      scheduleSave();
-      notify('Tile deleted', 'success');
-    }
-  }
-}
-
-// Dragging functionality
-function startDragging(e, tile) {
-  isDragging = true;
-  selectedTile = tile;
-  selectTile(tile);
-
-  const rect = tile.getBoundingClientRect();
-  const canvasRect = canvas.getBoundingClientRect();
-  dragOffset.x = e.clientX - rect.left;
-  dragOffset.y = e.clientY - rect.top;
-}
-
-function updateDragging(e) {
-  if (!selectedTile) return;
-
-  const canvasRect = canvas.getBoundingClientRect();
-  const x = e.clientX - canvasRect.left - dragOffset.x;
-  const y = e.clientY - canvasRect.top - dragOffset.y;
-
-  selectedTile.style.left = x + 'px';
-  selectedTile.style.top = y + 'px';
-  selectedTile.dataset.x = x;
-  selectedTile.dataset.y = y;
-}
-
-function finishDragging() {
-  isDragging = false;
-  if (selectedTile) {
-    scheduleSave();
-  }
-}
-
-// Canvas utilities
-function centerCanvas() {
-  if (tiles.length === 0) return;
-
-  // Calculate center of all tiles
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-
-  tiles.forEach(tile => {
-    const x = parseFloat(tile.dataset.x);
-    const y = parseFloat(tile.dataset.y);
-    const width = tile.offsetWidth;
-    const height = tile.offsetHeight;
-
-    minX = Math.min(minX, x);
-    minY = Math.min(minY, y);
-    maxX = Math.max(maxX, x + width);
-    maxY = Math.max(maxY, y + height);
-  });
-
-  const centerX = (minX + maxX) / 2;
-  const centerY = (minY + maxY) / 2;
-  const canvasRect = canvas.getBoundingClientRect();
-
-  canvasOffset.x = canvasRect.width / 2 - centerX;
-  canvasOffset.y = canvasRect.height / 2 - centerY;
-
-  canvasContent.style.transform = `translate(${canvasOffset.x}px, ${canvasOffset.y}px) scale(${zoom})`;
-}
-
-function renderCanvas() {
-  // Clear existing tiles from DOM
-  canvasContent.querySelectorAll('.tile').forEach(tile => tile.remove());
-
-  // Add all tiles to canvas
-  tiles.forEach(tile => {
-    canvasContent.appendChild(tile);
-  });
-}
-
-// Graph management - API integration
-async function loadGraphs() {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/graphs', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!response.ok) throw new Error('Failed to load graphs');
-
-    const graphs = await response.json();
-    displayGraphs(graphs);
-  } catch (error) {
-    console.error('Error loading graphs:', error);
-    notify('Failed to load graphs', 'error');
-  }
-}
-
-function displayGraphs(graphs) {
-  const ownGraphs = document.getElementById('ownGraphs');
-  const sharedGraphs = document.getElementById('sharedGraphsContent');
-
-  ownGraphs.innerHTML = '';
-  sharedGraphs.innerHTML = '';
-
-  graphs.forEach(graph => {
-    const graphElement = createGraphElement(graph);
-    if (graph.type === 'own') {
-      ownGraphs.appendChild(graphElement);
-    } else {
-      sharedGraphs.appendChild(graphElement);
-    }
-  });
-}
-
-function createGraphElement(graph) {
-  const div = document.createElement('div');
-  div.className = 'graph-item';
-  div.innerHTML = `
-    <div class="graph-title">${graph.title}</div>
-    <div class="graph-meta">Updated: ${new Date(graph.updated_at).toLocaleDateString()}</div>
-  `;
-
-  div.addEventListener('click', () => loadGraph(graph));
-  return div;
-}
-
-async function loadGraph(graph) {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${graph.id}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!response.ok) throw new Error('Failed to load graph');
-
-    const graphData = await response.json();
-    currentGraph = graphData;
-
-    // Clear existing tiles
-    tiles = [];
-    connections = [];
-
-    // Load tiles from graph data
-    if (graphData.data && graphData.data.tiles) {
-      graphData.data.tiles.forEach(tileData => {
-        const tile = createTile(
-          tileData.x || 0,
-          tileData.y || 0,
-          tileData.title || '',
-          tileData.content || '',
-          tileData.id
-        );
-        tiles.push(tile);
-      });
-    }
-
-    renderCanvas();
-    notify(`Loaded "${graphData.title}"`, 'success');
-  } catch (error) {
-    console.error('Error loading graph:', error);
-    notify('Failed to load graph', 'error');
-  }
-}
-
-// Graph creation
-function createNewGraph() {
-  const modal = document.getElementById('newGraphModal');
-  const input = document.getElementById('newGraphTitle');
-  input.value = '';
-  modal.classList.add('show');
-  input.focus();
-}
-
-function closeNewGraphModal() {
-  document.getElementById('newGraphModal').classList.remove('show');
-}
-
-async function confirmNewGraph() {
-  const title = document.getElementById('newGraphTitle').value.trim();
-  if (!title) {
-    notify('Please enter a title', 'error');
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/graphs', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        title: title,
-        data: { tiles: [], connections: [] }
-      })
-    });
-
-    if (!response.ok) throw new Error('Failed to create graph');
-
-    const newGraph = await response.json();
-    currentGraph = newGraph;
-    tiles = [];
-    connections = [];
-    renderCanvas();
-    closeNewGraphModal();
-    loadGraphs(); // Refresh the sidebar
-    notify(`Created "${title}"`, 'success');
-  } catch (error) {
-    console.error('Error creating graph:', error);
-    notify('Failed to create graph', 'error');
-  }
-}
-
-// Save functionality
-let saveTimeout = null;
-
-function scheduleSave() {
-  if (!currentGraph) return;
-
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveGraph, 1000);
-}
-
-async function saveGraph() {
-  if (!currentGraph) return;
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const graphData = {
-      tiles: tiles.map(tile => ({
-        id: tile.dataset.tileId,
-        x: parseFloat(tile.dataset.x),
-        y: parseFloat(tile.dataset.y),
-        title: tile.querySelector('.tile-title').value,
-        content: tile.querySelector('.tile-content').value
-      })),
-      connections: connections
-    };
-
-    const response = await fetch(`/api/graphs/${currentGraph.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        title: currentGraph.title,
-        data: graphData
-      })
-    });
-
-    if (!response.ok) throw new Error('Failed to save graph');
-
-    console.log('Graph saved successfully');
-  } catch (error) {
-    console.error('Error saving graph:', error);
-    notify('Failed to save graph', 'error');
-  }
-}
-
-// Folder management
-function toggleFolder(folderId) {
-  const folder = document.getElementById(folderId);
-  const header = folder.previousElementSibling;
-  const arrow = header.querySelector('.folder-arrow');
-
-  folder.classList.toggle('expanded');
-  arrow.textContent = folder.classList.contains('expanded') ? '▼' : '▶';
-  header.classList.toggle('active');
-}
-
-// Utility functions
-function generateId() {
-  return 'tile_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-}
-
-function notify(message, type = 'success', duration = 3000) {
-  const notification = document.getElementById('notification');
-  notification.textContent = message;
-  notification.className = `notification ${type}`;
-  notification.classList.add('show');
-
-  setTimeout(() => {
-    notification.classList.remove('show');
-  }, duration);
-}
-
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Delete' && selectedTile) {
-    deleteSelected();
-  } else if (e.key === 'n' && !e.target.matches('input, textarea')) {
-    addTile();
-  }
-});
-
-// ===========================
-// API-INTEGRATED FUNCTIONS
-// ===========================
-
-// Text rectangle creation
-function createTextRectangle() {
-  const x = Math.random() * 400 + 100;
-  const y = Math.random() * 300 + 100;
-  const tile = createTile(x, y, 'Text Block', 'Enter your text here...');
-  tile.style.minHeight = '80px';
-  tiles.push(tile);
-  renderCanvas();
-  selectTile(tile);
-  scheduleSave();
-  notify('Text rectangle added', 'success');
-}
-
-// AI Panel functionality
-let aiPanelVisible = false;
-function toggleAIPanel() {
-  const panel = document.getElementById('aiPanel');
-  if (!panel) {
-    notify('AI Panel element not found', 'error');
-    return;
-  }
-
-  aiPanelVisible = !aiPanelVisible;
-  panel.style.display = aiPanelVisible ? 'block' : 'none';
-
-  if (aiPanelVisible) {
-    document.getElementById('aiInput')?.focus();
-  }
-}
-
-// AI Suggestions with API integration
-async function getAISuggestions() {
-  const input = document.getElementById('aiInput');
-  const button = document.getElementById('aiBtn');
-  const suggestionsDiv = document.getElementById('aiSuggestions');
-
-  if (!input || !input.value.trim()) {
-    notify('Please enter a description', 'warn');
-    return;
-  }
-
-  const prompt = input.value.trim();
-  button.disabled = true;
-  button.innerHTML = '<span class="loading"></span>Getting suggestions...';
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/ai-suggestions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-        targetTile: selectedTile ? {
-          id: selectedTile.dataset.tileId,
-          title: selectedTile.querySelector('.tile-title')?.value,
-          content: selectedTile.querySelector('.tile-content')?.value
-        } : null,
-        existingTiles: tiles.map(tile => ({
-          id: tile.dataset.tileId,
-          title: tile.querySelector('.tile-title')?.value,
-          content: tile.querySelector('.tile-content')?.value
-        })),
-        connections: connections
-      })
-    });
-
-    if (!response.ok) throw new Error('Failed to get suggestions');
-
-    const data = await response.json();
-    displayAISuggestions(data.suggestions);
-    notify('AI suggestions generated', 'success');
-
-  } catch (error) {
-    console.error('AI suggestions error:', error);
-    notify('Failed to get AI suggestions', 'error');
-  } finally {
-    button.disabled = false;
-    button.innerHTML = '<span id="aiBtnText">Get Suggestions</span>';
-  }
-}
-
-function displayAISuggestions(suggestions) {
-  const suggestionsDiv = document.getElementById('aiSuggestions');
-  if (!suggestionsDiv) return;
-
-  suggestionsDiv.innerHTML = '';
-
-  suggestions.forEach((suggestion, index) => {
-    const div = document.createElement('div');
-    div.className = 'ai-suggestion';
-    div.textContent = suggestion;
-    div.onclick = () => applySuggestion(suggestion);
-    suggestionsDiv.appendChild(div);
-  });
-}
-
-function applySuggestion(suggestion) {
-  // Create a new tile with the suggestion
-  const x = Math.random() * 400 + 100;
-  const y = Math.random() * 300 + 100;
-  const tile = createTile(x, y, 'AI Suggestion', suggestion);
-  tiles.push(tile);
-  renderCanvas();
-  selectTile(tile);
-  scheduleSave();
-  notify('Suggestion applied', 'success');
-}
-
-// Grid functionality
-let gridVisible = false;
-function toggleGrid() {
-  gridVisible = !gridVisible;
-  const button = document.querySelector('.grid-toggle-btn');
-
-  if (gridVisible) {
-    showGrid();
-    button?.classList.add('active');
-    button?.setAttribute('title', 'Hide Grid (ON)');
-    notify('Grid enabled', 'success');
-  } else {
-    hideGrid();
-    button?.classList.remove('active');
-    button?.setAttribute('title', 'Show Grid (OFF)');
-    notify('Grid disabled', 'success');
-  }
-}
-
-function showGrid() {
-  // Create grid overlay
-  let gridOverlay = document.getElementById('gridOverlay');
-  if (!gridOverlay) {
-    gridOverlay = document.createElement('div');
-    gridOverlay.id = 'gridOverlay';
-    gridOverlay.className = 'grid-overlay';
-    canvasContent.appendChild(gridOverlay);
-  }
-
-  gridOverlay.innerHTML = '';
-  const gridSize = 20;
-  const canvasRect = canvas.getBoundingClientRect();
-
-  // Vertical lines
-  for (let x = 0; x < canvasRect.width; x += gridSize) {
-    const line = document.createElement('div');
-    line.className = 'grid-line vertical';
-    line.style.left = x + 'px';
-    gridOverlay.appendChild(line);
-  }
-
-  // Horizontal lines
-  for (let y = 0; y < canvasRect.height; y += gridSize) {
-    const line = document.createElement('div');
-    line.className = 'grid-line horizontal';
-    line.style.top = y + 'px';
-    gridOverlay.appendChild(line);
-  }
-
-  gridOverlay.classList.add('show');
-}
-
-function hideGrid() {
-  const gridOverlay = document.getElementById('gridOverlay');
-  if (gridOverlay) {
-    gridOverlay.classList.remove('show');
-  }
-}
-
-// Preset tile selector
-function showPresetTileSelector() {
-  const modal = document.getElementById('presetTileModal');
-  if (modal) {
-    modal.classList.add('show');
-  } else {
-    notify('Preset tile modal not found', 'error');
-  }
-}
-
-function createPresetTile(type) {
-  const modal = document.getElementById('presetTileModal');
-  modal?.classList.remove('show');
-
-  const x = Math.random() * 400 + 100;
-  const y = Math.random() * 300 + 100;
-
-  let title, content, style = '';
-
-  switch (type) {
-    case 'title':
-      title = 'Main Title';
-      content = 'Enter your main heading here';
-      style = 'font-size: 1.2em; font-weight: bold; text-align: center;';
-      break;
-    case 'notes':
-      title = 'Notes';
-      content = '• Point 1\n• Point 2\n• Point 3';
-      break;
-    case 'component':
-      title = 'Component';
-      content = 'Component description\n\nInputs: \nOutputs: ';
-      break;
-    case 'custom':
-      title = 'Custom Block';
-      content = 'Customize this block for your needs';
-      break;
-    default:
-      title = 'New Block';
-      content = 'Enter content here';
-  }
-
-  const tile = createTile(x, y, title, content);
-  if (style) {
-    tile.style.cssText += style;
-  }
-
-  tiles.push(tile);
-  renderCanvas();
-  selectTile(tile);
-  scheduleSave();
-  notify(`${type} tile created`, 'success');
-}
-
-// Snap functionality
-let snapToGrid = true;
-let snapToTiles = true;
-
-function toggleSnapToGrid() {
-  snapToGrid = !snapToGrid;
-  const button = document.querySelector('.snap-grid-btn');
-
-  if (snapToGrid) {
-    button?.classList.add('active');
-    button?.setAttribute('title', 'Snap to Grid (ON)');
-    notify('Snap to grid enabled', 'success');
-  } else {
-    button?.classList.remove('active');
-    button?.setAttribute('title', 'Snap to Grid (OFF)');
-    notify('Snap to grid disabled', 'success');
-  }
-}
-
-function toggleSnapToTiles() {
-  snapToTiles = !snapToTiles;
-  const button = document.querySelector('.snap-tiles-btn');
-
-  if (snapToTiles) {
-    button?.classList.add('active');
-    button?.setAttribute('title', 'Snap to Tiles (ON)');
-    notify('Snap to tiles enabled', 'success');
-  } else {
-    button?.classList.remove('active');
-    button?.setAttribute('title', 'Snap to Tiles (OFF)');
-    notify('Snap to tiles disabled', 'success');
-  }
-}
-
-// Share functionality with API integration
-function openShareGraphModal() {
-  if (!currentGraph) {
-    notify('No graph selected', 'warn');
-    return;
-  }
-
-  const modal = document.getElementById('shareGraphModal');
-  if (modal) {
-    modal.classList.add('show');
-    loadSharedUsers();
-  } else {
-    notify('Share modal not found', 'error');
-  }
-}
-
-function closeShareGraphModal() {
-  const modal = document.getElementById('shareGraphModal');
-  if (modal) {
-    modal.classList.remove('show');
-  }
-}
-
-async function shareGraph() {
-  if (!currentGraph) {
-    notify('No graph selected', 'error');
-    return;
-  }
-
-  const emailInput = document.getElementById('shareEmail');
-  const email = emailInput?.value.trim();
-
-  if (!email) {
-    notify('Please enter an email address', 'error');
-    return;
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    notify('Please enter a valid email address', 'error');
-    return;
-  }
-
-  const permission = document.querySelector('input[name="permission"]:checked')?.value || 'view';
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/share`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        email: email,
-        permission: permission === 'view' ? 'viewer' : 'editor'
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to share graph');
-    }
-
-    const result = await response.json();
-    notify(result.message || 'Graph shared successfully', 'success');
-    emailInput.value = '';
-    loadSharedUsers(); // Refresh the shared users list
-
-  } catch (error) {
-    console.error('Share error:', error);
-    notify(error.message || 'Failed to share graph', 'error');
-  }
-}
-
-async function loadSharedUsers() {
-  if (!currentGraph) return;
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/shared-users`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const sharedUsers = await response.json();
-      displaySharedUsers(sharedUsers);
-    }
-  } catch (error) {
-    console.error('Error loading shared users:', error);
-  }
-}
-
-function displaySharedUsers(sharedUsers) {
-  const container = document.getElementById('sharedUsersList');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (sharedUsers.length === 0) {
-    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center;">No users shared with this graph</p>';
-    return;
-  }
-
-  sharedUsers.forEach(user => {
-    const userDiv = document.createElement('div');
-    userDiv.className = 'shared-user-item';
-    userDiv.innerHTML = `
-      <div class="shared-user-info">
-        <div class="shared-user-email">${user.email}</div>
-        <div class="shared-user-permission">${user.permission}</div>
-      </div>
-      <div class="shared-user-actions">
-        <button class="change-permission-btn" onclick="changeUserPermission('${user.email}', '${user.permission}')">
-          Change
-        </button>
-        <button class="remove-user-btn" onclick="removeSharedUser('${user.email}')">
-          Remove
-        </button>
-      </div>
-    `;
-    container.appendChild(userDiv);
-  });
-}
-
-async function changeUserPermission(email, currentPermission) {
-  const newPermission = currentPermission === 'viewer' ? 'editor' : 'viewer';
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/change-permission`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        email: email,
-        permission: newPermission
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to change permission');
-    }
-
-    notify(`Permission changed to ${newPermission}`, 'success');
-    loadSharedUsers(); // Refresh the list
-
-  } catch (error) {
-    console.error('Change permission error:', error);
-    notify(error.message || 'Failed to change permission', 'error');
-  }
-}
-
-async function removeSharedUser(email) {
-  if (!confirm(`Remove ${email} from this graph?`)) return;
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/remove-user`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        email: email
-      })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to remove user');
-    }
-
-    notify('User removed successfully', 'success');
-    loadSharedUsers(); // Refresh the list
-
-  } catch (error) {
-    console.error('Remove user error:', error);
-    notify(error.message || 'Failed to remove user', 'error');
-  }
-}
-
-// Connection mode functionality
-let isConnecting = false;
-let connectionStart = null;
-
-function toggleConnectMode(enable) {
-  isConnecting = enable;
-  const connectBtn = document.getElementById('modeConnect');
-  const selectBtn = document.getElementById('modeNone');
-
-  if (enable) {
-    connectBtn?.classList.add('active');
-    selectBtn?.classList.remove('active');
-    canvas.style.cursor = 'crosshair';
-    notify('Connection mode enabled - click tiles to connect', 'success');
-  } else {
-    connectBtn?.classList.remove('active');
-    selectBtn?.classList.add('active');
-    canvas.style.cursor = 'grab';
-    connectionStart = null;
-    notify('Selection mode enabled', 'success');
-  }
-}
-
-// Tile manipulation functions
-function duplicateTile() {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  const originalX = parseFloat(selectedTile.dataset.x);
-  const originalY = parseFloat(selectedTile.dataset.y);
-  const title = selectedTile.querySelector('.tile-title')?.value || '';
-  const content = selectedTile.querySelector('.tile-content')?.value || '';
-
-  const newTile = createTile(originalX + 20, originalY + 20, title, content);
-  tiles.push(newTile);
-  renderCanvas();
-  selectTile(newTile);
-  scheduleSave();
-  notify('Tile duplicated', 'success');
-}
-
-function bringToFront() {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  selectedTile.style.zIndex = '1000';
-  notify('Tile brought to front', 'success');
-}
-
-function sendToBack() {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  selectedTile.style.zIndex = '1';
-  notify('Tile sent to back', 'success');
-}
-
-// Tile styling functions
-function changeTileShape(shape) {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  // Remove existing shape classes
-  selectedTile.classList.remove('rounded', 'circular', 'hexagon', 'diamond', 'triangle', 'parallelogram');
-
-  if (shape !== 'rectangle') {
-    selectedTile.classList.add(shape);
-  }
-
-  scheduleSave();
-  notify(`Tile shape changed to ${shape}`, 'success');
-}
-
-function showColorPicker() {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  // Create a simple color picker
-  const colors = ['#ffffff', '#f8f9fa', '#e9ecef', '#dee2e6', '#ced4da', '#adb5bd',
-                  '#6c757d', '#495057', '#343a40', '#212529', '#007bff', '#6610f2',
-                  '#6f42c1', '#e83e8c', '#dc3545', '#fd7e14', '#ffc107', '#28a745',
-                  '#20c997', '#17a2b8'];
-
-  const picker = document.createElement('div');
-  picker.className = 'color-picker-popout show';
-  picker.style.position = 'absolute';
-  picker.style.top = '50px';
-  picker.style.right = '20px';
-  picker.style.zIndex = '10000';
-
-  picker.innerHTML = `
-    <div class="color-picker-header">
-      <span class="color-picker-title">Choose Color</span>
-      <button class="color-picker-close" onclick="this.parentElement.parentElement.remove()">×</button>
-    </div>
-    <div class="color-picker-grid">
-      ${colors.map(color => `
-        <div class="color-picker-option" style="background-color: ${color}"
-             onclick="applyTileColor('${color}'); this.parentElement.parentElement.remove();"></div>
-      `).join('')}
-    </div>
-  `;
-
-  document.body.appendChild(picker);
-}
-
-function applyTileColor(color) {
-  if (!selectedTile) return;
-
-  selectedTile.style.backgroundColor = color;
-  scheduleSave();
-  notify('Tile color changed', 'success');
-}
-
-function resetTileColor() {
-  if (!selectedTile) {
-    notify('No tile selected', 'warn');
-    return;
-  }
-
-  selectedTile.style.backgroundColor = '';
-  scheduleSave();
-  notify('Tile color reset', 'success');
-}
-
-// Connection management functions
-let selectedConnection = null;
-
-function deleteSelectedConnection() {
-  if (!selectedConnection) {
-    notify('No connection selected', 'warn');
-    return;
-  }
-
-  const index = connections.indexOf(selectedConnection);
-  if (index > -1) {
-    connections.splice(index, 1);
-    selectedConnection = null;
-    renderConnections();
-    scheduleSave();
-    notify('Connection deleted', 'success');
-  }
-}
-
-function changeConnectionColor() {
-  if (!selectedConnection) {
-    notify('No connection selected', 'warn');
-    return;
-  }
-
-  const colors = ['#007bff', '#dc3545', '#28a745', '#ffc107', '#17a2b8', '#6f42c1'];
-  const currentColor = selectedConnection.color || '#007bff';
-  const currentIndex = colors.indexOf(currentColor);
-  const nextIndex = (currentIndex + 1) % colors.length;
-  const newColor = colors[nextIndex];
-
-  selectedConnection.color = newColor;
-  renderConnections();
-  scheduleSave();
-  notify('Connection color changed', 'success');
-}
-
-function changeLineStyle(style) {
-  if (!selectedConnection) {
-    notify('No connection selected', 'warn');
-    return;
-  }
-
-  selectedConnection.style = style;
-  renderConnections();
-  scheduleSave();
-  notify(`Connection style changed to ${style}`, 'success');
-}
-
-function renderConnections() {
-  const svg = document.getElementById('connections-svg');
-  if (!svg) return;
-
-  // Clear existing connections
-  const existingPaths = svg.querySelectorAll('path');
-  existingPaths.forEach(path => path.remove());
-
-  connections.forEach(connection => {
-    const fromTile = tiles.find(t => t.dataset.tileId === connection.from);
-    const toTile = tiles.find(t => t.dataset.tileId === connection.to);
-
-    if (fromTile && toTile) {
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-
-      const fromRect = fromTile.getBoundingClientRect();
-      const toRect = toTile.getBoundingClientRect();
-      const canvasRect = canvas.getBoundingClientRect();
-
-      const fromX = fromRect.right - canvasRect.left;
-      const fromY = fromRect.top + fromRect.height / 2 - canvasRect.top;
-      const toX = toRect.left - canvasRect.left;
-      const toY = toRect.top + toRect.height / 2 - canvasRect.top;
-
-      const d = `M ${fromX} ${fromY} L ${toX} ${toY}`;
-      path.setAttribute('d', d);
-      path.setAttribute('stroke', connection.color || '#007bff');
-      path.setAttribute('stroke-width', '3');
-      path.setAttribute('fill', 'none');
-      path.setAttribute('marker-end', 'url(#arrowhead)');
-
-      if (connection.style === 'dashed') {
-        path.setAttribute('stroke-dasharray', '5,5');
-      } else if (connection.style === 'dotted') {
-        path.setAttribute('stroke-dasharray', '2,2');
-      }
-
-      path.onclick = () => {
-        selectedConnection = connection;
-        path.classList.add('selected');
-      };
-
-      svg.appendChild(path);
-    }
-  });
-}
-
-// Context menu functionality
-function ctxAction(action) {
-  const menu = document.getElementById('ctxMenu');
-  if (menu) {
-    menu.style.display = 'none';
-  }
-
-  if (!selectedTile) return;
-
-  switch (action) {
-    case 'edit':
-      selectedTile.querySelector('.tile-title')?.focus();
-      break;
-    case 'color':
-      showColorPicker();
-      break;
-    case 'shape':
-      // Cycle through shapes
-      const shapes = ['rectangle', 'rounded', 'circular', 'hexagon'];
-      const currentShape = shapes.find(s => selectedTile.classList.contains(s)) || 'rectangle';
-      const currentIndex = shapes.indexOf(currentShape);
-      const nextShape = shapes[(currentIndex + 1) % shapes.length];
-      changeTileShape(nextShape);
-      break;
-    case 'duplicate':
-      duplicateTile();
-      break;
-    case 'delete':
-      deleteSelected();
-      break;
-  }
-}
-
-// Cache status modal
-function closeCacheStatusModal() {
-  const modal = document.getElementById('cacheStatusModal');
-  if (modal) {
-    modal.classList.remove('show');
-  }
-}
-
-async function showCacheStatus() {
-  if (!currentGraph) {
-    notify('No graph selected', 'warn');
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/cache-status`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const status = await response.json();
-      updateCacheStatusDisplay(status);
-      const modal = document.getElementById('cacheStatusModal');
-      if (modal) {
-        modal.classList.add('show');
-      }
-    }
-  } catch (error) {
-    console.error('Cache status error:', error);
-    notify('Failed to get cache status', 'error');
-  }
-}
-
-function updateCacheStatusDisplay(status) {
-  const lastSaveElement = document.getElementById('lastSaveTime');
-  const autoSaveElement = document.getElementById('autoSaveStatus');
-  const pendingElement = document.getElementById('pendingUpdatesCount');
-  const connectionElement = document.getElementById('connectionStatus');
-
-  if (lastSaveElement) {
-    lastSaveElement.textContent = status.lastModified ?
-      new Date(status.lastModified).toLocaleString() : 'Never';
-  }
-
-  if (autoSaveElement) {
-    autoSaveElement.textContent = 'Enabled';
-  }
-
-  if (pendingElement) {
-    pendingElement.textContent = status.dirty ? '1' : '0';
-  }
-
-  if (connectionElement) {
-    connectionElement.textContent = 'Online';
-  }
-}
-
-// Force save function
-async function forceSave() {
-  if (!currentGraph) {
-    notify('No graph to save', 'warn');
-    return;
-  }
-
-  try {
-    await saveGraph();
-
-    // Also call the force save API endpoint
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/save`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      notify('Graph force saved successfully', 'success');
-    } else {
-      throw new Error('Force save failed');
-    }
-  } catch (error) {
-    console.error('Force save error:', error);
-    notify('Failed to force save', 'error');
-  }
-}
-
-// Share section toggle
-function toggleShareSection() {
-  const section = document.getElementById('shareSection');
-  if (!section) return;
-
-  const isVisible = section.style.display !== 'none';
-  section.style.display = isVisible ? 'none' : 'block';
-
-  const button = document.querySelector('.share-toggle');
-  if (button) {
-    button.textContent = isVisible ? 'Show' : 'Hide';
-  }
-}
-
-// Enhanced API integration functions
-async function loadInbox() {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/graphs/inbox', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const invitations = await response.json();
-      displayInbox(invitations);
-    } else {
-      console.error('Failed to load inbox');
-    }
-  } catch (error) {
-    console.error('Inbox error:', error);
-  }
-}
-
-function displayInbox(invitations) {
-  const container = document.getElementById('inboxContent');
-  if (!container) return;
-
-  container.innerHTML = '';
-
-  if (invitations.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">No pending invitations</div>';
-    return;
-  }
-
-  invitations.forEach(invitation => {
-    const div = document.createElement('div');
-    div.className = 'inbox-item pending';
-    div.innerHTML = `
-      <div class="inbox-title">${invitation.graph_title}</div>
-      <div class="inbox-meta">Shared by ${invitation.sharer_name} • ${invitation.permission}</div>
-      <div class="inbox-actions">
-        <button class="inbox-btn accept" onclick="respondToInvitation(${invitation.id}, 'accept')">Accept</button>
-        <button class="inbox-btn reject" onclick="respondToInvitation(${invitation.id}, 'reject')">Reject</button>
-      </div>
-    `;
-    container.appendChild(div);
-  });
-}
-
-async function respondToInvitation(id, action) {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/inbox/${id}/${action}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      notify(`Invitation ${action}ed`, 'success');
-      loadInbox(); // Refresh inbox
-      if (action === 'accept') {
-        loadGraphs(); // Refresh graphs list
-      }
-    } else {
-      throw new Error(`Failed to ${action} invitation`);
-    }
-  } catch (error) {
-    console.error(`${action} invitation error:`, error);
-    notify(`Failed to ${action} invitation`, 'error');
-  }
-}
-
-// Graph statistics API integration
-async function getGraphStats() {
-  if (!currentGraph) {
-    notify('No graph selected', 'warn');
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch(`/api/graphs/${currentGraph.id}/stats`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const stats = await response.json();
-      displayGraphStats(stats);
-    } else {
-      throw new Error('Failed to get graph statistics');
-    }
-  } catch (error) {
-    console.error('Graph stats error:', error);
-    notify('Failed to get graph statistics', 'error');
-  }
-}
-
-function displayGraphStats(stats) {
-  const message = `
-Graph Statistics:
-• Tiles: ${stats.tile_count}
-• Connections: ${stats.connection_count}
-• Characters: ${stats.total_characters}
-• Data size: ${Math.round(stats.data_size_bytes / 1024)} KB
-• Last updated: ${new Date(stats.last_updated).toLocaleString()}
-  `;
-
-  alert(message); // Simple display - could be enhanced with a modal
-}
-
-// User profile API integration
-async function getUserProfile() {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/user/profile', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.ok) {
-      const profile = await response.json();
-      document.getElementById('userName').textContent = profile.name;
-      return profile;
-    }
-  } catch (error) {
-    console.error('Profile error:', error);
-  }
-}
-
-async function updateUserProfile(name) {
-  try {
-    const token = localStorage.getItem('flowpad_token');
-    const response = await fetch('/api/user/profile', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ name })
-    });
-
-    if (response.ok) {
-      notify('Profile updated successfully', 'success');
-      getUserProfile(); // Refresh display
-    } else {
-      throw new Error('Failed to update profile');
-    }
-  } catch (error) {
-    console.error('Update profile error:', error);
-    notify('Failed to update profile', 'error');
-  }
-}
-
-// Enhanced connection creation
-function createConnection(fromTileId, toTileId) {
-  const connection = {
-    id: 'conn_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-    from: fromTileId,
-    to: toTileId,
-    style: 'solid',
-    color: '#007bff'
-  };
-
-  connections.push(connection);
-  renderConnections();
-  scheduleSave();
-  notify('Connection created', 'success');
-
-  return connection;
-}
-
-// Enhanced tile click handling for connections
-function handleTileClick(tile) {
-  if (isConnecting) {
-    if (!connectionStart) {
-      connectionStart = tile.dataset.tileId;
-      tile.style.outline = '3px solid #007bff';
-      notify('Select target tile to connect', 'info');
-    } else if (connectionStart !== tile.dataset.tileId) {
-      createConnection(connectionStart, tile.dataset.tileId);
-
-      // Clear connection start
-      const startTile = tiles.find(t => t.dataset.tileId === connectionStart);
-      if (startTile) {
-        startTile.style.outline = '';
-      }
-      connectionStart = null;
-
-      // Exit connection mode
-      toggleConnectMode(false);
-    }
-  } else {
-    selectTile(tile);
-  }
-}
-
-// Initialize inbox and enhanced features
-function initializeEnhancedFeatures() {
-  loadInbox();
-  getUserProfile();
-
-  // Add click handlers for connection mode
-  document.addEventListener('click', (e) => {
-    const tile = e.target.closest('.tile');
-    if (tile && isConnecting) {
-      e.stopPropagation();
-      handleTileClick(tile);
-    }
-  });
-
-  // Add keyboard shortcuts for new features
-  document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey || e.metaKey) {
-      switch (e.key) {
-        case 'd':
-          e.preventDefault();
-          duplicateTile();
-          break;
-        case 's':
-          e.preventDefault();
-          forceSave();
-          break;
-        case 'g':
-          e.preventDefault();
-          toggleGrid();
-          break;
-      }
-    }
-  });
-}
-
+const tabContainer = document.getElementById('tabContainer');
+// presetPopup removed - using presetTileModal instead
+const ctxMenu = document.getElementById('ctxMenu');
+let ctxTargetTile = null;
 
 /* =========================
    Init
@@ -4529,6 +3028,9 @@ function addTileClickHandler(tile) {
   });
 }
 
+// Using existing findOptimalPort function
+
+// Using existing createSmartPath function
 
 function loadFromLocalStorage() {
   // Look for any saved graphs in localStorage
@@ -4752,7 +3254,7 @@ function closeShareGraphModal() {
   modal.style.display = 'none';
 }
 
-function shareGraph() {
+async function shareGraph() {
   if (!currentGraph) return;
   
   const email = document.getElementById('shareEmail').value.trim();
@@ -4762,17 +3264,38 @@ function shareGraph() {
   
   const permission = document.querySelector('input[name="permission"]:checked').value;
   
-  // Here you would typically send the share request to your server
-  // For now, we'll just show a success message
-  notify(`Graph shared with ${email} (${permission} access)`, 'success');
-  closeShareGraphModal();
-  
-  // In a real implementation, you would call:
-  // fetch(`/api/graphs/${currentGraph.id}/share`, {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('flowpad_token')}` },
-  //   body: JSON.stringify({ email, permission })
-  // });
+  try {
+    // Real API implementation
+    const response = await fetch(`/api/graphs/${currentGraph.id}/share`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('flowpad_token')}`
+      },
+      body: JSON.stringify({ email, permission })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to share graph');
+    }
+
+    const result = await response.json();
+    notify(result.message || `Graph shared with ${email} (${permission} access)`, 'success');
+    closeShareGraphModal();
+
+    // Clear the email input
+    document.getElementById('shareEmail').value = '';
+
+    // Refresh shared users list if available
+    if (typeof loadSharedUsers === 'function') {
+      loadSharedUsers();
+    }
+
+  } catch (error) {
+    console.error('Share error:', error);
+    notify(error.message || 'Failed to share graph', 'error');
+  }
 }
 
 function handleDragOver(e) {
