@@ -115,26 +115,26 @@
 .tile-content{font-size:0.9rem;line-height:1.5;min-height:50px;color:var(--text-tile);font-weight:400}
 
 /* Resize outline for selected tiles - always rectangular and separate from shape */
-.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid #007AFF;border-radius:8px;pointer-events:none;z-index:1000;background:rgba(0,122,255,0.1);clip-path:none !important;box-shadow:0 0 0 1px rgba(255,255,255,0.8)}
+.tile.selected::after{content:'';position:absolute;top:-4px;left:-4px;right:-4px;bottom:-4px;border:2px solid #007AFF;border-radius:8px;pointer-events:none;background:rgba(0,122,255,0.1);clip-path:none !important;box-shadow:0 0 0 1px rgba(255,255,255,0.8)}
 
 /* Resize handles for each edge and corner - 4 dots on each side, positioned farther from tile */
-  .tile.selected .resize-handle{position:absolute;width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;cursor:pointer;z-index:1001;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
-  .tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
-  .tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize;background:#007AFF;border:2px solid #fff;z-index:1001}
+  .tile.selected .resize-handle{position:absolute;width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+  .tile.selected .resize-handle.n1{top:-12px;left:25%;cursor:n-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.n2{top:-12px;left:50%;transform:translateX(-50%);cursor:n-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.n3{top:-12px;left:75%;cursor:n-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.s1{bottom:-12px;left:25%;cursor:s-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.s2{bottom:-12px;left:50%;transform:translateX(-50%);cursor:s-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.s3{bottom:-12px;left:75%;cursor:s-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.e1{right:-12px;top:25%;cursor:e-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.e2{right:-12px;top:50%;transform:translateY(-50%);cursor:e-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.e3{right:-12px;top:75%;cursor:e-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.w1{left:-12px;top:25%;cursor:w-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.w2{left:-12px;top:50%;transform:translateY(-50%);cursor:w-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.w3{left:-12px;top:75%;cursor:w-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.nw{top:-12px;left:-12px;cursor:nw-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.ne{top:-12px;right:-12px;cursor:ne-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.sw{bottom:-12px;left:-12px;cursor:sw-resize;background:#007AFF;border:2px solid #fff}
+  .tile.selected .resize-handle.se{bottom:-12px;right:-12px;cursor:se-resize;background:#007AFF;border:2px solid #fff}
 
   /* quick picker hover areas */
   .shape-palette{position:absolute;top:10px;left:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:4px;opacity:0;transition:opacity 0.3s ease;z-index:1000}
@@ -261,7 +261,7 @@
   .grid-snap-line.vertical{width:1px}
   .grid-snap-line.horizontal{height:1px}
 
-  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0.15;transition:opacity 0.3s ease}
+  .grid-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;opacity:0.15;transition:opacity 0.3s ease}
 .grid-overlay.show{opacity:0.4}
 .grid-line{position:absolute;background:var(--accent-primary);opacity:0.6;box-shadow:0 0 1px rgba(0,0,0,0.1)}
   .grid-line.vertical{width:1px;height:100%}
@@ -271,7 +271,7 @@
   .tool-btn.grid-toggle-btn:hover{background:var(--accent-secondary)}
   .tool-btn.grid-toggle-btn:not(.active){background:var(--border-primary);color:var(--text-primary)}
 
-  .floating-toolbar{position:fixed;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:8px;display:none;z-index:99999;pointer-events:auto;min-width:200px;transform:translateY(-50%)}
+  .floating-toolbar{position:fixed;background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.15);padding:8px;display:none;pointer-events:auto;min-width:200px;transform:translateY(-50%)}
   .floating-toolbar.show{display:block}
   .floating-toolbar.tile-toolbar{min-width:180px;transform:translateY(-50%)}
   .floating-toolbar.connection-toolbar{min-width:160px;transform:translateY(-50%)}
@@ -398,26 +398,31 @@
   .modal.danger .modal-btn.danger:hover { background: #c82333; border-color: #bd2130; }
   .warning-text { color: #dc3545; font-weight: 500; margin-top: 8px; }
 
-  #connections-svg{ z-index:5 }
-.tile{ z-index:20 }
-
-  .modal-overlay{ z-index:120000 }
-  .notification{ z-index:130000 }
-
+  /* Z-Index Hierarchy - Fixed Order */
   .canvas-container{ z-index:1 }
   .canvas{ z-index:1 }
   .tab-container{ z-index:2 }
+  #connections-svg{ z-index:5 }
+  .grid-overlay{ z-index:8 }
+  .tile{ z-index:100 !important }
+  .tile.selected{ z-index:101 !important }
+  .tile.selected::after{ z-index:102 !important }
+  .tile.selected .resize-handle{ z-index:103 !important }
 
-  .popover{ position:fixed; z-index:99999; background:var(--bg-tertiary);
+  /* UI Elements */
+  .header{ z-index:1000 }
+  .toolbar{ z-index:1000 }
+  .ai-panel{ z-index:1000 }
+  .floating-toolbar{ z-index:1001 }
+  .secondary-popup{ z-index:1002 }
+
+  /* High Priority UI */
+  .modal-overlay{ z-index:10000 }
+  .notification{ z-index:10001 }
+
+  .popover{ position:fixed; z-index:1003; background:var(--bg-tertiary);
     border:1px solid var(--border-primary); border-radius:10px; box-shadow:0 12px 30px var(--shadow-primary);
     padding:10px; pointer-events:auto; backdrop-filter:blur(20px); min-width:200px; max-width:90vw; max-height:90vh; overflow:auto }
-  .color-picker-popout { z-index: 99999 !important; position: fixed !important; }
-  .floating-toolbar { z-index: 99999 !important; position: fixed !important; }
-  .modal, .modal-overlay, .notification { z-index: 99999 !important; position: fixed !important; }
-  .color-picker-grid, .color-picker-recent-grid { z-index: 99999 !important; }
-  .popup-option, .popup-content { z-index: 99999 !important; }
-  .popover * { z-index: inherit !important; }
-  .color-picker-option { z-index: 99999 !important; position: relative !important; }
 
   /* Preset Tile Selector */
   .preset-tiles-grid{
@@ -1003,6 +1008,7 @@ function worldToScreen(x,y){ return { x: x*zoom + canvasOffset.x, y: y*zoom + ca
 function screenToWorld(x,y){ return { x: (x - canvas.getBoundingClientRect().left - canvasOffset.x)/zoom, y: (y - canvas.getBoundingClientRect().top - canvasOffset.y)/zoom }; }
 function getSnapPosition(x,y){ // x,y in world coords
   let sx = x, sy = y; const snapDist = 8/zoom;
+
   if (snapToGrid){
     const gx = Math.round(x/gridSize)*gridSize, gy = Math.round(y/gridSize)*gridSize;
     if (Math.abs(x-gx)<snapDist){ sx=gx; showSnapLineAt(worldToScreen(gx,0).x,'v'); }
@@ -2108,11 +2114,39 @@ function toggleSnapTiles(btn){ snapToTiles = !snapToTiles; btn?.classList.toggle
 async function checkAuth(){
   const token = localStorage.getItem('flowpad_token');
   const user = localStorage.getItem('flowpad_user');
-  currentUser = user ? JSON.parse(user) : { name:'User' };
-  document.getElementById('userName').textContent = currentUser.name || 'User';
-  if (!token) return; // continue in demo mode if no token
-  const ok = await fetch('/api/graphs', { headers:{Authorization:`Bearer ${token}`} }).then(r=>r.ok).catch(()=>false);
-  if (!ok){ /* optionally redirect */ }
+
+  // If no token, redirect to login page
+  if (!token) {
+    console.log('No auth token found, redirecting to login');
+    window.location.href = '/';
+    return;
+  }
+
+  // Verify token is valid
+  try {
+    const response = await fetch('/api/graphs', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      console.log('Invalid token, redirecting to login');
+      localStorage.clear();
+      window.location.href = '/';
+      return;
+    }
+
+    // Token is valid, set user info
+    currentUser = user ? JSON.parse(user) : { name: 'User' };
+    const userNameElement = document.getElementById('userName');
+    if (userNameElement) {
+      userNameElement.textContent = currentUser.name || 'User';
+    }
+
+  } catch (error) {
+    console.log('Auth check failed, redirecting to login');
+    localStorage.clear();
+    window.location.href = '/';
+  }
 }
 function signOut(){ localStorage.clear(); window.location.reload(); }
 
@@ -2627,9 +2661,19 @@ function clearSelection() {
 
 // Initialize enhanced functionality
 function initializeEnhancedFeatures() {
-  // Set initial states for snap buttons
-  document.querySelector('.snap-grid-btn').classList.toggle('active', snapToGrid);
-  document.querySelector('.snap-tiles-btn').classList.toggle('active', snapToTiles);
+  // Set initial states for snap buttons (safely)
+  const snapGridBtn = document.querySelector('.snap-grid-btn');
+  const snapTilesBtn = document.querySelector('.snap-tiles-btn');
+
+  if (snapGridBtn) {
+    snapGridBtn.classList.toggle('active', snapToGrid);
+    snapGridBtn.title = snapToGrid ? 'Snap to Grid (ON)' : 'Snap to Grid (OFF)';
+  }
+
+  if (snapTilesBtn) {
+    snapTilesBtn.classList.toggle('active', snapToTiles);
+    snapTilesBtn.title = snapToTiles ? 'Snap to Tiles (ON)' : 'Snap to Tiles (OFF)';
+  }
   
   // Add connection dot event listeners
   document.addEventListener('click', (e) => {
@@ -2772,19 +2816,7 @@ function closePresetTileModal() {
   if (modal) modal.classList.remove('show');
 }
 
-function toggleSnapToGrid() {
-  snapToGrid = !snapToGrid;
-  const btn = document.querySelector('.snap-grid-btn');
-  if (btn) btn.classList.toggle('active', snapToGrid);
-  notify(`Snap to grid ${snapToGrid ? 'ON' : 'OFF'}`);
-}
 
-function toggleSnapToTiles() {
-  snapToTiles = !snapToTiles;
-  const btn = document.querySelector('.snap-tiles-btn');
-  if (btn) btn.classList.toggle('active', snapToTiles);
-  notify(`Snap to tiles ${snapToTiles ? 'ON' : 'OFF'}`);
-}
 
 function toggleGrid() {
   showGrid = !showGrid;
@@ -3099,6 +3131,8 @@ function loadFromLocalStorage() {
 function addResizeHandles(tile) {
   // Remove existing handles
   tile.querySelectorAll('.resize-handle').forEach(h => h.remove());
+
+
   
   // Create resize handles for each edge (4 dots on each side) and corners
   const handles = [
@@ -3139,6 +3173,8 @@ function addResizeHandles(tile) {
     
     tile.appendChild(div);
   });
+
+
 }
 
 function startResizing(tile, handleType, e) {
