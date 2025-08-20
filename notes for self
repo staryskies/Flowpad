@@ -20,8 +20,3 @@ use the best css possible dont cut back and black and white formating
 
 tiles that have editable titles and text that resizes to amount of text 
 
-edit my current code to see if there are eerrors
-
-Error: Can't parse json file /vercel/path0/package.json: Unexpected token '/', "// package"... is not valid JSON while parsing '// package.json
-{
-    "name": "flowpad-s'
