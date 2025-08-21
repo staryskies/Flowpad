@@ -357,7 +357,7 @@
   .ai-suggestion{background:var(--bg-secondary);border:1px solid var(--border-primary);border-radius:6px;padding:10px;margin-bottom:8px;cursor:pointer;transition:all 0.3s ease;box-shadow:0 2px 6px var(--shadow-primary);font-weight:400}
   .ai-suggestion:hover{background:var(--border-primary);box-shadow:0 4px 12px var(--shadow-secondary)}
 
-  .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 8px 25px var(--shadow-primary);z-index:10000;transform:translateX(400px);transition:.3s transform;max-width:300px}
+  .notification{position:fixed;top:80px;right:20px;background:var(--accent-primary);color:#fff;padding:12px 20px;border-radius:8px;box-shadow:0 8px 25px var(--shadow-primary);transform:translateX(400px);transition:.3s transform;max-width:300px}
   .notification.show{transform:translateX(0)}
   .notification.error{background:#f44336}
   .notification.warn{background:#FF9500}
@@ -371,7 +371,347 @@
   .loading{display:inline-block;width:16px;height:16px;border:2px solid transparent;border-top:2px solid currentColor;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px}
   @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 
-  .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:10000;display:none;align-items:center;justify-content:center}
+  /* Enhanced Tile Menu */
+  .tile-menu {
+    position: fixed;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    box-shadow: 0 8px 25px var(--shadow-primary);
+    backdrop-filter: blur(20px);
+    z-index: 500;
+    display: none;
+    padding: 8px;
+    min-width: 280px;
+  }
+
+  .tile-menu.show {
+    display: block;
+  }
+
+  .tile-menu-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .tile-menu-dropdown {
+    position: relative;
+    flex: 1;
+  }
+
+  .tile-menu-btn {
+    width: 100%;
+    height: 36px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+    gap: 4px;
+  }
+
+  .tile-menu-btn:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+  }
+
+  .tile-menu-btn.delete-btn {
+    background: #dc3545;
+    color: white;
+    border-color: #dc3545;
+    flex: 0 0 auto;
+    width: 60px;
+  }
+
+  .tile-menu-btn.duplicate-btn {
+    background: var(--accent-primary);
+    color: white;
+    border-color: var(--accent-primary);
+    flex: 0 0 auto;
+    width: 70px;
+  }
+
+  .color-preview {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid var(--border-primary);
+    background: #ffffff;
+  }
+
+  .shape-icon {
+    font-size: 14px;
+    width: 16px;
+    text-align: center;
+  }
+
+  .dropdown-arrow {
+    font-size: 10px;
+    color: var(--text-secondary);
+  }
+
+  .dropdown-content {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    box-shadow: 0 4px 12px var(--shadow-primary);
+    z-index: 501;
+    display: none;
+    margin-top: 2px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .dropdown-content.show {
+    display: block;
+  }
+
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .color-option {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1px solid var(--border-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .color-option:hover {
+    transform: scale(1.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 8px var(--shadow-secondary);
+  }
+
+  .shape-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 12px;
+  }
+
+  .shape-option:hover {
+    background: var(--bg-secondary);
+    color: var(--accent-primary);
+  }
+
+  /* Enhanced Inbox Styling */
+  .inbox-section-header {
+    margin: 15px 0 10px 0;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .inbox-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .inbox-section-header h4 {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .inbox-bulk-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .inbox-bulk-btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .inbox-bulk-btn.accept-all {
+    background: #28a745;
+    color: white;
+  }
+
+  .inbox-bulk-btn.accept-all:hover {
+    background: #218838;
+    box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+  }
+
+  .inbox-bulk-btn.reject-all {
+    background: #dc3545;
+    color: white;
+  }
+
+  .inbox-bulk-btn.reject-all:hover {
+    background: #c82333;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+  }
+
+  .inbox-item {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px var(--shadow-primary);
+  }
+
+  .inbox-item.pending {
+    border-left: 4px solid #ffc107;
+    background: var(--bg-primary);
+  }
+
+  .inbox-item.accepted {
+    border-left: 4px solid #28a745;
+    opacity: 0.7;
+  }
+
+  .inbox-item.rejected {
+    border-left: 4px solid #dc3545;
+    opacity: 0.7;
+  }
+
+  .inbox-item:hover {
+    box-shadow: 0 4px 12px var(--shadow-secondary);
+    transform: translateY(-1px);
+  }
+
+  .inbox-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .inbox-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    font-size: 16px;
+  }
+
+  .inbox-permission {
+    background: var(--accent-primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .inbox-status {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .inbox-status.accepted {
+    background: #28a745;
+    color: white;
+  }
+
+  .inbox-status.rejected {
+    background: #dc3545;
+    color: white;
+  }
+
+  .inbox-meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+  }
+
+  .inbox-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .inbox-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .inbox-btn.accept {
+    background: #28a745;
+    color: white;
+  }
+
+  .inbox-btn.accept:hover {
+    background: #218838;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+  }
+
+  .inbox-btn.reject {
+    background: #dc3545;
+    color: white;
+  }
+
+  .inbox-btn.reject:hover {
+    background: #c82333;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+
+  /* Inbox Badge */
+  .inbox-badge {
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 16px;
+    height: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+  }
+
+  .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center}
   .modal-overlay.show{display:flex}
   .modal{background:var(--bg-tertiary);border:1px solid var(--border-primary);border-radius:12px;padding:30px;min-width:400px;max-width:600px;box-shadow:0 20px 40px var(--shadow-primary)}
   .modal-title{font-size:1.3rem;font-weight:400;margin-bottom:20px;color:var(--text-primary)}
@@ -430,10 +770,29 @@
   .tile.rounded::before{border-radius:20px}
   .tile.circular::before{border-radius:50%}
   .tile.circular{min-width:120px;min-height:120px;aspect-ratio:1}
-  .tile.hexagon::before{clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)}
-  .tile.diamond::before{clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)}
-  .tile.triangle::before{clip-path:polygon(50% 0%, 0% 100%, 100% 100%)}
-  .tile.parallelogram::before{clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%)}
+
+  /* Complex shapes - use border + clip-path to preserve borders */
+  .tile.hexagon::before{
+    clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    /* Add padding to prevent border clipping */
+    margin:-2px;
+    padding:2px;
+  }
+  .tile.diamond::before{
+    clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    margin:-2px;
+    padding:2px;
+  }
+  .tile.triangle::before{
+    clip-path:polygon(50% 0%, 0% 100%, 100% 100%);
+    margin:-2px;
+    padding:2px;
+  }
+  .tile.parallelogram::before{
+    clip-path:polygon(25% 0%, 100% 0%, 75% 100%, 0% 100%);
+    margin:-2px;
+    padding:2px;
+  }
 
   /* Content area adjustments for different shapes */
   .tile.circular .tile-content-wrapper{
@@ -713,11 +1072,12 @@
       </div>
 
       <div class="folder-section">
-        <div class="folder-header" onclick="toggleFolder('inbox')" 
-             ondragover="handleDragOver(event)" 
-             ondrop="handleDrop(event, 'inbox')" 
+        <div class="folder-header" onclick="toggleFolder('inbox')"
+             ondragover="handleDragOver(event)"
+             ondrop="handleDrop(event, 'inbox')"
              ondragleave="handleDragLeave(event)">
           <span><span class="folder-icon">Inbox</span>Inbox</span>
+          <span class="inbox-badge" id="inboxBadge" style="display:none;">0</span>
           <span class="folder-arrow">▶</span>
         </div>
         <div class="folder-content" id="inbox">
@@ -914,32 +1274,78 @@
     </div>
   </div>
 
-  <!-- Floating Toolbar for Tiles -->
-  <div class="floating-toolbar tile-toolbar" id="tileToolbar">
-    <div class="toolbar-section">
-      <div class="toolbar-section-title">Tile</div>
-      <div class="toolbar-row">
-        <button class="toolbar-button" onclick="duplicateTile()" title="Duplicate">Copy</button>
-        <button class="toolbar-button" onclick="bringToFront()" title="Bring to Front">Up</button>
-        <button class="toolbar-button" onclick="sendToBack()" title="Send to Back">Down</button>
-        <button class="toolbar-button" onclick="deleteSelected()" title="Delete">Delete</button>
+  <!-- Enhanced Tile Menu - Floating Above Tile -->
+  <div class="tile-menu" id="tileMenu">
+    <div class="tile-menu-row">
+      <!-- Color Dropdown -->
+      <div class="tile-menu-dropdown">
+        <button class="tile-menu-btn color-btn" onclick="toggleColorDropdown()">
+          <div class="color-preview" id="colorPreview"></div>
+          <span>Color</span>
+          <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="dropdown-content color-dropdown" id="colorDropdown">
+          <div class="color-grid">
+            <div class="color-option" style="background:#ffffff" onclick="applyTileColor('#ffffff')"></div>
+            <div class="color-option" style="background:#f8f9fa" onclick="applyTileColor('#f8f9fa')"></div>
+            <div class="color-option" style="background:#e9ecef" onclick="applyTileColor('#e9ecef')"></div>
+            <div class="color-option" style="background:#dee2e6" onclick="applyTileColor('#dee2e6')"></div>
+            <div class="color-option" style="background:#007bff" onclick="applyTileColor('#007bff')"></div>
+            <div class="color-option" style="background:#28a745" onclick="applyTileColor('#28a745')"></div>
+            <div class="color-option" style="background:#dc3545" onclick="applyTileColor('#dc3545')"></div>
+            <div class="color-option" style="background:#ffc107" onclick="applyTileColor('#ffc107')"></div>
+            <div class="color-option" style="background:#17a2b8" onclick="applyTileColor('#17a2b8')"></div>
+            <div class="color-option" style="background:#6f42c1" onclick="applyTileColor('#6f42c1')"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="toolbar-section">
-      <div class="toolbar-section-title">Shape</div>
-      <div class="toolbar-row">
-        <button class="toolbar-button" onclick="changeTileShape('rectangle')" title="Rectangle">Rect</button>
-        <button class="toolbar-button" onclick="changeTileShape('rounded')" title="Rounded">Round</button>
-        <button class="toolbar-button" onclick="changeTileShape('circular')" title="Circle">Circle</button>
-        <button class="toolbar-button" onclick="changeTileShape('hexagon')" title="Hexagon">Hex</button>
+
+      <!-- Shape Dropdown -->
+      <div class="tile-menu-dropdown">
+        <button class="tile-menu-btn shape-btn" onclick="toggleShapeDropdown()">
+          <span class="shape-icon" id="shapeIcon">□</span>
+          <span>Shape</span>
+          <span class="dropdown-arrow">▼</span>
+        </button>
+        <div class="dropdown-content shape-dropdown" id="shapeDropdown">
+          <div class="shape-option" onclick="changeTileShape('rectangle')">
+            <span class="shape-icon">□</span>
+            <span>Rectangle</span>
+          </div>
+          <div class="shape-option" onclick="changeTileShape('rounded')">
+            <span class="shape-icon">⬜</span>
+            <span>Rounded</span>
+          </div>
+          <div class="shape-option" onclick="changeTileShape('circular')">
+            <span class="shape-icon">●</span>
+            <span>Circle</span>
+          </div>
+          <div class="shape-option" onclick="changeTileShape('hexagon')">
+            <span class="shape-icon">⬢</span>
+            <span>Hexagon</span>
+          </div>
+          <div class="shape-option" onclick="changeTileShape('diamond')">
+            <span class="shape-icon">◆</span>
+            <span>Diamond</span>
+          </div>
+          <div class="shape-option" onclick="changeTileShape('triangle')">
+            <span class="shape-icon">▲</span>
+            <span>Triangle</span>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="toolbar-section">
-      <div class="toolbar-section-title">Color</div>
-      <div class="toolbar-row">
-        <div class="toolbar-color-picker" onclick="showColorPicker()" title="Change Color"></div>
-        <button class="toolbar-button" onclick="resetTileColor()" title="Reset Color">Reset</button>
-      </div>
+
+      <!-- Delete Button -->
+      <button class="tile-menu-btn delete-btn" onclick="deleteSelected()">
+        <span>🗑️</span>
+        <span>Delete</span>
+      </button>
+
+      <!-- Duplicate Button -->
+      <button class="tile-menu-btn duplicate-btn" onclick="duplicateTile()">
+        <span>📋</span>
+        <span>Duplicate</span>
+      </button>
     </div>
   </div>
 
@@ -1613,14 +2019,6 @@ function createTile(x=100,y=100,title='',content='',id=null,shape='rectangle',pr
   t.style.left=x+'px'; t.style.top=y+'px'; t.style.width='200px'; t.style.height='120px'; t.style.backgroundColor=color;
   t.innerHTML = `
     <div class="tile-content-wrapper">
-      <div class="shape-palette">
-        <div class="shape-option" title="Rounded" data-shape="rounded">Round</div>
-        <div class="shape-option" title="Circle" data-shape="circular">Circle</div>
-        <div class="shape-option" title="Diamond" data-shape="diamond">Diamond</div>
-        <div class="shape-option" title="Hex" data-shape="hexagon">Hex</div>
-        <div class="shape-option" title="Triangle" data-shape="triangle">Triangle</div>
-        <div class="shape-option" title="Parallelogram" data-shape="parallelogram">Para</div>
-      </div>
       <textarea class="tile-title" placeholder="Title">${title||''}</textarea>
       <textarea class="tile-content" placeholder="Content">${content||''}</textarea>
     </div>
@@ -1668,8 +2066,9 @@ function selectTile(tile){
   
   // Add resize handles
   addResizeHandles(tile);
-  
-  openTileToolbar(tile);
+
+  // Open new tile menu instead of old toolbar
+  openTileMenu(tile);
 }
 function clearSelection(){
   tiles.forEach(t=>{
@@ -2126,47 +2525,209 @@ async function confirmNewGraph(){
 async function loadInbox(){
   const token = localStorage.getItem('flowpad_token');
   const res = await fetch('/api/graphs/inbox', { headers:{Authorization:`Bearer ${token}`} }).catch(()=>null);
-  if (res && res.ok) renderInbox(await res.json());
-  else document.getElementById('inboxContent').innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">No pending invitations</div>';
+  if (res && res.ok) {
+    renderInbox(await res.json());
+  } else {
+    document.getElementById('inboxContent').innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px;">No pending invitations</div>';
+    updateInboxBadge(0); // No pending invitations
+  }
+}
+
+function updateInboxBadge(count) {
+  const badge = document.getElementById('inboxBadge');
+  if (badge) {
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count.toString();
+      badge.style.display = 'flex';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
 }
 function renderInbox(items){
-  const container=document.getElementById('inboxContent'); container.innerHTML='';
+  const container = document.getElementById('inboxContent');
+  container.innerHTML = '';
+
   if (!items?.length){
-    container.innerHTML='<div style="text-align:center;color:var(--text-secondary);padding:20px;">No pending invitations</div>'; return;
+    container.innerHTML = `
+      <div style="text-align:center;color:var(--text-secondary);padding:20px;">
+        <div style="font-size:48px;margin-bottom:10px;">📬</div>
+        <div>No pending invitations</div>
+        <div style="font-size:12px;margin-top:5px;">Invitations from other users will appear here</div>
+      </div>
+    `;
+    return;
   }
-  items.forEach(it=>{
-    const el=document.createElement('div');
-    el.className=`inbox-item ${it.status||'pending'}`;
-    el.innerHTML=`<div class="inbox-title">${it.graphTitle}</div>
-      <div class="inbox-meta">From: ${it.sharerName} • ${new Date(it.sharedAt).toLocaleString()}</div>
-      ${it.status==='pending'?`<div class="inbox-actions">
-        <button class="inbox-btn accept" onclick="respondToInvitation('${it.id}','accept')">Accept</button>
-        <button class="inbox-btn reject" onclick="respondToInvitation('${it.id}','reject')">Reject</button></div>`:''}`;
-    container.appendChild(el);
-  });
+
+  // Group invitations by status
+  const pending = items.filter(it => it.status === 'pending');
+  const processed = items.filter(it => it.status !== 'pending');
+
+  // Update inbox badge
+  updateInboxBadge(pending.length);
+
+  // Show pending invitations first
+  if (pending.length > 0) {
+    const pendingHeader = document.createElement('div');
+    pendingHeader.className = 'inbox-section-header';
+    pendingHeader.innerHTML = `
+      <div class="inbox-header-content">
+        <h4>Pending Invitations (${pending.length})</h4>
+        <div class="inbox-bulk-actions">
+          <button class="inbox-bulk-btn accept-all" onclick="acceptAllInvitations()" title="Accept all pending invitations">
+            ✓ Accept All
+          </button>
+          <button class="inbox-bulk-btn reject-all" onclick="rejectAllInvitations()" title="Reject all pending invitations">
+            ✗ Reject All
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(pendingHeader);
+
+    pending.forEach(invitation => {
+      const el = document.createElement('div');
+      el.className = 'inbox-item pending';
+      el.innerHTML = `
+        <div class="inbox-item-header">
+          <div class="inbox-title">${invitation.graphTitle || 'Untitled Graph'}</div>
+          <div class="inbox-permission">${invitation.permission || 'viewer'}</div>
+        </div>
+        <div class="inbox-meta">
+          From: <strong>${invitation.sharerName || 'Unknown User'}</strong> •
+          ${new Date(invitation.sharedAt || Date.now()).toLocaleString()}
+        </div>
+        <div class="inbox-actions">
+          <button class="inbox-btn accept" onclick="respondToInvitation('${invitation.id}','accept')" title="Accept invitation">
+            ✓ Accept
+          </button>
+          <button class="inbox-btn reject" onclick="respondToInvitation('${invitation.id}','reject')" title="Reject invitation">
+            ✗ Reject
+          </button>
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  }
+
+  // Show processed invitations (for reference)
+  if (processed.length > 0) {
+    const processedHeader = document.createElement('div');
+    processedHeader.className = 'inbox-section-header';
+    processedHeader.innerHTML = `<h4>Recent Activity (${processed.length})</h4>`;
+    container.appendChild(processedHeader);
+
+    processed.slice(0, 5).forEach(invitation => { // Show only last 5
+      const el = document.createElement('div');
+      el.className = `inbox-item ${invitation.status}`;
+      el.innerHTML = `
+        <div class="inbox-item-header">
+          <div class="inbox-title">${invitation.graphTitle || 'Untitled Graph'}</div>
+          <div class="inbox-status ${invitation.status}">${invitation.status}</div>
+        </div>
+        <div class="inbox-meta">
+          From: ${invitation.sharerName || 'Unknown User'} •
+          ${new Date(invitation.sharedAt || Date.now()).toLocaleString()}
+        </div>
+      `;
+      container.appendChild(el);
+    });
+  }
 }
 async function respondToInvitation(id, action){
-  const res = await fetch(`/api/graphs/inbox/${id}/${action}`, {method:'POST', headers:{Authorization:`Bearer ${localStorage.getItem('flowpad_token')}`}}).catch(()=>null);
-  if (res && res.ok){ notify(`Invitation ${action}ed`); loadInbox(); if(action==='accept') loadGraphs(); }
-  else notify(`Failed to ${action} invitation`,'error');
+  try {
+    const token = localStorage.getItem('flowpad_token');
+    const response = await fetch(`/api/graphs/inbox/${id}/${action}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || `Failed to ${action} invitation`);
+    }
+
+    const result = await response.json();
+    notify(result.message || `Invitation ${action}ed successfully`, 'success');
+
+    // Refresh inbox to remove processed invitation
+    await loadInbox();
+
+    // If accepted, refresh graphs list to show new shared graph
+    if (action === 'accept') {
+      await loadGraphs();
+      notify('Graph added to your shared graphs', 'success');
+    }
+
+  } catch (error) {
+    console.error(`${action} invitation error:`, error);
+    notify(error.message || `Failed to ${action} invitation`, 'error');
+  }
 }
-function shareGraph(){
-  if (!currentGraph) return;
-  
+async function shareGraph(){
+  if (!currentGraph) {
+    notify('No graph selected', 'error');
+    return;
+  }
+
   // Prevent sharing local graphs
   if (currentGraph.id && (currentGraph.id.toString().startsWith('local_') || currentGraph.id.toString().startsWith('demo-'))) {
     notify('Cannot share local graphs. Please save to server first.', 'error');
     return;
   }
-  
-  const email = document.getElementById('shareEmail').value.trim();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return notify('Invalid email','error');
-  fetch(`/api/graphs/${currentGraph.id}/share`,{
-    method:'POST',
-    headers:{'Content-Type':'application/json', Authorization:`Bearer ${localStorage.getItem('flowpad_token')}`},
-    body: JSON.stringify({ email })
-  }).then(r=>{ notify(r.ok?'Shared':'Share failed', r.ok?'success':'error'); if (r.ok) document.getElementById('shareEmail').value=''; })
-  .catch(()=>notify('Share failed','error'));
+
+  const email = document.getElementById('shareEmail')?.value.trim();
+  if (!email) {
+    notify('Please enter an email address', 'error');
+    return;
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    notify('Please enter a valid email address', 'error');
+    return;
+  }
+
+  const permission = document.querySelector('input[name="permission"]:checked')?.value || 'viewer';
+
+  try {
+    const token = localStorage.getItem('flowpad_token');
+    const response = await fetch(`/api/graphs/${currentGraph.id}/invite`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        email,
+        permission,
+        action: 'invite'
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to send invitation');
+    }
+
+    const result = await response.json();
+    notify(result.message || `Invitation sent to ${email}`, 'success');
+
+    // Clear the email input
+    const emailInput = document.getElementById('shareEmail');
+    if (emailInput) emailInput.value = '';
+
+    // Refresh shared users list if available
+    if (typeof loadSharedUsers === 'function') {
+      loadSharedUsers();
+    }
+
+  } catch (error) {
+    console.error('Share error:', error);
+    notify(error.message || 'Failed to send invitation', 'error');
+  }
 }
 function addShareEmailListener(){
   const el=document.getElementById('shareEmail'); if (!el) return;
@@ -3521,23 +4082,27 @@ async function shareGraph() {
   const permission = document.querySelector('input[name="permission"]:checked').value;
   
   try {
-    // Real API implementation
-    const response = await fetch(`/api/graphs/${currentGraph.id}/share`, {
+    // Send invitation (not direct access)
+    const response = await fetch(`/api/graphs/${currentGraph.id}/invite`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('flowpad_token')}`
       },
-      body: JSON.stringify({ email, permission })
+      body: JSON.stringify({
+        email,
+        permission,
+        action: 'invite' // Explicitly request invitation, not direct access
+      })
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to share graph');
+      throw new Error(error.message || 'Failed to send invitation');
     }
 
     const result = await response.json();
-    notify(result.message || `Graph shared with ${email} (${permission} access)`, 'success');
+    notify(result.message || `Invitation sent to ${email} (${permission} access)`, 'success');
     closeShareGraphModal();
 
     // Clear the email input
@@ -3725,6 +4290,275 @@ function createTextRectangle() {
   scheduleSave();
   notify('Text rectangle added', 'success');
 }
+
+/* Enhanced Tile Menu System */
+function openTileMenu(tile) {
+  if (!tile) return;
+
+  // Close any open dropdowns first
+  closeAllDropdowns();
+
+  const menu = document.getElementById('tileMenu');
+  if (!menu) return;
+
+  // Position menu above the tile
+  const tileRect = tile.getBoundingClientRect();
+  const menuX = tileRect.left + (tileRect.width / 2);
+  const menuY = tileRect.top - 10; // Float above tile
+
+  menu.style.left = menuX + 'px';
+  menu.style.top = menuY + 'px';
+  menu.style.transform = 'translateX(-50%) translateY(-100%)'; // Center horizontally, position above
+  menu.classList.add('show');
+
+  // Update color preview and shape icon
+  updateColorPreview(tile);
+  updateShapeIcon(tile);
+}
+
+function closeTileMenu() {
+  const menu = document.getElementById('tileMenu');
+  if (menu) {
+    menu.classList.remove('show');
+  }
+  closeAllDropdowns();
+}
+
+function updateColorPreview(tile) {
+  const preview = document.getElementById('colorPreview');
+  if (preview && tile) {
+    const bgColor = tile.style.backgroundColor || '#ffffff';
+    preview.style.backgroundColor = bgColor;
+  }
+}
+
+function updateShapeIcon(tile) {
+  const icon = document.getElementById('shapeIcon');
+  if (icon && tile) {
+    const shapeIcons = {
+      'rectangle': '□',
+      'rounded': '⬜',
+      'circular': '●',
+      'hexagon': '⬢',
+      'diamond': '◆',
+      'triangle': '▲',
+      'parallelogram': '▱'
+    };
+
+    // Determine current shape
+    let currentShape = 'rectangle';
+    for (const shape in shapeIcons) {
+      if (tile.classList.contains(shape)) {
+        currentShape = shape;
+        break;
+      }
+    }
+
+    icon.textContent = shapeIcons[currentShape];
+  }
+}
+
+// Dropdown functions
+function toggleColorDropdown() {
+  const dropdown = document.getElementById('colorDropdown');
+  const shapeDropdown = document.getElementById('shapeDropdown');
+
+  // Close shape dropdown if open
+  if (shapeDropdown) shapeDropdown.classList.remove('show');
+
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+function toggleShapeDropdown() {
+  const dropdown = document.getElementById('shapeDropdown');
+  const colorDropdown = document.getElementById('colorDropdown');
+
+  // Close color dropdown if open
+  if (colorDropdown) colorDropdown.classList.remove('show');
+
+  if (dropdown) {
+    dropdown.classList.toggle('show');
+  }
+}
+
+function closeAllDropdowns() {
+  const dropdowns = document.querySelectorAll('.dropdown-content');
+  dropdowns.forEach(dropdown => dropdown.classList.remove('show'));
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.tile-menu-dropdown')) {
+    closeAllDropdowns();
+  }
+
+  if (!e.target.closest('.tile-menu')) {
+    closeTileMenu();
+  }
+});
+
+// Enhanced Invitation Management
+async function acceptAllInvitations() {
+  const pendingInvitations = document.querySelectorAll('.inbox-item.pending');
+  if (pendingInvitations.length === 0) {
+    notify('No pending invitations to accept', 'info');
+    return;
+  }
+
+  if (!confirm(`Accept all ${pendingInvitations.length} pending invitations?`)) {
+    return;
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const item of pendingInvitations) {
+    const acceptBtn = item.querySelector('.inbox-btn.accept');
+    if (acceptBtn) {
+      const onclick = acceptBtn.getAttribute('onclick');
+      const match = onclick.match(/respondToInvitation\('([^']+)','accept'\)/);
+      if (match) {
+        try {
+          await respondToInvitation(match[1], 'accept');
+          successCount++;
+        } catch (error) {
+          errorCount++;
+        }
+      }
+    }
+  }
+
+  if (successCount > 0) {
+    notify(`Accepted ${successCount} invitations`, 'success');
+  }
+  if (errorCount > 0) {
+    notify(`Failed to accept ${errorCount} invitations`, 'error');
+  }
+}
+
+async function rejectAllInvitations() {
+  const pendingInvitations = document.querySelectorAll('.inbox-item.pending');
+  if (pendingInvitations.length === 0) {
+    notify('No pending invitations to reject', 'info');
+    return;
+  }
+
+  if (!confirm(`Reject all ${pendingInvitations.length} pending invitations? This cannot be undone.`)) {
+    return;
+  }
+
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const item of pendingInvitations) {
+    const rejectBtn = item.querySelector('.inbox-btn.reject');
+    if (rejectBtn) {
+      const onclick = rejectBtn.getAttribute('onclick');
+      const match = onclick.match(/respondToInvitation\('([^']+)','reject'\)/);
+      if (match) {
+        try {
+          await respondToInvitation(match[1], 'reject');
+          successCount++;
+        } catch (error) {
+          errorCount++;
+        }
+      }
+    }
+  }
+
+  if (successCount > 0) {
+    notify(`Rejected ${successCount} invitations`, 'success');
+  }
+  if (errorCount > 0) {
+    notify(`Failed to reject ${errorCount} invitations`, 'error');
+  }
+}
+
+async function getInvitationDetails(invitationId) {
+  try {
+    const token = localStorage.getItem('flowpad_token');
+    const response = await fetch(`/api/graphs/inbox/${invitationId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      return await response.json();
+    }
+  } catch (error) {
+    console.error('Error getting invitation details:', error);
+  }
+  return null;
+}
+
+async function previewSharedGraph(graphId) {
+  try {
+    const token = localStorage.getItem('flowpad_token');
+    const response = await fetch(`/api/graphs/${graphId}/preview`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (response.ok) {
+      const preview = await response.json();
+      showGraphPreviewModal(preview);
+    } else {
+      notify('Cannot preview this graph', 'error');
+    }
+  } catch (error) {
+    console.error('Error previewing graph:', error);
+    notify('Failed to load graph preview', 'error');
+  }
+}
+
+function showGraphPreviewModal(preview) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay show';
+  modal.innerHTML = `
+    <div class="modal">
+      <div class="modal-title">Graph Preview: ${preview.title}</div>
+      <div class="modal-content">
+        <div class="preview-stats">
+          <div class="stat-item">
+            <span class="stat-label">Tiles:</span>
+            <span class="stat-value">${preview.tile_count || 0}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Connections:</span>
+            <span class="stat-value">${preview.connection_count || 0}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Last Updated:</span>
+            <span class="stat-value">${new Date(preview.updated_at).toLocaleString()}</span>
+          </div>
+        </div>
+        <div class="preview-description">
+          ${preview.description || 'No description available'}
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="modal-btn secondary" onclick="this.closest('.modal-overlay').remove()">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+// Auto-refresh inbox every 30 seconds
+setInterval(() => {
+  if (document.getElementById('inboxContent')) {
+    loadInbox().catch(() => {}); // Silent refresh
+  }
+}, 30000);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', init);
+
 </script>
 </body>
 </html>
